@@ -11,6 +11,12 @@ import './meeting.css'
 const { Header, Footer, Sider, Content } = Layout;
 
 class Meeting extends React.Component {
+    constructor(props) {
+        super(props);
+        this.state = {
+            role: 'ADMIN'
+        };
+    }
     render() {
         let anchor_list = [
             {name:'sqx-1',type:1},
@@ -21,6 +27,14 @@ class Meeting extends React.Component {
             {name:'sqx-6',type:1},
             {name:'sqx-7',type:1},
         ];
+
+        let action_buttons = (
+            <div className="admin-action">
+                <Button type="primary">摄像头</Button>
+                <Button type="primary">麦克风</Button>
+                <Button type="primary">下麦</Button>
+            </div>
+        )
         // anchor_list = [];
         return (
             // <div>
@@ -44,6 +58,7 @@ class Meeting extends React.Component {
                 </Header>
                 <Layout>
                     <Content>
+                        {action_buttons}
                         <video></video>
                     </Content>
                     <Sider 
