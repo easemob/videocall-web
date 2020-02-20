@@ -1,13 +1,13 @@
 import React, {Component} from 'react'
 import {Redirect} from 'react-router-dom'
 
-import { PageHeader } from 'antd';
 
 import { 
     Layout,
-    Button
+    Button,
+    Icon
 } from 'antd';
-import './meeting.css'
+import './meeting.less'
 const { Header, Footer, Sider, Content } = Layout;
 
 class Meeting extends React.Component {
@@ -29,10 +29,10 @@ class Meeting extends React.Component {
         ];
 
         let action_buttons = (
-            <div className="admin-action">
-                <Button type="primary">摄像头</Button>
-                <Button type="primary">麦克风</Button>
-                <Button type="primary">下麦</Button>
+            <div className="talker-action action">
+                <Button type="primary" size="small">摄像头</Button>
+                <Button type="primary" size="small">麦克风</Button>
+                <Button type="primary" size="small">下麦</Button>
             </div>
         )
         // anchor_list = [];
@@ -70,8 +70,14 @@ class Meeting extends React.Component {
                         <div className="total">主播6 观众234</div>
                         <div className="item-wrap">
                             { anchor_list.map(item => {
+
+                                let icon_mic_status = <Icon type="audio" />
                                 return (
-                                    <div key={''} className="item"></div>
+                                    <div key={''} className="item">
+                                        {action_buttons}
+                                        <video></video>
+                                        {icon_mic_status}
+                                    </div>
                                 )
                             }) }
                         </div>
