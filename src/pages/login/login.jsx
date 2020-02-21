@@ -9,7 +9,6 @@ import {
 
 import './login.css';
 
-import emedia from 'easemob-emedia';
 import {connect} from 'react-redux'
 import {login} from '../../redux/actions'
 
@@ -18,66 +17,86 @@ const Item = Form.Item // 不能写在import之前
 
 
 class Login extends React.Component {
-    
-    create = () => {
-        
-    }
 
-     join_anchor = e => {
-        e.preventDefault();
-        this.props.form.validateFields((err, values) => {
+    constructor(props) {
+        super(props)
+    
+        this.state = {
+        }
+    }
+    
+    
+
+    login = (event) => {
+
+        // 阻止事件的默认行为
+        event.preventDefault()
+    
+        // 对所有表单字段进行检验
+        this.props.form.validateFields(async (err, values) => {
+          // 检验成功
           if (!err) {
-            console.log('Received values of form: ', values);
+            // 请求登陆
+            const {username, password} = values
+    
+            let params = {
+                grant_type: "password",
+                username,
+                password,
+                timestamp: new Date().getTime()
+            }
+            this.props.login(params);
+            
+    
+          } else {
+            console.log('检验失败!')
           }
         });
     }
-     join_audience = e => {
-        e.preventDefault();
-        this.props.form.validateFields((err, values) => {
-          if (!err) {
-            console.log('Received values of form: ', values);
-          }
-        });
-    };
 
     render() {
+
+        // 如果用户已经登陆, 自动跳转到管理界面
+        const user = this.props.user;
+
+        if(user && user.name) {
+            return <Redirect to='/join'/>
+        }
+
         const { getFieldDecorator } = this.props.form;
 
         return (
             <div className="login-wrap">
     
-                <Form className="login-form">
+                <Form onSubmit={this.login} className="login-form">
                     <Item>
                     {getFieldDecorator('username', {
-                        rules: [{ required: true, message: '请输入房间名称' }],
+                        rules: [{ required: true, message: '请输入用户名' }],
                     })(
                         <Input
                         prefix={<Icon type="user" style={{ color: 'rgba(0,0,0,.25)' }} />}
-                        placeholder="房间名称"
+                        placeholder="用户名"
                         />,
                     )}
                     </Item>
                     <Item>
                     {getFieldDecorator('password', {
-                        rules: [{ required: true, message: '请输入房间密码' }],
+                        rules: [{ required: true, message: '请输入密码' }],
                     })(
                         <Input
                         prefix={<Icon type="lock" style={{ color: 'rgba(0,0,0,.25)' }} />}
                         type="password"
-                        placeholder="房间密码"
+                        placeholder="密码"
                         />,
                     )}
                     </Item>
     
                     <Button 
-                        style={{ marginBottom:'15px' }}
                         type="primary"  
-                        onClick={this.join_anchor}
+                        htmlType="submit" 
+                        disabled={this.state.disabled} 
                     >
-                        以主播身份进入
-                    </Button>
-                    <Button type="primary" onClick={this.join_audience}>
-                        以观众身份进入
+                        登录
                     </Button>
                 </Form>
             </div>
@@ -85,8 +104,20 @@ class Login extends React.Component {
     }
 }
 
+const mapStateToProps = state => {
+    return { user: state.user }
+}
+
+const mapDispatchToProps = dispatch => {
+    return {
+        login: params => dispatch(login(params))
+    }
+}
 const WrapLogin = Form.create()(Login)
-export default WrapLogin;
+export default connect(
+    mapStateToProps,
+    mapDispatchToProps
+)(WrapLogin);
 
 
 

@@ -8,6 +8,7 @@ import {
 import './App.css'
 
 import Login from './pages/login/login'
+import Join from './pages/join/join'
 import Meeting from './pages/meeting/meeting'
 
 /*
@@ -21,6 +22,7 @@ export default class App extends Component {
       <Router>
         <Switch> {/*只匹配其中一个*/}
           <Route path='/login' component={Login}></Route>
+          <Route path='/join' component={Join}></Route>
           <Route path='/' component={Meeting}></Route>
         </Switch>
       </Router>
