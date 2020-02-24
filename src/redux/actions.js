@@ -6,9 +6,12 @@
 import {
     // SET_HEAD_TITLE,
     RECEIVE_USER,
+    RECEIVE_ROOM,
     SHOW_ERROR_MSG,
   } from './action-types'
-import {req_login} from '../api'
+import {
+  req_login, req_create
+} from '../api'
 //   import storageUtils from "../utils/storageUtils";
   
   /*
@@ -20,7 +23,8 @@ import {req_login} from '../api'
   接收用户的同步action
    */
   export const receiveUser = (user) => ({type: RECEIVE_USER, user})
-  
+  export const receiveRoom = room => ({type: RECEIVE_ROOM, room})
+
   /*
   显示错误信息同步action
    */
@@ -56,6 +60,21 @@ import {req_login} from '../api'
         }
 
         dispatch(receiveUser(user))
+      } catch (error) {
+        dispatch(showErrorMsg(error))
+      }
+
+    }
+  }
+
+  export const create = (params) => {
+    return async dispatch => {
+      try {
+        const room = await req_create(params);
+        if(!room.confrId){
+          return
+        };
+        dispatch(receiveRoom(room))
       } catch (error) {
         dispatch(showErrorMsg(error))
       }

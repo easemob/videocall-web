@@ -14,9 +14,7 @@ import {login} from '../../redux/actions'
 
 const Item = Form.Item // 不能写在import之前
 
-
-
-class Login extends React.Component {
+class Login extends Component {
 
     constructor(props) {
         super(props)
@@ -24,8 +22,6 @@ class Login extends React.Component {
         this.state = {
         }
     }
-    
-    
 
     login = (event) => {
 
