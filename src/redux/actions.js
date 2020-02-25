@@ -50,7 +50,7 @@ import {
       try {
         const user_info = await req_login(params);
         if(!user_info.access_token){
-          return
+          return 
         };
 
         let user = {
@@ -59,9 +59,10 @@ import {
           uuid: user_info.user && user_info.user.uuid
         }
 
-        dispatch(receiveUser(user))
+        dispatch(receiveUser(user));
       } catch (error) {
-        dispatch(showErrorMsg(error))
+        dispatch(showErrorMsg(error));
+        // return Promise.reject()
       }
 
     }

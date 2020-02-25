@@ -20,15 +20,17 @@ class Login extends Component {
         super(props)
     
         this.state = {
+            loading: false
         }
     }
 
     login = (event) => {
-
+        this.setState({ loading: true })
         // 阻止事件的默认行为
         event.preventDefault()
     
         // 对所有表单字段进行检验
+        let _this = this;
         this.props.form.validateFields(async (err, values) => {
           // 检验成功
           if (!err) {
@@ -41,9 +43,10 @@ class Login extends Component {
                 password,
                 timestamp: new Date().getTime()
             }
-            this.props.login(params);
+
+            await _this.props.login(params);
+            _this.setState({ loading: false })
             
-    
           } else {
             console.log('检验失败!')
           }
@@ -90,7 +93,7 @@ class Login extends Component {
                     <Button 
                         type="primary"  
                         htmlType="submit" 
-                        disabled={this.state.disabled} 
+                        loading={this.state.loading} 
                     >
                         登录
                     </Button>

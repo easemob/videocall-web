@@ -11,12 +11,19 @@ import './join.css';
 
 import {connect} from 'react-redux';
 
-import {create} from '../../redux/actions';
+import {create,login} from '../../redux/actions';
+import emedia from 'easemob-emedia';
 
 const Item = Form.Item // 不能写在import之前
 
 class Join extends Component {
 
+    /*
+    * 1.当我点击加入按钮时
+    *   首先会创建 房间
+    *   然后再加入房间
+    * 2.当加入房间成功，跳转到 room 界面
+    */ 
     constructor(props) {
         super(props)
     
@@ -24,7 +31,9 @@ class Join extends Component {
             roomName:'',
             password:'',
             memName: this.props.user.name,
-            token: this.props.user.token
+            token: this.props.user.token,
+
+            defaultRole:3
         }
     }
     
@@ -34,7 +43,8 @@ class Join extends Component {
             roomName,
             password,
             memName,
-            token
+            token,
+            defaultRole
         } = this.state;
 
         if(
@@ -50,36 +60,61 @@ class Join extends Component {
             roomName,
             password,
             memName,
-            token
+            token,
+            defaultRole
         }
-        this.props.create(params)
+        await this.props.create(params);
+
+        this.join()
     }
 
-    join_anchor = e => {
-        e.preventDefault();
+    componentDidMount() {
+        emedia.config({
+            restPrefix: "https://rtc-turn4-hsb.easemob.com"
+        });
+    }
+
+
+    async join() {
+        
+        let {
+            confrId, 
+            password
+        } = this.props.room;
+
+        let { name,token } = this.props.user
+        if(
+            !confrId || 
+            !password
+        ) {
+            return
+        }
+
+        emedia.mgr.setIdentity(name, token); // ???
+
+        try {
+            await emedia.mgr.joinUsePassword(confrId, password);
+        } catch (error) {
+            console.error('join_error', error)
+        }
+    }
+
+    join_handle(defaultRole){
         var _this = this;
         this.props.form.validateFields((err, values) => {
 
             _this.setState({
                 roomName: values.roomName,
-                password: values.password
+                password: values.password,
+                defaultRole
             },() => {
                 if (!err) {
                     _this.create()
                 }
-
             })
         });
     }
-    join_audience = e => {
-        e.preventDefault();
-        this.props.form.validateFields((err, values) => {
-          if (!err) {
-            console.log('Received values of form: ', values);
-          }
-        });
-    };
-
+    
     render() {
 
         const { ticket, confrId } = this.props.room;
@@ -92,7 +127,6 @@ class Join extends Component {
 
         return (
             <div className="login-wrap">
-    
                 <Form className="login-form">
                     <Item>
                     {getFieldDecorator('roomName', {
@@ -119,11 +153,15 @@ class Join extends Component {
                     <Button 
                         style={{ marginBottom:'15px' }}
                         type="primary"  
-                        onClick={this.join_anchor}
+                        onClick={() => this.join_handle(3)}
                     >
                         以主播身份进入
                     </Button>
-                    <Button type="primary" onClick={this.join_audience}>
+                    <Button 
+                        style={{ marginBottom:'15px' }}
+                        type="primary"  
+                        onClick={() => this.join_handle(1)}
+                    >
                         以观众身份进入
                     </Button>
                 </Form>
@@ -142,7 +180,8 @@ const mapStateToProps = state => {
 
 const mapDispatchToProps = dispatch => {
     return {
-        create: params => dispatch(create(params))
+        create: params => dispatch(create(params)),
+        login: params => dispatch(login(params)),
     }
 }
 const WrapJoin = Form.create()(Join)

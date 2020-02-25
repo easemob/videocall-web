@@ -1,5 +1,6 @@
 import React, {Component} from 'react'
 import {Redirect} from 'react-router-dom'
+import { createBrowserHistory } from 'history'; 
 
 
 import { 
@@ -10,7 +11,7 @@ import {
 import './room.less';
 
 import {connect} from 'react-redux';
-// import {login,create} from '../../redux/actions';
+import {login,create} from '../../redux/actions';
 
 import emedia from 'easemob-emedia';
 
@@ -20,19 +21,26 @@ const { Header, Footer, Sider, Content } = Layout;
 class AnchorList extends Component {
 
     componentDidMount() {
-        this.fill_stream_to_video()
+        // this.fill_stream_to_video()
     }
 
     fill_stream_to_video() {
 
+        
         this.props.anchor_list.map(item => {
             let { id } = item.stream;
             let el = this.refs[`list-video-${id}`];
-            console.log('componentDidMount el', el);
             
-            if(el) {
-                emedia.mgr.streamBindVideo(item.stream, el)
-            }
+            let stream = item.stream;
+            let member = item.member;
+
+
+            // if(stream.located()) {
+            //     emedia.mgr.streamBindVideo(stream, el)
+            // } else {
+            //     emedia.mgr.subscribe(member, stream, true, true, el)
+            // }
+
         })
     }
     componentDidUpdate() {
@@ -56,10 +64,14 @@ class AnchorList extends Component {
                         let icon_mic_status = <Icon type="audio" />
 
                         let { id } = item.stream;
+                        let { name } = item.member;
+                        
                         return (
                             <div key={id} className="item">
                                 {/* {action_buttons} */}
-                                <video ref={`list-video-${id}`}></video>
+                                <span style={{position:'absolute',left:0,top:0}}>{ name }</span>
+                                <video ref={`list-video-${id}`} autoPlay></video>
+                                <span style={{position:'absolute',right:0,top:0}}>{ name }</span>
                                 {/* {icon_mic_status} */}
                             </div>
                         )
@@ -77,31 +89,71 @@ class Room extends Component {
         };
     }
 
+    // temp
+
+
+    // login(name) {
+
+    //     let params = {
+    //         grant_type: "password",
+    //         username: name == 2 ? 'qx.su.2' : 'qx.su',
+    //         password: 'ssgsqx133856',
+    //         timestamp: new Date().getTime()
+    //     }
+
+    //     this.props.login(params).then(() => {
+    //         console.log('this.props.login success');
+    //     });
+
+    // }
+
+    // create(){
+    //     let params = {
+    //         roomName:'room-1',
+    //         password:'1',
+    //         memName: this.props.user.name,
+    //         token: this.props.user.token
+    //     }
+
+    //     this.props.create(params)
+
+    // }
+
+
+    // temp fun
+
     init_emedia_callback() {
+        
         emedia.config({
             restPrefix: "https://rtc-turn4-hsb.easemob.com"
         });
-
         let _this = this;
         emedia.mgr.onStreamAdded = function (member, stream) {
             console.log('onStreamAdded >>>', member, stream);
 
-            let anchor_list = [];
+            let { anchor_list } = _this.state;
 
-            anchor_list.push({stream});
+            anchor_list.push({stream,member});
 
             _this.setState({ anchor_list })
-            if(stream.located()){
-                let videoTag = _this.refs['main-video'];
-                emedia.mgr.streamBindVideo(stream, videoTag)
-            }
+            // if(stream.located()){
+            //     let videoTag = _this.refs['main-video'];
+            //     emedia.mgr.streamBindVideo(stream, videoTag)
+            // }
+        };
+        emedia.mgr.onStreamRemoved = function (member, stream) {
+
+        };
+        emedia.mgr.onMemberJoined = function (member) {
+            console.log('onMemberJoined',member);
+            
         };
 
     }
     componentDidMount() {
 
         this.init_emedia_callback();
-        this.join();
+        // this.join();
         
         window.onbeforeunload=function(e){     
             var e = window.event||e;  
@@ -109,31 +161,35 @@ class Room extends Component {
         } 
     }
 
-    async join() {
+    // async join() {
         
-        let {
-            confrId, 
-            password
-        } = this.props.room;
+    //     let {
+    //         confrId, 
+    //         password
+    //     } = this.props.room;
 
-        let { name,token } = this.props.user
-        if(
-            !confrId || 
-            !password
-        ) {
-            return
-        }
+    //     let { name,token } = this.props.user
+    //     if(
+    //         !confrId || 
+    //         !password
+    //     ) {
+    //         return
+    //     }
 
-        emedia.mgr.setIdentity(name, token); // ???
+    //     emedia.mgr.setIdentity(name, token); // ???
 
-        try {
-            await emedia.mgr.joinUsePassword(confrId, password);
-            this.publish()
-        } catch (error) {
-            console.error('join_error', error)
-        }
+    //     try {
+    //         await emedia.mgr.joinUsePassword(confrId, password);
+    //     } catch (error) {
+    //         console.error('join_error', error)
+    //     }
+    // }
+
+    leave() {
+        emedia.mgr.exitConference();
+
+        createBrowserHistory().push('/join');
     }
-
     async publish() {
 
         try {
@@ -147,7 +203,6 @@ class Room extends Component {
     }
 
     render() {
-
 
         let action_buttons = (
             <div className="talker-action action">
@@ -164,7 +219,7 @@ class Room extends Component {
                         <span>network</span>
                         <span>name</span>
                         <span>admin</span>
-                        <Button type="primary">离开</Button>
+                        <Button type="primary" onClick={() => this.leave()}>离开</Button>
                     </div>
                 </Header>
                 <Layout>
@@ -174,6 +229,15 @@ class Room extends Component {
                     </Content>
                     <AnchorList anchor_list={this.state.anchor_list}/>
                 </Layout>
+                <Footer>
+                    <Button type="primary" onClick={() => this.publish()}>推流</Button>
+                    {/* <Button type="primary" onClick={() => this.login()} style={{margin:'0 15px'}}>qx.su login</Button>
+                    <Button type="primary" onClick={() => this.create()} >qx.su create</Button>
+                    <Button type="primary" onClick={() => this.join()} >qx.su join</Button>
+                    <Button type="primary" onClick={() => this.login(2)} style={{margin:'0 15px'}}>qx.su.2 login</Button>
+                    <Button type="primary" onClick={() => this.create()} >qx.su.2 create</Button>
+                    <Button type="primary" onClick={() => this.join()} >qx.su.2 join</Button> */}
+                </Footer>
             </Layout>
         )
     }
@@ -181,5 +245,5 @@ class Room extends Component {
 
 export default connect(
     state => ({user:state.user,room: state.room}),
-    // {login, create }
+    {login, create }
 )(Room);
