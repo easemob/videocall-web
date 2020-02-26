@@ -10,19 +10,9 @@ import {combineReducers} from 'redux'
 import {
   RECEIVE_USER,
   RECEIVE_ROOM,
+  RECEIVE_USER_ROOM,
   SHOW_ERROR_MSG,
 } from './action-types'
-
-// const initHeadTitle = ''
-
-// function headTitle(state = initHeadTitle, action) {
-//   switch (action.type) {
-//     case SET_HEAD_TITLE:
-//       return action.data
-//     default:
-//       return state
-//   }
-// }
 
 /*
 用来管理当前登陆用户的reducer函数
@@ -39,8 +29,6 @@ function user(state = initUser, action) {
       const errorMsg = action.errorMsg
       // state.errorMsg = errorMsg  // 不要直接修改原本状态数据
       return {...state, errorMsg}
-    // case RESET_USER:
-    //   return {}
     default:
       return state
   }
@@ -61,6 +49,19 @@ function room(state = initRoom, action) {
   }
 }
 
+function user_room(state = {}, action) {
+
+  switch (action.type) {
+    case RECEIVE_USER_ROOM:
+      return action.user_room
+    case SHOW_ERROR_MSG:
+      const errorMsg = action.errorMsg
+      return {...state, errorMsg}
+    default:
+      return state  
+  }
+}
+
 /*
 向外默认暴露的是合并产生的总的reducer函数
 管理的总的state的结构:
@@ -71,5 +72,6 @@ function room(state = initRoom, action) {
  */
 export default combineReducers({
   user,
-  room
+  room,
+  user_room
 })

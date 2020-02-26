@@ -4,26 +4,25 @@
 异步action: 函数  dispatch => {}
  */
 import {
-    // SET_HEAD_TITLE,
     RECEIVE_USER,
     RECEIVE_ROOM,
+    RECEIVE_USER_ROOM,
     SHOW_ERROR_MSG,
-  } from './action-types'
+} from './action-types'
+
 import {
-  req_login, req_create
-} from '../api'
+  req_login, 
+  req_create
+} from '../api';
+
 //   import storageUtils from "../utils/storageUtils";
-  
-  /*
-  设置头部标题的同步action
-   */
-//   export const setHeadTitle = (headTitle) => ({type: SET_HEAD_TITLE, data: headTitle})
   
   /*
   接收用户的同步action
    */
   export const receiveUser = (user) => ({type: RECEIVE_USER, user})
   export const receiveRoom = room => ({type: RECEIVE_ROOM, room})
+  export const receive_user_room = user_room => ({type: RECEIVE_USER_ROOM, user_room})
 
   /*
   显示错误信息同步action
@@ -62,7 +61,6 @@ import {
         dispatch(receiveUser(user));
       } catch (error) {
         dispatch(showErrorMsg(error));
-        // return Promise.reject()
       }
 
     }
@@ -80,6 +78,35 @@ import {
         dispatch(showErrorMsg(error))
       }
 
+    }
+  }
+
+  export const join = (emedia,params) => {
+
+    return async dispatch => {
+      if(!emedia) {
+        return
+      }
+
+      let {
+        name,
+        token,
+        confrId,
+        password,
+        role
+      } = params;
+
+      try {
+        
+        emedia.mgr.setIdentity(name, token);
+  
+        let { ticket } = await emedia.mgr.reqTkt(params);
+        let user_room = await emedia.mgr.joinConferenceWithTicket(confrId, ticket);
+      
+        dispatch(receive_user_room(user_room))
+      } catch (error) {
+        dispatch(showErrorMsg(error))
+      }
     }
   }
   
