@@ -18,12 +18,16 @@ import emedia from 'easemob-emedia';
 const { Header, Footer, Sider, Content } = Layout;
 
 
-class AnchorList extends Component {
+class TalkerList extends Component {
 
+    constructor(props){
+        super(props);
+        
+    }
     fill_stream_to_video() {
 
         
-        this.props.anchor_list.map(item => {
+        this.props.talker_list.map(item => {
             let { id } = item.stream;
             let el = this.refs[`list-video-${id}`];
             
@@ -37,19 +41,45 @@ class AnchorList extends Component {
     componentDidUpdate() {
         this.fill_stream_to_video()
     }
+
+    // get_action_buttons(stream) {
+
+    //     let { user_room } = this.props
+    //     if(
+    //         !user_room || 
+    //         !stream ||
+    //         !stream.owner
+    //     ) {
+    //         return ''
+    //     }
+
+    //     if( user_room.joinId != stream.owner.id) {
+    //         return ''
+    //     }
+
+    //     return (
+    //         <div className="talker-action action">
+    //             <Button type="primary" size="small">摄像头</Button>
+    //             <Button type="primary" size="small">麦克风</Button>
+    //             <Button type="primary" size="small">下麦</Button>
+    //         </div>
+    //     );
+    // }
     render() {
 
-        let { anchor_list } = this.props;
+        let { talker_list } = this.props;
+
+
         return (
             <Sider 
                 width="300" 
-                className="anchor-list"
+                className="talker-list"
                 // defaultCollapsed={true}
                 // collapsedWidth='0'
             >
                 <div className="total">主播6 观众234</div>
                 <div className="item-wrap">
-                    { anchor_list.map(item => {
+                    { talker_list.map(item => {
                         let icon_mic_status = <Icon type="audio" />
 
                         let { id } = item.stream;
@@ -60,11 +90,14 @@ class AnchorList extends Component {
                             <div 
                                 key={id} 
                                 className="item"
-                                onDoubleClick={() => this.props.toggle_main(id)}>
-                                {/* {action_buttons} */}
+                                onDoubleClick={() => this.props.toggle_main(id)}
+                            >
+
+                                {this.props.get_action_buttons(item.stream)}
                                 <span className="name">{ name + (role == 7 ? '(管理员)' : '') }</span>
                                 <video ref={`list-video-${id}`} autoPlay></video>
                                 {/* {icon_mic_status} */}
+
                             </div>
                         )
                     }) }
@@ -80,15 +113,125 @@ class Room extends Component {
     constructor(props) {
         super(props);
         this.state = {
-            anchor_list: [],
-            main: null
-            // anchor_list: [{ 
+            talker_list: [],
+            main: null,
+            user_room: this.props.user_room,
+            own_stream:null,
+            // talker_list: [{ 
             //     member:{name:'qx.su'},
             //     stream:{id:'1'}
             //  }]
+
+            aoff: false,
+            voff: false,
         };
-        this.toggle_main = this.toggle_main.bind(this)
+        this.toggle_main = this.toggle_main.bind(this);
+        this.get_action_buttons = this.get_action_buttons.bind(this);
+
+        this.toggle_own_video = this.toggle_own_video.bind(this);
     }
+
+
+    leave() {
+
+        let is_confirm = confirm('确定退出会议吗？');
+
+        if(is_confirm){
+            emedia.mgr.exitConference();
+            // createBrowserHistory().push('/join');
+        }
+        
+    }
+    async publish() {
+
+        try {
+            const stream = emedia.mgr.publish({ audio: true, video: true });
+
+            if(stream) {
+                this.setState({ own_stream: stream})
+            }
+            console.log('publish stream', stream);
+            
+        } catch (error) {
+            console.log('publish error',error);
+        }
+    }
+
+    // 取消推流（下麦）
+    unpublish() {
+
+    }
+    toggle_main(id) {
+        if(!id) {
+            return
+        }
+        // 此方法就是将一个数组的项 与一个对象替换
+        let talker_list = this.state.talker_list;
+        let main = this.state.main;
+
+        talker_list.map((item, index) => { // 在数组中删除点击的项
+            let stream_id = item.stream.id;
+
+            if( id == stream_id){
+
+                if(main && Object.keys(main).length > 0){ //main存在，就替换被删除的项
+                    main = talker_list.splice(index,1,main)[0]
+                }else {
+                    main = talker_list.splice(index,1)[0]
+                }
+                return
+            }
+        })
+
+
+        this.setState({
+            talker_list, 
+            main
+        }, this.main_bind_stream)
+    }
+
+    // toggle 代指关闭或开启
+
+    // 关闭或开启自己的
+    async toggle_own_video(stream) {
+
+        if(!stream || Object.keys(stream).length == 0) {
+            return
+        }
+
+        let { voff } = this.state
+        if(voff){
+            await emedia.mgr.resumeVideo(stream);
+            voff = !voff
+            this.setState({ voff })
+        }else {
+            await emedia.mgr.pauseVideo(stream);
+            voff = !voff
+            this.setState({ voff })
+        }
+    }
+    async toggle_own_audio(stream) {
+        if(!stream || Object.keys(stream).length == 0) {
+            return
+        }
+
+        let { aoff } = this.state
+        if(aoff){
+            await emedia.mgr.resumeAudio(stream);
+            aoff = !aoff
+            this.setState({ aoff })
+        }else {
+            await emedia.mgr.pauseAudio(stream);
+            aoff = !aoff
+            this.setState({ aoff })
+        }
+    }
+    
+    // 管理关闭别人的（只有管理员能操作）
+    close_talker_camera() {}
+    close_talker_mic() {}
+    
+
 
     // temp
 
@@ -122,6 +265,8 @@ class Room extends Component {
             await this.props.create(params);
             join();
         };
+
+        let _this = this;
         const join = async () => {
             let {
                 confrId, 
@@ -146,14 +291,19 @@ class Room extends Component {
                 role
             }
 
-            this.props.join(emedia,params);
-            
+            await this.props.join(emedia,params);
+
+            let { user_room } = this.props;
+            _this.setState({ user_room })
         };
 
 
         login();
 
+
     }
+
+    
     // temp fun
 
     main_bind_stream() {
@@ -179,7 +329,8 @@ class Room extends Component {
         emedia.mgr.onStreamAdded = function (member, stream) {
             console.log('onStreamAdded >>>', member, stream);
 
-            if(stream.located()){// 自己publish的流
+            let { main } = _this.state;
+            if(stream.located() && !main){// 自己publish的流
                 _this.setState({
                     main: {
                         member,
@@ -188,13 +339,26 @@ class Room extends Component {
                 }, _this.main_bind_stream)
 
             } else {
-                let { anchor_list } = _this.state;
-                anchor_list.push({stream,member});
-                _this.setState({ anchor_list })
+                let { talker_list } = _this.state;
+                talker_list.push({stream,member});
+                _this.setState({ talker_list })
             }
         };
         emedia.mgr.onStreamRemoved = function (member, stream) {
             console.log('onStreamRemoved',member,stream);
+
+            let { talker_list } = _this.state;
+
+            talker_list.map((item, index) => {
+                if(
+                    item.stream && 
+                    item.stream.id == stream.id 
+                ) {
+                    talker_list.splice(index, 1)
+                }
+            });
+
+            _this.setState({ talker_list })
         };
         emedia.mgr.onMemberJoined = function (member) {
             console.log('onMemberJoined',member);
@@ -241,34 +405,6 @@ class Room extends Component {
         };
     }
 
-    toggle_main(id) {
-        if(!id) {
-            return
-        }
-        // 此方法就是将一个数组的项 与一个对象替换
-        let anchor_list = this.state.anchor_list;
-        let main = this.state.main;
-
-        anchor_list.map((item, index) => { // 在数组中删除点击的项
-            let stream_id = item.stream.id;
-
-            if( id == stream_id){
-
-                if(main && Object.keys(main).length > 0){ //main存在，就替换被删除的项
-                    main = anchor_list.splice(index,1,main)[0]
-                }else {
-                    main = anchor_list.splice(index,1)[0]
-                }
-                return
-            }
-        })
-
-
-        this.setState({
-            anchor_list, 
-            main
-        }, this.main_bind_stream)
-    }
     componentDidMount() {
 
         this.init_emedia_callback();
@@ -279,45 +415,72 @@ class Room extends Component {
     }
 
 
-    leave() {
 
-        let is_confirm = confirm('确定退出会议吗？');
+    get_action_buttons(stream) {
 
-        if(is_confirm){
-            emedia.mgr.exitConference();
-            // createBrowserHistory().push('/join');
+        /**
+         * 以下将判断 各种角色关系、较为复杂
+         * 1.main 只要是自己的图像就有 <摄像头、麦克风、下麦> 操作
+         *   a.通过判断 stream.owner.id == joinId 
+         * 2.如果自己是管理员,可控制别人的音视频切换
+         *      a.通过判断 user_room.role == 7 //7.admin、 3.talker、1.andience
+         */ 
+
+
+        let { user_room } = this.state
+        if(
+            !user_room || 
+            !stream ||
+            !stream.owner
+        ) {
+            return ''
         }
+
+        
+
+        if( user_room.joinId != stream.owner.id) { //不是自己推的流
+
+            if (user_room.role && user_room.role == 7) { //自己是主播
+                return (
+                    <div className="talker-action action">
+                        <Button type="primary" size="small">摄像头</Button>
+                        <Button type="primary" size="small">麦克风</Button>
+                    </div>
+                );
+            } else {
+                return ''
+            }
+
+        } else { //是自己推的流
+            return (
+                <div className="talker-action action">
+                    <Button 
+                        type="primary" size="small"
+                        onClick={() => this.toggle_own_video(stream)}>摄像头</Button>
+                    <Button 
+                        type="primary" size="small"
+                        onClick={() => this.toggle_own_audio(stream)}>麦克风</Button>
+                    <Button 
+                        type="primary" size="small">下麦</Button>
+                </div>
+            );
+        }
+
+        
         
     }
-    async publish() {
-
-        try {
-            const stream = emedia.mgr.publish({ audio: true, video: true });
-            console.log('publish stream', stream);
-            
-        } catch (error) {
-            console.log('publish error',error);
-        }
-    }
-
     render() {
 
         console.log('room render props', this.props);
         
-        let action_buttons = (
-            <div className="talker-action action">
-                <Button type="primary" size="small">摄像头</Button>
-                <Button type="primary" size="small">麦克风</Button>
-                <Button type="primary" size="small">下麦</Button>
-            </div>
-        );
-
         let { main } = this.state;
+
         let name = '', role = 1;
-        if( main && main.member ){
+        if( main && main.member ){ //赋值显示
             name = main.member.name;
             role = main.member.role;
         }
+
         return (
             <Layout className="meeting">
                 <Header>
@@ -331,11 +494,15 @@ class Room extends Component {
                 </Header>
                 <Layout>
                     <Content>
-                        {action_buttons}
+                        {this.get_action_buttons(main && main.stream)}
                         <span className="name">{ name + (role == 7 ? '(管理员)' : '') }</span>
                         <video className="main" ref="main-video"></video>
                     </Content>
-                    <AnchorList anchor_list={this.state.anchor_list} toggle_main={this.toggle_main}/>
+                    <TalkerList 
+                        { ...this.state } 
+                        toggle_main={this.toggle_main}
+                        get_action_buttons={this.get_action_buttons}
+                    />
                 </Layout>
                 <Footer>
                     <div style={{textAlign:'center',margin:'20px 0'}}>
