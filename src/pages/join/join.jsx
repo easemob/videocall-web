@@ -1,5 +1,6 @@
 import React, {Component} from 'react'
 import {Redirect} from 'react-router-dom'
+import { createHashHistory } from 'history'; 
 import {
   Form,
   Icon,
@@ -11,7 +12,7 @@ import './join.css';
 
 import {connect} from 'react-redux';
 
-import {create,login} from '../../redux/actions';
+import {create,login,join} from '../../redux/actions';
 import emedia from 'easemob-emedia';
 
 const Item = Form.Item // 不能写在import之前
@@ -33,7 +34,7 @@ class Join extends Component {
             memName: this.props.user.name,
             token: this.props.user.token,
 
-            defaultRole:3
+            role:undefined
         }
     }
     
@@ -43,8 +44,7 @@ class Join extends Component {
             roomName,
             password,
             memName,
-            token,
-            defaultRole
+            token
         } = this.state;
 
         if(
@@ -60,8 +60,7 @@ class Join extends Component {
             roomName,
             password,
             memName,
-            token,
-            defaultRole
+            token
         }
         await this.props.create(params);
 
@@ -96,20 +95,23 @@ class Join extends Component {
             token,
             confrId,
             password,
-            role
+            role: this.state.role
         }
 
         await this.props.join(emedia,params);
+
+        window.emedia = emedia;
+        createHashHistory().push('/room');
     }
 
-    join_handle(defaultRole){
+    join_handle(role){
         var _this = this;
         this.props.form.validateFields((err, values) => {
 
             _this.setState({
                 roomName: values.roomName,
                 password: values.password,
-                defaultRole
+                role
             },() => {
                 if (!err) {
                     _this.create()
@@ -120,10 +122,9 @@ class Join extends Component {
     
     render() {
 
-        const { ticket, confrId } = this.props.room;
-
-        if( ticket && confrId ) {
-            // return <Redirect to='/room'/>
+        let { user } = this.props;
+        if(!user || Object.keys(user).length == 0){
+            return <Redirect to='/login'/>
         }
         
         const { getFieldDecorator } = this.props.form;

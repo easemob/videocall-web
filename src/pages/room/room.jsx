@@ -1,6 +1,6 @@
 import React, {Component} from 'react'
 import {Redirect} from 'react-router-dom'
-import { createBrowserHistory } from 'history'; 
+import { createHashHistory } from 'history'; 
 
 
 import { 
@@ -12,15 +12,17 @@ import {
 import './room.less';
 
 import {connect} from 'react-redux';
-// import {login,create, join} from '../../redux/actions';
 
-import emedia from 'easemob-emedia';
+const emedia = window.emedia; // ???
+
 
 const { Header, Footer, Sider, Content } = Layout;
 
 class Room extends Component {
     constructor(props) {
         super(props);
+
+        
         this.state = {
             stream_list: [null],
             user_room: this.props.user_room,
@@ -35,7 +37,7 @@ class Room extends Component {
 
     componentDidMount() {
 
-        // this.init_emedia_callback();
+        this.init_emedia_callback();
         window.onbeforeunload=function(e){     
             var e = window.event||e;  
             emedia.mgr.exitConference();
@@ -48,7 +50,11 @@ class Room extends Component {
             role == emedia.mgr.Role.ADMIN ||
             role == emedia.mgr.Role.TALKER
         ) { //自动推流
-            console.log('this.publish()')
+            let _this = this;
+            // setTimeout(() => {
+            //     _this.publish()
+
+            // },2000)
         }
     }
 
@@ -58,11 +64,12 @@ class Room extends Component {
 
         if(is_confirm){
             emedia.mgr.exitConference();
-            createBrowserHistory().push('/#/join');
+            createHashHistory().push('/#/join');
         }
         
     }
     publish() {
+
         emedia.mgr.publish({ audio: true, video: true });
     }
 
@@ -80,14 +87,21 @@ class Room extends Component {
         }
 
         let { stream_list } = this.state
+        console.log('_on_add outer', stream_list);
 
         if(stream.located() && !stream_list[0]){// 自己publish的流
            stream_list[0] = { stream, member };
+           console.log('_on_add if', stream_list);
+
         } else {
             stream_list.push({stream,member});
+
+            console.log('_on_add else', stream_list);
+            
         }
 
-        this.setState({ stream_list }, this._stream_bind_video)
+        this.setState({ stream_list:stream_list },this._stream_bind_video)
+        // this.setState({ stream_list:stream_list }, this._stream_bind_video)
     }
     _on_stream_removeed(stream) {
         if(!stream){
@@ -108,9 +122,6 @@ class Room extends Component {
         this.setState({ stream_list },this._stream_bind_video)
     }
     init_emedia_callback() {
-        emedia.config({
-            restPrefix: "https://rtc-turn4-hsb.easemob.com"
-        });
         let _this = this;
         emedia.mgr.onStreamAdded = function (member, stream) {
             console.log('onStreamAdded >>>', member, stream);
@@ -217,9 +228,6 @@ class Room extends Component {
         confirm({
             title:`是否同意${useid}的上麦请求`,
             onOk() {
-
-                console.log('model ok');
-                
                 emedia.mgr.grantRole(confr, [useid], 3)
             }
         })
@@ -441,14 +449,13 @@ class Room extends Component {
 
         let { user_room } = this.state;
 
-        // if(
-        //     !user_room ||
-        //     Object.keys(user_room).length == 0
-        // ) {
-        //     return <Redirect to='/login'/>
-        // }
+        if(
+            !user_room ||
+            Object.keys(user_room).length == 0
+        ) {
+            return <Redirect to='/login'/>
+        }
 
-        console.log('props room', this.props.room);
         
         let { role } = this.state.user_room
 
@@ -481,6 +488,8 @@ class Room extends Component {
                 <Layout>
                     {this._get_main_video_el()}
                     {this._get_silder_component()}
+
+                    <Button type="primary" onClick={() => this.publish()}>推流</Button>
                 </Layout>
             </Layout>
         )
