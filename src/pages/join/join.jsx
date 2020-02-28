@@ -120,7 +120,7 @@ class Join extends Component {
         const { ticket, confrId } = this.props.room;
 
         if( ticket && confrId ) {
-            return <Redirect to='/room'/>
+            // return <Redirect to='/room'/>
         }
         
         const { getFieldDecorator } = this.props.form;

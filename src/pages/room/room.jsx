@@ -12,7 +12,7 @@ import {
 import './room.less';
 
 import {connect} from 'react-redux';
-import {login,create, join} from '../../redux/actions';
+// import {login,create, join} from '../../redux/actions';
 
 import emedia from 'easemob-emedia';
 
@@ -27,11 +27,30 @@ class Room extends Component {
             aoff: false,
             voff: false,
         };
+
         this.toggle_main = this.toggle_main.bind(this);
         this._get_action_buttons = this._get_action_buttons.bind(this);
         this.toggle_own_video = this.toggle_own_video.bind(this);
     }
 
+    componentDidMount() {
+
+        // this.init_emedia_callback();
+        window.onbeforeunload=function(e){     
+            var e = window.event||e;  
+            emedia.mgr.exitConference();
+        } 
+
+        let { role } = this.state.user_room;
+
+        
+        if(
+            role == emedia.mgr.Role.ADMIN ||
+            role == emedia.mgr.Role.TALKER
+        ) { //自动推流
+            console.log('this.publish()')
+        }
+    }
 
     leave() {
 
@@ -39,13 +58,12 @@ class Room extends Component {
 
         if(is_confirm){
             emedia.mgr.exitConference();
-            // createBrowserHistory().push('/join');
+            createBrowserHistory().push('/#/join');
         }
         
     }
     publish() {
         emedia.mgr.publish({ audio: true, video: true });
-        
     }
 
     // 取消推流（下麦）
@@ -277,78 +295,6 @@ class Room extends Component {
         emedia.mgr.setConferenceAttrs(options)
     }
 
-    // temp start
-
-    join_handle(name, role){
-        if(!name || !role) {
-            return
-        }
-        
-
-        const login = async () => {
-            let params = {
-                grant_type: "password",
-                username: name,
-                password: 'ssgsqx133856',
-                timestamp: new Date().getTime()
-            }
-    
-            await this.props.login(params);
-
-            create();
-
-        };
-        const create = async () => {
-            let params = {
-                roomName:'room-3',
-                password:'1',
-                memName: this.props.user.name,
-                token: this.props.user.token
-            }
-    
-            await this.props.create(params);
-            join();
-        };
-
-        let _this = this;
-        const join = async () => {
-            let {
-                confrId, 
-                password
-            } = this.props.room;
-    
-            let { name,token } = this.props.user
-            if(
-                !confrId || 
-                !password ||
-                !name ||
-                !token
-            ) {
-                return
-            }
-    
-            let params = {
-                name,
-                token,
-                confrId,
-                password,
-                role
-            }
-
-            await this.props.join(emedia,params);
-
-            let { user_room } = this.props;
-            _this.setState({ user_room })
-        };
-
-
-        login();
-
-
-    }
-
-    // temp fun end
-    
     _stream_bind_video() {
         let { stream_list } = this.state;
 
@@ -405,16 +351,6 @@ class Room extends Component {
         )
 
     }
-    componentDidMount() {
-
-        this.init_emedia_callback();
-        window.onbeforeunload=function(e){     
-            var e = window.event||e;  
-            emedia.mgr.exitConference();
-        } 
-    }
-
-
 
     _get_action_buttons(stream) {
 
@@ -503,6 +439,17 @@ class Room extends Component {
 
     render() {
 
+        let { user_room } = this.state;
+
+        // if(
+        //     !user_room ||
+        //     Object.keys(user_room).length == 0
+        // ) {
+        //     return <Redirect to='/login'/>
+        // }
+
+        console.log('props room', this.props.room);
+        
         let { role } = this.state.user_room
 
         return (
@@ -535,39 +482,6 @@ class Room extends Component {
                     {this._get_main_video_el()}
                     {this._get_silder_component()}
                 </Layout>
-                <Footer>
-                    <div style={{textAlign:'center',margin:'20px 0'}}>
-                        <Button 
-                            type="primary" 
-                            onClick={() => this.publish()}
-                            style={{width:'200px'}}>推流</Button>
-                    </div>
-
-                    <div style={{textAlign:'center'}}>
-
-                        <Button type="primary" onClick={() => this.join_handle('qx.su',3)} style={{margin:'0 8px'}}>qx.su 主播</Button>
-                        <Button type="primary" onClick={() => this.join_handle('qx.su',1)}>qx.su 观众</Button>
-
-                        <Button 
-                            type="primary" 
-                            onClick={() => this.join_handle('qx.su.2',3)} 
-                            style={{margin:'0 8px 0 30px',background:'#00ba6e'}}>qx.su.2 主播</Button>
-                        <Button 
-                            type="primary" 
-                            onClick={() => this.join_handle('qx.su.2',1)} 
-                            style={{background:'#00ba6e'}}>qx.su.2 观众</Button>
-
-                        <Button 
-                            type="primary" 
-                            onClick={() => this.join_handle('qx.su.3',3)} 
-                            style={{margin:'0 8px 0 30px',background:'#159cd5'}}>qx.su.3 主播</Button>
-                        <Button 
-                            type="primary" 
-                            onClick={() => this.join_handle('qx.su.3',1)} 
-                            style={{background:'#159cd5'}}>qx.su.3 观众</Button>
-                    </div>
-
-                </Footer>
             </Layout>
         )
     }
@@ -579,5 +493,5 @@ export default connect(
         room: state.room,
         user_room: state.user_room
     }),
-    {login, create, join}
+    // {login, create, join}
 )(Room);
