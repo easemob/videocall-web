@@ -76,7 +76,6 @@ class Join extends Component {
 
 
     async join() {
-        
         let {
             confrId, 
             password
@@ -85,18 +84,22 @@ class Join extends Component {
         let { name,token } = this.props.user
         if(
             !confrId || 
-            !password
+            !password ||
+            !name ||
+            !token
         ) {
             return
         }
 
-        emedia.mgr.setIdentity(name, token); // ???
-
-        try {
-            await emedia.mgr.joinUsePassword(confrId, password);
-        } catch (error) {
-            console.error('join_error', error)
+        let params = {
+            name,
+            token,
+            confrId,
+            password,
+            role
         }
+
+        await this.props.join(emedia,params);
     }
 
     join_handle(defaultRole){
@@ -180,8 +183,8 @@ const mapStateToProps = state => {
 
 const mapDispatchToProps = dispatch => {
     return {
-        create: params => dispatch(create(params)),
         login: params => dispatch(login(params)),
+        create: params => dispatch(create(params)),
     }
 }
 const WrapJoin = Form.create()(Join)
