@@ -185,6 +185,7 @@ const mapDispatchToProps = dispatch => {
     return {
         login: params => dispatch(login(params)),
         create: params => dispatch(create(params)),
+        join: (emedia, params) => dispatch(join(emedia,params))
     }
 }
 const WrapJoin = Form.create()(Join)
