@@ -7,14 +7,18 @@ import {
     Layout,
     Button,
     Icon,
-    Modal
+    Modal,
+    Form,
+    Input
 } from 'antd';
 import './room.less';
 
 import {connect} from 'react-redux';
 
-const emedia = window.emedia; // ???
+import emedia from 'easemob-emedia';
+import {create,login,join} from '../../redux/actions';
 
+const Item = Form.Item 
 
 const { Header, Footer, Sider, Content } = Layout;
 
@@ -24,16 +28,106 @@ class Room extends Component {
 
         
         this.state = {
+
+            // join start
+            roomName:'',
+            password:'',
+            user: this.props.user,
+
+            memName: this.props.user.name,
+            token: this.props.user.token,
+
+            role:undefined,
+            // join end
             stream_list: [null],
             user_room: this.props.user_room,
             aoff: false,
             voff: false,
+
+            joined: false
         };
 
         this.toggle_main = this.toggle_main.bind(this);
         this._get_action_buttons = this._get_action_buttons.bind(this);
         this.toggle_own_video = this.toggle_own_video.bind(this);
     }
+
+
+    // join fun start
+    async create() {
+
+        let {
+            roomName,
+            password,
+            memName,
+            token
+        } = this.state;
+
+        if(
+            !roomName ||
+            !password ||
+            !memName ||
+            !token
+        ) {
+            return
+        }
+
+        let params = {
+            roomName,
+            password,
+            memName,
+            token
+        }
+        await this.props.create(params);
+
+        this.join()
+    }
+
+    async join() {
+        let {
+            confrId, 
+            password
+        } = this.props.room;
+
+        let { name,token } = this.props.user
+        if(
+            !confrId || 
+            !password ||
+            !name ||
+            !token
+        ) {
+            return
+        }
+
+        let params = {
+            name,
+            token,
+            confrId,
+            password,
+            role: this.state.role
+        }
+
+        await this.props.join(emedia,params);
+
+        this.setState({ joined: true })
+    }
+
+    join_handle(role){
+        var _this = this;
+        this.props.form.validateFields((err, values) => {
+
+            _this.setState({
+                roomName: values.roomName,
+                password: values.password,
+                role
+            },() => {
+                if (!err) {
+                    _this.create()
+                }
+            })
+        });
+    }
+    // join fun end
 
     componentDidMount() {
 
@@ -123,6 +217,10 @@ class Room extends Component {
     }
     init_emedia_callback() {
         let _this = this;
+
+        emedia.config({
+            restPrefix: "https://rtc-turn4-hsb.easemob.com"
+        });
         emedia.mgr.onStreamAdded = function (member, stream) {
             console.log('onStreamAdded >>>', member, stream);
 
@@ -447,11 +545,14 @@ class Room extends Component {
 
     render() {
 
-        let { user_room } = this.state;
+        
+        let { user } = this.state;
+        console.log('room render');
+        const { getFieldDecorator } = this.props.form;
 
         if(
-            !user_room ||
-            Object.keys(user_room).length == 0
+            !user ||
+            Object.keys(user).length == 0
         ) {
             return <Redirect to='/login'/>
         }
@@ -459,48 +560,99 @@ class Room extends Component {
         
         let { role } = this.state.user_room
 
-        return (
-            <Layout className="meeting">
-                <Header>
-                    <div className="info">
-                        <div>
-                            <span className="logo">logo</span>  
-                            <span>network</span>
-                        </div>
-                        <div>
-                            <span>name</span>
-                            <span>00:00</span>
-                        </div>
-                        <div>
-                            <span>admin:sqx</span>
-                        </div>
-                        <div>
-                            {role == 1 ? <Button type="primary" 
-                                        onClick={() => this.apply_talker()}
-                                        style={{marginRight:'10px'}}>申请上麦</Button> : ''
-                            }
-                            <Button type="primary" onClick={() => this.leave()}>离开</Button>
-                        </div>
-                        
-                        
-                    </div>
-                </Header>
-                <Layout>
-                    {this._get_main_video_el()}
-                    {this._get_silder_component()}
+        let { joined } = this.state
 
-                    <Button type="primary" onClick={() => this.publish()}>推流</Button>
+
+        return (
+            <div style={{width:'100%', height:'100%'}}>
+                {/* join compoent */}
+                <div className="login-wrap" style={{display: joined ? 'none' : 'flex'}}>
+                    <Form className="login-form">
+                        <Item>
+                        {getFieldDecorator('roomName', {
+                            initialValue: 'room-3',
+                            rules: [{ required: true, message: '请输入房间名称' }],
+                        })(
+                            <Input
+                            prefix={<Icon type="user" style={{ color: 'rgba(0,0,0,.25)' }} />}
+                            placeholder="房间名称"
+                            />,
+                        )}
+                        </Item>
+                        <Item>
+                        {getFieldDecorator('password', {
+                            initialValue: '1',
+                            rules: [{ required: true, message: '请输入房间密码' }],
+                        })(
+                            <Input
+                            prefix={<Icon type="lock" style={{ color: 'rgba(0,0,0,.25)' }} />}
+                            type="password"
+                            placeholder="房间密码"
+                            />,
+                        )}
+                        </Item>
+        
+                        <Button 
+                            style={{ marginBottom:'15px' }}
+                            type="primary"  
+                            onClick={() => this.join_handle(3)}
+                        >
+                            以主播身份进入
+                        </Button>
+                        <Button 
+                            style={{ marginBottom:'15px' }}
+                            type="primary"  
+                            onClick={() => this.join_handle(1)}
+                        >
+                            以观众身份进入
+                        </Button>
+                    </Form>
+                </div>
+                
+                {/* room compoent */}
+                
+                <Layout className="meeting" style={{display: joined ? 'block' : 'none'}}>
+                    <Header>
+                        <div className="info">
+                            <div>
+                                <span className="logo">logo</span>  
+                                <span>network</span>
+                            </div>
+                            <div>
+                                <span>name</span>
+                                <span>00:00</span>
+                            </div>
+                            <div>
+                                <span>admin:sqx</span>
+                            </div>
+                            <div>
+                                {role == 1 ? <Button type="primary" 
+                                            onClick={() => this.apply_talker()}
+                                            style={{marginRight:'10px'}}>申请上麦</Button> : ''
+                                }
+                                <Button type="primary" onClick={() => this.leave()}>离开</Button>
+                            </div>
+                            
+                            
+                        </div>
+                    </Header>
+                    <Layout>
+                        {this._get_main_video_el()}
+                        {this._get_silder_component()}
+
+                        <Button type="primary" onClick={() => this.publish()}>推流</Button>
+                    </Layout>
                 </Layout>
-            </Layout>
+            </div>
         )
     }
 }
-
+const WrapRoom = Form.create()(Room)
 export default connect(
     state => ({
         user:state.user,
         room: state.room,
         user_room: state.user_room
     }),
-    // {login, create, join}
-)(Room);
+    {login, create, join}
+)(WrapRoom);

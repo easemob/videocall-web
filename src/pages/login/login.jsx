@@ -59,7 +59,7 @@ class Login extends Component {
         const user = this.props.user;
 
         if(user && user.name) {
-            return <Redirect to='/join'/>
+            return <Redirect to='/room'/>
         }
 
         const { getFieldDecorator } = this.props.form;
@@ -70,6 +70,7 @@ class Login extends Component {
                 <Form onSubmit={this.login} className="login-form">
                     <Item>
                     {getFieldDecorator('username', {
+                        initialValue: 'qx.su',
                         rules: [{ required: true, message: '请输入用户名' }],
                     })(
                         <Input
@@ -80,6 +81,7 @@ class Login extends Component {
                     </Item>
                     <Item>
                     {getFieldDecorator('password', {
+                        initialValue: 'ssgsqx133856',
                         rules: [{ required: true, message: '请输入密码' }],
                     })(
                         <Input

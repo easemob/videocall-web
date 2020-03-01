@@ -22,7 +22,7 @@ export default class App extends Component {
       <Router>
         <Switch> {/*只匹配其中一个*/}
           <Route path='/login' component={Login}></Route>
-          <Route path='/join' component={Join}></Route>
+          {/* <Route path='/join' component={Join}></Route> */}
           <Route path='/room' component={Room}></Route>
           <Route path='/' component={Login}></Route>
         </Switch>
