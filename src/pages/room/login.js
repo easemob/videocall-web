@@ -47,7 +47,7 @@ function Login() {
         };
 
         let user = {
-            name: user_info.user && user_info.user.username,
+            name: user_info.user && 'easemob-demo#chatdemoui_' + user_info.user.username,
             token: user_info.access_token,
             uuid: user_info.user && user_info.user.uuid
         }

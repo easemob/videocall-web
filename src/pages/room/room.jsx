@@ -36,11 +36,13 @@ class Room extends Component {
                 role: undefined
             },
             // join end
+            time:0,// 秒的单位
             stream_list: [null],
             aoff: false,
             voff: false,
 
-            joined: false
+            joined: false,
+            loading: false
         };
 
         this.toggle_main = this.toggle_main.bind(this);
@@ -50,6 +52,8 @@ class Room extends Component {
 
     // join fun start
     async create() {
+
+        this.setState({ loading:true })
 
         let {
             roomName,
@@ -120,6 +124,8 @@ class Room extends Component {
             joined: true,
             user_room
         },this.publish)
+
+        this.startTime()
     }
 
     join_handle(role){
@@ -151,11 +157,15 @@ class Room extends Component {
             emedia.mgr.exitConference();
         } 
     }
+
+    componentWillUnmount() {
+        clearInterval(this.timeID);
+    }
     init_emedia_callback() {
         let _this = this;
 
         emedia.config({
-            restPrefix: "https://rtc-turn4-hsb.easemob.com"
+            restPrefix: "http://a1-hsb.easemob.com"
         });
         emedia.mgr.onStreamAdded = function (member, stream) {
             console.log('onStreamAdded >>>', member, stream);
@@ -212,8 +222,6 @@ class Room extends Component {
         };
 
         emedia.mgr.onConfrAttrsUpdated = function(cattrs){
-            console.log('confr_attrs', cattrs);
-
             let { name } = _this.state.user //自己的name
             let { role } = _this.state.user_room
             cattrs.map(item => {
@@ -232,23 +240,24 @@ class Room extends Component {
 
         emedia.mgr.onRoleChanged = function (role, confr) {
 
-            console.log('onRoleChanged', role, confr);
+            
             let { user_room } = _this.state;
+            console.log('onRole', JSON.stringify(user_room.role), role, confr);
 
-            if(user_room.role == role){
-                return;
-            }
-
-            if(role != 3){
+            // 被允许上麦
+            if(
+                user_room.role == 1 &&
+                role == 3
+            ) {
+                user_room.role = role;
+                _this.setState({ user_room },_this.publish);
                 return
             }
 
-            console.log('我变成了talker');
-            
             user_room.role = role;
 
             _this.setState({ user_room });
-            _this.publish()
+
         };
     }
 
@@ -258,7 +267,8 @@ class Room extends Component {
 
         if(is_confirm){
             emedia.mgr.exitConference();
-            this.setState({ joined:false });
+            // this.setState({ joined:false });
+            window.location.reload()
         }
         
     }
@@ -306,12 +316,12 @@ class Room extends Component {
         });
 
         // delete cattrs,处理完请求删除会议属性
-        let options = {
-            key:useid,
-            val:'request_tobe_speaker'
-        }
+        // let options = {
+        //     key:useid,
+        //     val:'request_tobe_speaker'
+        // }
 
-        emedia.mgr.deleteConferenceAttrs(options)
+        // emedia.mgr.deleteConferenceAttrs(options)
     }
     toggle_main(index) {
 
@@ -511,10 +521,13 @@ class Room extends Component {
         let name = '', role = undefined;
 
         if( main.member ){ //赋值显示
-            name = main.member.name;
+            name = main.member.name.split('_')[1];
             role = main.member.role;
         }
 
+        console.log('_get_main_video_el', main);
+        console.log('_get_main_video_el', name,role);
+        
         let main_stream = stream_list[0].stream
         let id = main_stream.id;
         
@@ -527,13 +540,42 @@ class Room extends Component {
         )
     }
 
+    startTime() {
+        let _this = this;
+        this.timeID = setInterval(
+            () => {
+                _this.setState(state => ({
+                    time:state.time + 1
+                }))
+            },
+            1000
+        )
+    }
+    _get_tick() {
+        let { time } = this.state
+
+        function get_second(second){
+            return second<10 ? ('0'+second) : second
+        }
+        function get_minute(minute){
+            return minute<10 ? ('0'+minute) : minute
+        }
+        let time_str = ''
+        if(time < 60){
+            time_str = '00:' + get_second(time)
+        }else if(time >= 60){
+            let minute = get_minute(parseInt(time/60));
+            let surplus_second = get_second(time%60)
+            time_str = minute +':'+ surplus_second
+        }
+        return time_str
+    }
     render() {
 
         const { getFieldDecorator } = this.props.form;
 
         let { role } = this.state.user_room
-        let { joined } = this.state
-
+        let { joined, roomName } = this.state
 
         return (
             <div style={{width:'100%', height:'100%'}}>
@@ -568,6 +610,7 @@ class Room extends Component {
                             style={{ marginBottom:'15px' }}
                             type="primary"  
                             onClick={() => this.join_handle(3)}
+                            loading={this.state.loading}
                         >
                             以主播身份进入
                         </Button>
@@ -575,6 +618,7 @@ class Room extends Component {
                             style={{ marginBottom:'15px' }}
                             type="primary"  
                             onClick={() => this.join_handle(1)}
+                            loading={this.state.loading}
                         >
                             以观众身份进入
                         </Button>
@@ -591,8 +635,8 @@ class Room extends Component {
                                 <span>network</span>
                             </div>
                             <div>
-                                <span>name</span>
-                                <span>00:00</span>
+                                <span style={{marginRight:'10px'}}>{roomName}</span>
+                                <span>{this._get_tick()}</span>
                             </div>
                             <div>
                                 <span>admin:sqx</span>

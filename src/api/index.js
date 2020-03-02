@@ -15,7 +15,7 @@ export const req_login = params => ajax(
 );
 
 export const req_create = params => ajax(
-    'https://rtc-turn4-hsb.easemob.com/easemob-demo/chatdemoui/conferences/room', 
+    'http://a1-hsb.easemob.com/easemob-demo/chatdemoui/conferences/room', 
     params, 
     'POST'
 );
