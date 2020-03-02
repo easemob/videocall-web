@@ -16,11 +16,12 @@ import './room.less';
 import {connect} from 'react-redux';
 
 import emedia from 'easemob-emedia';
-import {create,login,join} from '../../redux/actions';
+import login from '../login/login.js'
+import { req_create } from '../../api';
 
 const Item = Form.Item 
 
-const { Header, Footer, Sider, Content } = Layout;
+const { Header, Sider, Content } = Layout;
 
 class Room extends Component {
     constructor(props) {
@@ -32,15 +33,13 @@ class Room extends Component {
             // join start
             roomName:'',
             password:'',
-            user: this.props.user,
-
-            memName: this.props.user.name,
-            token: this.props.user.token,
-
-            role:undefined,
+            user: {},
+            room: {},
+            user_room: {
+                role: undefined
+            },
             // join end
             stream_list: [null],
-            user_room: this.props.user_room,
             aoff: false,
             voff: false,
 
@@ -52,16 +51,19 @@ class Room extends Component {
         this.toggle_own_video = this.toggle_own_video.bind(this);
     }
 
-
     // join fun start
     async create() {
 
         let {
             roomName,
-            password,
-            memName,
-            token
+            password
         } = this.state;
+
+        let {
+            name:memName,
+            token
+        } = this.state.user;
+        
 
         if(
             !roomName ||
@@ -72,24 +74,29 @@ class Room extends Component {
             return
         }
 
+        
         let params = {
             roomName,
             password,
             memName,
             token
         }
-        await this.props.create(params);
+        const room = await req_create(params);
 
-        this.join()
+        if(!room.confrId){
+          return
+        };
+
+        this.setState({ room },this.join)
     }
 
     async join() {
         let {
             confrId, 
             password
-        } = this.props.room;
+        } = this.state.room;
 
-        let { name,token } = this.props.user
+        let { name,token } = this.state.user
         if(
             !confrId || 
             !password ||
@@ -104,22 +111,30 @@ class Room extends Component {
             token,
             confrId,
             password,
-            role: this.state.role
+            role: this.state.user_room.role
         }
 
-        await this.props.join(emedia,params);
+        emedia.mgr.setIdentity(name, token);
+      
+        let { ticket } = await emedia.mgr.reqTkt(params);
+        let user_room = await emedia.mgr.joinConferenceWithTicket(confrId, ticket);
 
-        this.setState({ joined: true })
+        this.setState({ 
+            joined: true,
+            user_room
+        },this.publish)
     }
 
     join_handle(role){
         var _this = this;
+        let { user_room } = this.state;
+        user_room.role = role;
         this.props.form.validateFields((err, values) => {
 
             _this.setState({
                 roomName: values.roomName,
                 password: values.password,
-                role
+                user_room
             },() => {
                 if (!err) {
                     _this.create()
@@ -129,91 +144,15 @@ class Room extends Component {
     }
     // join fun end
 
-    componentDidMount() {
+    async componentDidMount () {
 
+        const user = await login();
+        this.setState({ user })
         this.init_emedia_callback();
         window.onbeforeunload=function(e){     
             var e = window.event||e;  
             emedia.mgr.exitConference();
         } 
-
-        let { role } = this.state.user_room;
-
-        
-        if(
-            role == emedia.mgr.Role.ADMIN ||
-            role == emedia.mgr.Role.TALKER
-        ) { //自动推流
-            let _this = this;
-            // setTimeout(() => {
-            //     _this.publish()
-
-            // },2000)
-        }
-    }
-
-    leave() {
-
-        let is_confirm = confirm('确定退出会议吗？');
-
-        if(is_confirm){
-            emedia.mgr.exitConference();
-            createHashHistory().push('/#/join');
-        }
-        
-    }
-    publish() {
-
-        emedia.mgr.publish({ audio: true, video: true });
-    }
-
-    // 取消推流（下麦）
-    unpublish(stream) {
-        if(!stream){
-            return
-        }
-        emedia.mgr.unpublish(stream);
-    }
-
-    _on_stream_added(member, stream) {
-        if(!member || !stream) {
-            return
-        }
-
-        let { stream_list } = this.state
-        console.log('_on_add outer', stream_list);
-
-        if(stream.located() && !stream_list[0]){// 自己publish的流
-           stream_list[0] = { stream, member };
-           console.log('_on_add if', stream_list);
-
-        } else {
-            stream_list.push({stream,member});
-
-            console.log('_on_add else', stream_list);
-            
-        }
-
-        this.setState({ stream_list:stream_list },this._stream_bind_video)
-        // this.setState({ stream_list:stream_list }, this._stream_bind_video)
-    }
-    _on_stream_removeed(stream) {
-        if(!stream){
-            return
-        }
-
-        let { stream_list } = this.state
-
-        stream_list.map((item, index) => {
-            if(
-                item.stream && 
-                item.stream.id == stream.id 
-            ) {
-                stream_list.splice(index, 1)
-            }
-        });
-
-        this.setState({ stream_list },this._stream_bind_video)
     }
     init_emedia_callback() {
         let _this = this;
@@ -315,6 +254,45 @@ class Room extends Component {
             _this.publish()
         };
     }
+
+    leave() {
+
+        let is_confirm = confirm('确定退出会议吗？');
+
+        if(is_confirm){
+            emedia.mgr.exitConference();
+            this.setState({ joined:false });
+        }
+        
+    }
+    publish() {
+        let { role } = this.state.user_room
+        if(role == 1){
+            return
+        }
+        emedia.mgr.publish({ audio: true, video: true });
+    }
+    // 取消推流（下麦）
+    unpublish(stream) {
+        if(!stream){
+            return
+        }
+        emedia.mgr.unpublish(stream);
+    }
+
+    apply_talker() {
+        let { name } = this.state.user;
+
+        if(!name) {
+            return
+        }
+
+        let options = {
+            key:name,
+            val:'request_tobe_speaker'
+        }
+        emedia.mgr.setConferenceAttrs(options)
+    }
     handle_apply_talker(useid) {
         if(!useid){
             return
@@ -322,13 +300,21 @@ class Room extends Component {
 
         const { confirm } = Modal;
 
-        let confr = this.props.user_room;
+        let confr = this.state.user_room;
         confirm({
             title:`是否同意${useid}的上麦请求`,
             onOk() {
                 emedia.mgr.grantRole(confr, [useid], 3)
             }
-        })
+        });
+
+        // delete cattrs,处理完请求删除会议属性
+        let options = {
+            key:useid,
+            val:'request_tobe_speaker'
+        }
+
+        emedia.mgr.deleteConferenceAttrs(options)
     }
     toggle_main(index) {
 
@@ -344,6 +330,7 @@ class Room extends Component {
 
         this.setState({ stream_list },this._stream_bind_video)
     }
+    
 
     // toggle 代指关闭或开启
 
@@ -382,25 +369,40 @@ class Room extends Component {
         }
     }
     
-    // 管理关闭别人的（只有管理员能操作）
-    close_talker_camera() {}
-    close_talker_mic() {}
-    
-
-    apply_talker() {
-        let { name } = this.props.user;
-
-        if(!name) {
+    _on_stream_added(member, stream) {
+        if(!member || !stream) {
             return
         }
 
-        let options = {
-            key:name,
-            val:'request_tobe_speaker'
-        }
-        emedia.mgr.setConferenceAttrs(options)
-    }
+        let { stream_list } = this.state
 
+        if(stream.located() && !stream_list[0]){// 自己publish的流
+           stream_list[0] = { stream, member };
+        } else {
+            stream_list.push({stream,member});
+        }
+
+        this.setState({ stream_list:stream_list },this._stream_bind_video)
+    }
+    _on_stream_removeed(stream) {
+        if(!stream){
+            return
+        }
+
+        let { stream_list } = this.state
+
+        stream_list.map((item, index) => {
+            if(
+                item.stream && 
+                item.stream.id == stream.id 
+            ) {
+                stream_list.splice(index, 1)
+            }
+        });
+
+        this.setState({ stream_list },this._stream_bind_video)
+    }
+    
     _stream_bind_video() {
         let { stream_list } = this.state;
 
@@ -434,7 +436,7 @@ class Room extends Component {
                 <div className="total">主播6 观众234</div>
                 <div className="item-wrap">
                     { stream_list.map((item, index) => {
-                        if(index != 0 ){
+                        if(index != 0 && item){
                             let { id } = item.stream;
                             let { name, role } = item.member;
     
@@ -481,36 +483,21 @@ class Room extends Component {
         
 
         if( user_room.joinId != stream.owner.id) { //不是自己推的流
-
             return '';
-
-            // 二期的功能 02-28
-            if (user_room.role && user_room.role == 7) { //自己是主播
-                return (
-                    <div className="talker-action action">
-                        <Button type="primary" size="small">摄像头</Button>
-                        <Button type="primary" size="small">麦克风</Button>
-                    </div>
-                );
-            } else {
-                return ''
-            }
-
-        } else { //是自己推的流
-            return (
-                <div className="talker-action action">
-                    <Button 
-                        type="primary" size="small"
-                        onClick={() => this.toggle_own_video(stream)}>摄像头</Button>
-                    <Button 
-                        type="primary" size="small"
-                        onClick={() => this.toggle_own_audio(stream)}>麦克风</Button>
-                    <Button 
-                        type="primary" size="small"
-                        onClick={() => this.unpublish(stream)}>下麦</Button>
-                </div>
-            );
-        }
+        } 
+        return (
+            <div className="talker-action action">
+                <Button 
+                    type="primary" size="small"
+                    onClick={() => this.toggle_own_video(stream)}>摄像头</Button>
+                <Button 
+                    type="primary" size="small"
+                    onClick={() => this.toggle_own_audio(stream)}>麦克风</Button>
+                <Button 
+                    type="primary" size="small"
+                    onClick={() => this.unpublish(stream)}>下麦</Button>
+            </div>
+        );
 
         
         
@@ -545,21 +532,9 @@ class Room extends Component {
 
     render() {
 
-        
-        let { user } = this.state;
-        console.log('room render');
         const { getFieldDecorator } = this.props.form;
 
-        if(
-            !user ||
-            Object.keys(user).length == 0
-        ) {
-            return <Redirect to='/login'/>
-        }
-
-        
         let { role } = this.state.user_room
-
         let { joined } = this.state
 
 
@@ -639,8 +614,6 @@ class Room extends Component {
                     <Layout>
                         {this._get_main_video_el()}
                         {this._get_silder_component()}
-
-                        <Button type="primary" onClick={() => this.publish()}>推流</Button>
                     </Layout>
                 </Layout>
             </div>
@@ -650,9 +623,6 @@ class Room extends Component {
 const WrapRoom = Form.create()(Room)
 export default connect(
     state => ({
-        user:state.user,
-        room: state.room,
-        user_room: state.user_room
-    }),
-    {login, create, join}
+        user:state.user
+    })
 )(WrapRoom);
