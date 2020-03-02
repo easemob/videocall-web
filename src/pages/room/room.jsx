@@ -1,6 +1,4 @@
-import React, {Component} from 'react'
-import {Redirect} from 'react-router-dom'
-import { createHashHistory } from 'history'; 
+import React, {Component} from 'react' 
 
 
 import { 
@@ -13,10 +11,9 @@ import {
 } from 'antd';
 import './room.less';
 
-import {connect} from 'react-redux';
 
 import emedia from 'easemob-emedia';
-import login from '../login/login.js'
+import login from './login.js'
 import { req_create } from '../../api';
 
 const Item = Form.Item 
@@ -217,7 +214,7 @@ class Room extends Component {
         emedia.mgr.onConfrAttrsUpdated = function(cattrs){
             console.log('confr_attrs', cattrs);
 
-            let { name } = _this.props.user //自己的name
+            let { name } = _this.state.user //自己的name
             let { role } = _this.state.user_room
             cattrs.map(item => {
                 if(item.key == name){
@@ -621,8 +618,4 @@ class Room extends Component {
     }
 }
 const WrapRoom = Form.create()(Room)
-export default connect(
-    state => ({
-        user:state.user
-    })
-)(WrapRoom);
+export default WrapRoom

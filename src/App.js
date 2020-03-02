@@ -7,8 +7,6 @@ import {
 
 import './App.css'
 
-import Login from './pages/login/login'
-import Join from './pages/join/join'
 import Room from './pages/room/room'
 
 /*
@@ -21,10 +19,8 @@ export default class App extends Component {
     return (
       <Router>
         <Switch> {/*只匹配其中一个*/}
-          <Route path='/login' component={Login}></Route>
-          {/* <Route path='/join' component={Join}></Route> */}
           <Route path='/room' component={Room}></Route>
-          <Route path='/' component={Login}></Route>
+          <Route path='/' component={Room}></Route>
         </Switch>
       </Router>
     )
