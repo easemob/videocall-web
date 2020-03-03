@@ -18,7 +18,7 @@ import { req_create } from '../../api';
 
 const Item = Form.Item 
 
-const { Header, Sider, Content } = Layout;
+const { Header, Sider, Content, Footer } = Layout;
 
 class Room extends Component {
     constructor(props) {
@@ -35,6 +35,7 @@ class Room extends Component {
             user_room: {
                 role: undefined
             },
+            own_stream:null,
             // join end
             time:0,// 秒的单位
             stream_list: [null],
@@ -46,8 +47,8 @@ class Room extends Component {
         };
 
         this.toggle_main = this.toggle_main.bind(this);
-        this._get_action_buttons = this._get_action_buttons.bind(this);
-        this.toggle_own_video = this.toggle_own_video.bind(this);
+        // this._get_action_buttons = this._get_action_buttons.bind(this);
+        // this.toggle_own_video = this.toggle_own_video.bind(this);
     }
 
     // join fun start
@@ -238,14 +239,25 @@ class Room extends Component {
                     item.op == 'ADD' &&
                     role == emedia.mgr.Role.ADMIN
                 ) { //处理上麦
-                    _this.handle_apply_talker(item.key)
+                    _this.handle_apply_talker(item.key);
+                    return
                 }
                 if(
                     item.val == 'request_tobe_audience' && 
                     item.op == 'ADD' &&
                     role == emedia.mgr.Role.ADMIN
                 ) { //处理下麦
-                    _this.handle_apply_audience(item.key)
+                    _this.handle_apply_audience(item.key);
+                    return
+                }
+
+                if(
+                    item.val == 'become_admin' && 
+                    item.op == 'ADD'
+                ) { //处理下麦
+                    alert(item.key + '变成了管理员')
+                    _this.handle_become_admin(item.key)
+                    return
                 }
             })
         };
@@ -271,6 +283,7 @@ class Room extends Component {
             ) {
                 _this.become_admin()
             }
+            
             
             user_room.role = role;
 
@@ -330,31 +343,27 @@ class Room extends Component {
 
         let confr = this.state.user_room;
 
-        confirm({
-            title:`是否同意${useid}的上麦请求`,
-            onOk() {
-                emedia.mgr.grantRole(confr, [member_name], 3)
-            }
-        });
-
         // delete cattrs,处理完请求删除会议属性
         let options = {
             key:useid,
             val:'request_tobe_speaker'
         }
 
-        emedia.mgr.deleteConferenceAttrs(options)
+        confirm({
+            title:`是否同意${useid}的上麦请求`,
+            async onOk() {
+                await emedia.mgr.grantRole(confr, [member_name], 3);
+                emedia.mgr.deleteConferenceAttrs(options)
+            },
+            cancelText:'取消',
+            okText:'确定'
+        });
+
+
     }
     // 下麦申请
     apply_audience() {
 
-        // if(
-        //     this.state.user_room &&
-        //     this.state.user_room.role &&
-        //     this.state.user_room.role == emedia.mgr.Role.ADMIN
-        // ) {
-
-        // }
         let { name } = this.state.user;
 
         if(!name) {
@@ -369,7 +378,7 @@ class Room extends Component {
     }
 
     
-    handle_apply_audience(useid) {
+    async handle_apply_audience(useid) {
         if(!useid){
             return
         }
@@ -378,12 +387,6 @@ class Room extends Component {
 
         let member_name = 'easemob-demo#chatdemoui_' + useid; // sdk 需要一个fk 格式的name
         let confr = this.state.user_room;
-        confirm({
-            title:`是否同意${useid}的下麦请求`,
-            onOk() {
-                emedia.mgr.grantRole(confr, [member_name], 1)
-            }
-        });
 
         // delete cattrs,处理完请求删除会议属性
         let options = {
@@ -391,7 +394,23 @@ class Room extends Component {
             val:'request_tobe_audience'
         }
 
-        emedia.mgr.deleteConferenceAttrs(options)
+        let { name } = this.state.user;
+        name = name.split('_')[1];
+        if( useid == joinId) { //管理员下麦自己
+            await emedia.mgr.grantRole(confr, [member_name], 1);
+            emedia.mgr.deleteConferenceAttrs(options)
+
+        }else {
+            confirm({
+                title:`是否同意${useid}的下麦请求`,
+                async onOk() {
+                    await emedia.mgr.grantRole(confr, [member_name], 1);
+                    emedia.mgr.deleteConferenceAttrs(options)
+                },
+                cancelText:'取消',
+                okText:'确定'
+            });
+        }
     }
 
     become_admin() {
@@ -402,6 +421,28 @@ class Room extends Component {
             val:'become_admin'
         }
         emedia.mgr.setConferenceAttrs(options)
+    }
+    handle_become_admin(useid) {
+
+        if(!useid) {
+            return
+        }
+
+        let { stream_list } = this.state;
+
+        stream_list.map(item => {
+            if(item && item.memeber){
+                if(item.member.id == useid) {
+                    item.member.role = emedia.mgr.Role.ADMIN
+                }
+            }
+        })
+
+        console.log('hande become admin useid', useid);
+        console.log('hande become admin stream_list', stream_list);
+        
+        this.setState({ stream_list })
+
     }
     toggle_main(index) {
 
@@ -422,35 +463,50 @@ class Room extends Component {
     // toggle 代指关闭或开启
 
     // 关闭或开启自己的
-    async toggle_own_video(stream) {
 
-        if(!stream || Object.keys(stream).length == 0) {
+    async toggle_video() {
+
+        let { role } = this.state.user_room;
+        let { own_stream } = this.state;
+        if(role == 1){
+            return
+        }
+
+        if(!own_stream) {
             return
         }
 
         let { voff } = this.state
         if(voff){
-            await emedia.mgr.resumeVideo(stream);
+            await emedia.mgr.resumeVideo(own_stream);
             voff = !voff
             this.setState({ voff })
         }else {
-            await emedia.mgr.pauseVideo(stream);
+            await emedia.mgr.pauseVideo(own_stream);
             voff = !voff
             this.setState({ voff })
         }
+
     }
-    async toggle_own_audio(stream) {
-        if(!stream || Object.keys(stream).length == 0) {
+    
+    async toggle_audio() {
+        let { role } = this.state.user_room;
+        let { own_stream } = this.state;
+        if(role == 1){
+            return
+        }
+
+        if(!own_stream) {
             return
         }
 
         let { aoff } = this.state
         if(aoff){
-            await emedia.mgr.resumeAudio(stream);
+            await emedia.mgr.resumeAudio(own_stream);
             aoff = !aoff
             this.setState({ aoff })
         }else {
-            await emedia.mgr.pauseAudio(stream);
+            await emedia.mgr.pauseAudio(own_stream);
             aoff = !aoff
             this.setState({ aoff })
         }
@@ -463,7 +519,13 @@ class Room extends Component {
 
         let { stream_list } = this.state
 
-        if(stream.located() && !stream_list[0]){// 自己publish的流
+        if(stream.located()) {//自己 publish的流，添加role 属性
+            let { role } = this.state.user_room;
+            member.role = role;
+            this.setState({ own_stream: stream }) //用来控制流
+        }
+
+        if(stream.located() && !stream_list[0]){// 自己publish的流 并且main没有画面
            stream_list[0] = { stream, member };
         } else {
             stream_list.push({stream,member});
@@ -511,6 +573,28 @@ class Room extends Component {
         })
     }
 
+    _get_header_el() {
+
+        let { roomName } = this.state;
+        return (
+            <div className="info">
+                <div>
+                    <span className="logo">logo</span>  
+                    <span>network</span>
+                </div>
+                <div>
+                    <span style={{marginRight:'10px'}}>{roomName}</span>
+                    <span>{this._get_tick()}</span>
+                </div>
+                <div>
+                    <span>admin:sqx</span>
+                </div>
+                <div>
+                    <Button type="primary" onClick={() => this.leave()}>离开</Button>
+                </div>
+            </div>
+        )
+    }
     _get_silder_component() {
         let _this = this;
         let { stream_list } = this.state;
@@ -525,21 +609,7 @@ class Room extends Component {
                 <div className="item-wrap">
                     { stream_list.map((item, index) => {
                         if(index != 0 && item){
-                            let { id } = item.stream;
-                            let { name, role } = item.member;
-    
-                            return (
-                                <div 
-                                    key={id} 
-                                    className="item"
-                                    onDoubleClick={() => this.toggle_main(index)}
-                                >
-    
-                                    {_this._get_action_buttons(item.stream)}
-                                    <span className="name">{ name + (role == 7 ? '(管理员)' : '') }</span>
-                                    <video ref={`list-video-${id}`} autoPlay></video>
-                                </div>
-                            )
+                            return _this._get_video_item(item,index);
                         }
                     }) }
                 </div>
@@ -548,78 +618,135 @@ class Room extends Component {
 
     }
 
-    _get_action_buttons(stream) {
+    // _get_action_buttons(stream) {
 
-        /**
-         * 以下将判断 各种角色关系、较为复杂
-         * 1.main 只要是自己的图像就有 <摄像头、麦克风、下麦> 操作
-         *   a.通过判断 stream.owner.id == joinId 
-         * 2.apply_audience 申请下麦 实际将角色便为观众
-         */ 
+    //     /**
+    //      * 以下将判断 各种角色关系、较为复杂
+    //      * 1.main 只要是自己的图像就有 <摄像头、麦克风、下麦> 操作
+    //      *   a.通过判断 stream.owner.id == joinId 
+    //      * 2.apply_audience 申请下麦 实际将角色便为观众
+    //      */ 
 
 
-        let { user_room } = this.state
+    //     let { user_room } = this.state
+    //     if(
+    //         !user_room || 
+    //         !stream ||
+    //         !stream.owner
+    //     ) {
+    //         return ''
+    //     }
+
+        
+
+    //     if( user_room.joinId != stream.owner.id) { //不是自己推的流
+    //         return '';
+    //     } 
+    //     return (
+    //         <div className="talker-action action">
+    //             <Button 
+    //                 type="primary" size="small"
+    //                 onClick={() => this.toggle_own_video(stream)}>摄像头</Button>
+    //             <Button 
+    //                 type="primary" size="small"
+    //                 onClick={() => this.toggle_own_audio(stream)}>麦克风</Button>  
+    //             <Button 
+    //                 type="primary" size="small"
+    //                 onClick={() => this.apply_audience()}>下麦</Button>
+    //         </div>
+    //     );
+
+        
+        
+    // }
+    // _get_main_video_el() {
+
+    //     let main = this.state.stream_list[0];
+
+    //     if(!main){
+    //         return <Content></Content>
+    //     }
+    //     return (
+    //         <Content>
+    //             {this._get_video_item(main)}
+    //         </Content>
+    //     )
+    // }
+
+    _get_video_item(talker_item,index) {
+
+        let { stream, member } = talker_item;
         if(
-            !user_room || 
             !stream ||
-            !stream.owner
+            !member ||
+            Object.keys(stream).length == 0 ||
+            Object.keys(member).length == 0 
         ) {
             return ''
         }
 
-        
+        let { id } = stream;
+        let { name, role } = member;
+        name = name.split('_')[1];
 
-        if( user_room.joinId != stream.owner.id) { //不是自己推的流
-            return '';
-        } 
-        return (
-            <div className="talker-action action">
-                <Button 
-                    type="primary" size="small"
-                    onClick={() => this.toggle_own_video(stream)}>摄像头</Button>
-                <Button 
-                    type="primary" size="small"
-                    onClick={() => this.toggle_own_audio(stream)}>麦克风</Button>  
-                <Button 
-                    type="primary" size="small"
-                    onClick={() => this.apply_audience()}>下麦</Button>
-            </div>
-        );
-
-        
-        
-    }
-    _get_main_video_el() {
-        let { stream_list } = this.state;
-
-        let main = this.state.stream_list[0];
-
-        if(!main){
-            return <Content></Content>
+        let is_me = false; //判断是否是自己
+        if(
+            this.state.user_room.joinId == stream.owner.id
+        ) {
+            is_me = true
         }
 
-        let name = '', role = undefined, is_me_text = '';
 
-        if( main.member ){ //赋值显示
-            name = main.member.name.split('_')[1];
-            role = main.member.role;
-        }
-
-        console.log('_get_main_video_el', main);
-        console.log('_get_main_video_el', name,role);
-        
-        let main_stream = stream_list[0].stream
-        let id = main_stream.id;
-        
         return (
-            <Content>
-                {this._get_action_buttons(main.stream)}
-                <span className="name">{ name + (role == 7 ? '(管理员)' : '') }</span>
+            <div 
+                key={id} 
+                className="item"
+                onDoubleClick={() => { index ? this.toggle_main(index) : '' }} //mian 图不需要点击事件，所以不传index
+            >
+
+                {/* {this._get_action_buttons(stream)} */}
+                <span className="name">
+                    { name + (role == 7 ? '(管理员)' : '') + (is_me ? '(我)' : '')}
+                </span>
                 <video ref={`list-video-${id}`} autoPlay></video>
-            </Content>
+            </div>
+        )
+
+    }
+
+    _get_footer_el() {
+        let { role } = this.state.user_room
+        let {aoff, voff} = this.state
+        
+
+
+        return (
+            <div className="actions-wrap">
+                {
+                    role == 1 ? 
+                    <Button 
+                    type="primary" 
+                    onClick={() => this.apply_talker()} 
+                    style={{marginRight:'10px'}}>申请上麦</Button> : 
+                    <Button type="primary" 
+                    onClick={() => this.apply_audience()}
+                                    style={{marginRight:'10px'}}>申请下麦</Button>
+                }
+
+                {
+                   <Button 
+                        type="primary" size="small"
+                        onClick={() => this.toggle_video()}>{voff ? '打开摄像头' : '关闭摄像头'}</Button>
+                                
+                }
+                {
+                    <Button 
+                        type="primary" size="small"
+                        onClick={() => this.toggle_audio()}>{aoff ? '打开麦克风' : '关闭麦克风'}</Button>
+                }
+            </div>
         )
     }
-
     startTime() {
         let _this = this;
         this.timeID = setInterval(
@@ -654,8 +781,8 @@ class Room extends Component {
 
         const { getFieldDecorator } = this.props.form;
 
-        let { role } = this.state.user_room
-        let { joined, roomName } = this.state
+        let { joined } = this.state;
+        let main_stream = this.state.stream_list[0]
 
         return (
             <div style={{width:'100%', height:'100%'}}>
@@ -715,33 +842,18 @@ class Room extends Component {
                 
                 <Layout className="meeting" style={{display: joined ? 'block' : 'none'}}>
                     <Header>
-                        <div className="info">
-                            <div>
-                                <span className="logo">logo</span>  
-                                <span>network</span>
-                            </div>
-                            <div>
-                                <span style={{marginRight:'10px'}}>{roomName}</span>
-                                <span>{this._get_tick()}</span>
-                            </div>
-                            <div>
-                                <span>admin:sqx</span>
-                            </div>
-                            <div>
-                                {role == 1 ? <Button type="primary" 
-                                            onClick={() => this.apply_talker()}
-                                            style={{marginRight:'10px'}}>申请上麦</Button> : ''
-                                }
-                                <Button type="primary" onClick={() => this.leave()}>离开</Button>
-                            </div>
-                            
-                            
-                        </div>
+                        {this._get_header_el()}
                     </Header>
                     <Layout>
-                        {this._get_main_video_el()}
+                        <Content>
+                            {main_stream ? this._get_video_item(main_stream) : ''}
+                        </Content>
+                        {/* {this._get_main_video_el()} */}
                         {this._get_silder_component()}
                     </Layout>
+                    <Footer>
+                        {this._get_footer_el()}
+                    </Footer>
                 </Layout>
             </div>
         )
