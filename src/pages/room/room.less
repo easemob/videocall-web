@@ -18,6 +18,9 @@
 
 .meeting {
     height: 100%;
+    .ant-layout-has-sider {
+        height: calc(100% - 130px);
+    }
     .ant-layout-header {
         background: #fff;
         padding: 0 20px;
@@ -40,6 +43,10 @@
         padding: 20px;
         position: relative;
 
+        .item {
+            width: 100%;
+            height: 100%;
+        }
         .name {
             position: absolute;
             font-size: 20px;

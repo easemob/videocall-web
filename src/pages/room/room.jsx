@@ -255,7 +255,7 @@ class Room extends Component {
                     item.val == 'become_admin' && 
                     item.op == 'ADD'
                 ) { //处理下麦
-                    alert(item.key + '变成了管理员')
+                    console.log(item.key + '变成了管理员')
                     _this.handle_become_admin(item.key)
                     return
                 }
@@ -396,7 +396,7 @@ class Room extends Component {
 
         let { name } = this.state.user;
         name = name.split('_')[1];
-        if( useid == joinId) { //管理员下麦自己
+        if( useid == name) { //管理员下麦自己
             await emedia.mgr.grantRole(confr, [member_name], 1);
             emedia.mgr.deleteConferenceAttrs(options)
 
@@ -430,17 +430,16 @@ class Room extends Component {
 
         let { stream_list } = this.state;
 
-        stream_list.map(item => {
-            if(item && item.memeber){
-                if(item.member.id == useid) {
+        stream_list.map(item => { //便利所有 stream_list 将这个流的role 变为管理员
+            if(item && item.member){
+                let name = item.member.name;
+                name = name.split('_')[1]
+                if(name == useid) {
                     item.member.role = emedia.mgr.Role.ADMIN
                 }
             }
         })
 
-        console.log('hande become admin useid', useid);
-        console.log('hande become admin stream_list', stream_list);
-        
         this.setState({ stream_list })
 
     }
@@ -459,11 +458,9 @@ class Room extends Component {
         this.setState({ stream_list },this._stream_bind_video)
     }
     
-
     // toggle 代指关闭或开启
 
     // 关闭或开启自己的
-
     async toggle_video() {
 
         let { role } = this.state.user_room;
@@ -532,7 +529,7 @@ class Room extends Component {
         }
 
         this.setState({ stream_list:stream_list },this._stream_bind_video)
-    }
+    } 
     _on_stream_removeed(stream) {
         if(!stream){
             return
@@ -573,9 +570,22 @@ class Room extends Component {
         })
     }
 
-    _get_header_el() {
+    _get_header_el() { 
 
-        let { roomName } = this.state;
+        let { roomName, stream_list } = this.state;
+        let admin = '';
+        stream_list.map(item => {
+            
+            if(
+                item &&
+                item.member && 
+                item.member.role == 7
+            ) {
+                admin = item.member.name.slice(-5);
+                return
+            }
+        })
+
         return (
             <div className="info">
                 <div>
@@ -587,7 +597,7 @@ class Room extends Component {
                     <span>{this._get_tick()}</span>
                 </div>
                 <div>
-                    <span>admin:sqx</span>
+                    <span>admin: {admin}</span>
                 </div>
                 <div>
                     <Button type="primary" onClick={() => this.leave()}>离开</Button>
