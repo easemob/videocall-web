@@ -221,8 +221,13 @@ class Room extends Component {
             }
         };
 
-        emedia.mgr.onConfrAttrsUpdated = function(cattrs){
+        emedia.mgr.onConfrAttrsUpdated = function(cattrs){ 
+            console.log('onConfrAttrsUpdated', cattrs);
+            // 会议属性变更
+            // 上麦、下麦、管理员变更 便利判断
+            // 
             let { name } = _this.state.user //自己的name
+            name = name.split('_')[0] // easemob-demo#chatdemoui_xxx fk格式 裁剪为 昵称
             let { role } = _this.state.user_room
             cattrs.map(item => {
                 if(item.key == name){
@@ -232,15 +237,20 @@ class Room extends Component {
                     item.val == 'request_tobe_speaker' && 
                     item.op == 'ADD' &&
                     role == emedia.mgr.Role.ADMIN
-                ) {
+                ) { //处理上麦
                     _this.handle_apply_talker(item.key)
+                }
+                if(
+                    item.val == 'request_tobe_audience' && 
+                    item.op == 'ADD' &&
+                    role == emedia.mgr.Role.ADMIN
+                ) { //处理下麦
+                    _this.handle_apply_audience(item.key)
                 }
             })
         };
 
         emedia.mgr.onRoleChanged = function (role, confr) {
-
-            
             let { user_room } = _this.state;
             console.log('onRole', JSON.stringify(user_room.role), role, confr);
 
@@ -254,6 +264,14 @@ class Room extends Component {
                 return
             }
 
+            // 变为管理员
+            if(
+                user_room.role == 3 &&
+                role == 7
+            ) {
+                _this.become_admin()
+            }
+            
             user_room.role = role;
 
             _this.setState({ user_room });
@@ -287,6 +305,7 @@ class Room extends Component {
         emedia.mgr.unpublish(stream);
     }
 
+    // 上麦申请
     apply_talker() {
         let { name } = this.state.user;
 
@@ -294,6 +313,7 @@ class Room extends Component {
             return
         }
 
+        name = name.split('_')[1] // easemob_xxx fk格式请求后台 设置会议属性使用昵称
         let options = {
             key:name,
             val:'request_tobe_speaker'
@@ -305,23 +325,83 @@ class Room extends Component {
             return
         }
 
+        let member_name = 'easemob-demo#chatdemoui_' + useid; // sdk 需要一个fk 格式的name
         const { confirm } = Modal;
 
         let confr = this.state.user_room;
+
         confirm({
             title:`是否同意${useid}的上麦请求`,
             onOk() {
-                emedia.mgr.grantRole(confr, [useid], 3)
+                emedia.mgr.grantRole(confr, [member_name], 3)
             }
         });
 
         // delete cattrs,处理完请求删除会议属性
-        // let options = {
-        //     key:useid,
-        //     val:'request_tobe_speaker'
-        // }
+        let options = {
+            key:useid,
+            val:'request_tobe_speaker'
+        }
 
-        // emedia.mgr.deleteConferenceAttrs(options)
+        emedia.mgr.deleteConferenceAttrs(options)
+    }
+    // 下麦申请
+    apply_audience() {
+
+        // if(
+        //     this.state.user_room &&
+        //     this.state.user_room.role &&
+        //     this.state.user_room.role == emedia.mgr.Role.ADMIN
+        // ) {
+
+        // }
+        let { name } = this.state.user;
+
+        if(!name) {
+            return
+        }
+        name = name.split('_')[1] // easemob_xxx fk格式请求后台 设置会议属性使用昵称
+        let options = {
+            key:name,
+            val:'request_tobe_audience'
+        }
+        emedia.mgr.setConferenceAttrs(options)
+    }
+
+    
+    handle_apply_audience(useid) {
+        if(!useid){
+            return
+        }
+
+        const { confirm } = Modal;
+
+        let member_name = 'easemob-demo#chatdemoui_' + useid; // sdk 需要一个fk 格式的name
+        let confr = this.state.user_room;
+        confirm({
+            title:`是否同意${useid}的下麦请求`,
+            onOk() {
+                emedia.mgr.grantRole(confr, [member_name], 1)
+            }
+        });
+
+        // delete cattrs,处理完请求删除会议属性
+        let options = {
+            key:useid,
+            val:'request_tobe_audience'
+        }
+
+        emedia.mgr.deleteConferenceAttrs(options)
+    }
+
+    become_admin() {
+        let useid = this.state.user.name.split('_')[1]
+
+        let options = {
+            key:useid,
+            val:'become_admin'
+        }
+        emedia.mgr.setConferenceAttrs(options)
     }
     toggle_main(index) {
 
@@ -400,6 +480,7 @@ class Room extends Component {
 
         stream_list.map((item, index) => {
             if(
+                item &&
                 item.stream && 
                 item.stream.id == stream.id 
             ) {
@@ -473,8 +554,7 @@ class Room extends Component {
          * 以下将判断 各种角色关系、较为复杂
          * 1.main 只要是自己的图像就有 <摄像头、麦克风、下麦> 操作
          *   a.通过判断 stream.owner.id == joinId 
-         * 2.如果自己是管理员,可控制别人的音视频切换
-         *      a.通过判断 user_room.role == 7 //7.admin、 3.talker、1.andience
+         * 2.apply_audience 申请下麦 实际将角色便为观众
          */ 
 
 
@@ -499,10 +579,10 @@ class Room extends Component {
                     onClick={() => this.toggle_own_video(stream)}>摄像头</Button>
                 <Button 
                     type="primary" size="small"
-                    onClick={() => this.toggle_own_audio(stream)}>麦克风</Button>
+                    onClick={() => this.toggle_own_audio(stream)}>麦克风</Button>  
                 <Button 
                     type="primary" size="small"
-                    onClick={() => this.unpublish(stream)}>下麦</Button>
+                    onClick={() => this.apply_audience()}>下麦</Button>
             </div>
         );
 
@@ -518,7 +598,7 @@ class Room extends Component {
             return <Content></Content>
         }
 
-        let name = '', role = undefined;
+        let name = '', role = undefined, is_me_text = '';
 
         if( main.member ){ //赋值显示
             name = main.member.name.split('_')[1];
@@ -585,7 +665,10 @@ class Room extends Component {
                         <Item>
                         {getFieldDecorator('roomName', {
                             initialValue: 'room-3',
-                            rules: [{ required: true, message: '请输入房间名称' }],
+                            rules: [
+                                { required: true, message: '请输入房间名称' },
+                                { min:3 , message: '房间名称不能少于3位'}
+                            ],
                         })(
                             <Input
                             prefix={<Icon type="user" style={{ color: 'rgba(0,0,0,.25)' }} />}
@@ -595,8 +678,11 @@ class Room extends Component {
                         </Item>
                         <Item>
                         {getFieldDecorator('password', {
-                            initialValue: '1',
-                            rules: [{ required: true, message: '请输入房间密码' }],
+                            initialValue: '123',
+                            rules: [
+                                { required: true, message: '请输入房间密码' },
+                                { min:3 , message: '密码长度不能小于3位'}
+                            ],
                         })(
                             <Input
                             prefix={<Icon type="lock" style={{ color: 'rgba(0,0,0,.25)' }} />}
