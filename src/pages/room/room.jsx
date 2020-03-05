@@ -116,8 +116,6 @@ class Room extends Component {
     }
     init_emedia_callback() {
         let _this = this;
-
-        console.log('env',process.env);
         
         emedia.config({
             restPrefix: process.env.REACT_APP_HOST
@@ -134,7 +132,6 @@ class Room extends Component {
         };
         emedia.mgr.onMemberJoined = function (member) {
             console.log('onMemberJoined',member);
-            
         };
 
         emedia.mgr.onMemberLeave = function (member, reason, failed) {
@@ -261,13 +258,6 @@ class Room extends Component {
             return
         }
         emedia.mgr.publish({ audio: true, video: true });
-    }
-    // 取消推流（下麦）
-    unpublish(stream) {
-        if(!stream){
-            return
-        }
-        emedia.mgr.unpublish(stream);
     }
 
     // 上麦申请
@@ -580,61 +570,6 @@ class Room extends Component {
 
     }
 
-    // _get_action_buttons(stream) {
-
-    //     /**
-    //      * 以下将判断 各种角色关系、较为复杂
-    //      * 1.main 只要是自己的图像就有 <摄像头、麦克风、下麦> 操作
-    //      *   a.通过判断 stream.owner.id == joinId 
-    //      * 2.apply_audience 申请下麦 实际将角色便为观众
-    //      */ 
-
-
-    //     let { user_room } = this.state
-    //     if(
-    //         !user_room || 
-    //         !stream ||
-    //         !stream.owner
-    //     ) {
-    //         return ''
-    //     }
-
-        
-
-    //     if( user_room.joinId != stream.owner.id) { //不是自己推的流
-    //         return '';
-    //     } 
-    //     return (
-    //         <div className="talker-action action">
-    //             <Button 
-    //                 type="primary" size="small"
-    //                 onClick={() => this.toggle_own_video(stream)}>摄像头</Button>
-    //             <Button 
-    //                 type="primary" size="small"
-    //                 onClick={() => this.toggle_own_audio(stream)}>麦克风</Button>  
-    //             <Button 
-    //                 type="primary" size="small"
-    //                 onClick={() => this.apply_audience()}>下麦</Button>
-    //         </div>
-    //     );
-
-        
-        
-    // }
-    // _get_main_video_el() {
-
-    //     let main = this.state.stream_list[0];
-
-    //     if(!main){
-    //         return <Content></Content>
-    //     }
-    //     return (
-    //         <Content>
-    //             {this._get_video_item(main)}
-    //         </Content>
-    //     )
-    // }
-
     _get_video_item(talker_item,index) {
 
         let { stream, member } = talker_item;
@@ -663,10 +598,9 @@ class Room extends Component {
             <div 
                 key={id} 
                 className="item"
-                onDoubleClick={ index ? () => {this.toggle_main(index)} : ''} //mian 图不需要点击事件，所以不传index÷
+                onDoubleClick={ index ? () => {this.toggle_main(index)} : () => {}} //mian 图不需要点击事件，所以不传index÷
             >
 
-                {/* {this._get_action_buttons(stream)} */}
                 <span className="name">
                     { name + (role == 7 ? '(管理员)' : '') + (is_me ? '(我)' : '')}
                 </span>
@@ -680,8 +614,6 @@ class Room extends Component {
         let { role } = this.state.user_room
         let {aoff, voff} = this.state
         
-
-
         return (
             <div className="actions-wrap">
                 {
@@ -697,13 +629,13 @@ class Room extends Component {
 
                 {
                    <Button 
-                        type="primary" size="small"
+                        type="primary"
                         onClick={() => this.toggle_video()}>{voff ? '打开摄像头' : '关闭摄像头'}</Button>
                                 
                 }
                 {
                     <Button 
-                        type="primary" size="small"
+                        type="primary"
                         onClick={() => this.toggle_audio()}>{aoff ? '打开麦克风' : '关闭麦克风'}</Button>
                 }
             </div>
