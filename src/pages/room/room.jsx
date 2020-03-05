@@ -15,8 +15,6 @@ import './room.less';
 import emedia from 'easemob-emedia';
 import login from './login.js'
 
-console.log('process.env.NODE_ENV', process.env);
-
 const Item = Form.Item 
 
 const { Header, Sider, Content, Footer } = Layout;
@@ -119,7 +117,7 @@ class Room extends Component {
     init_emedia_callback() {
         let _this = this;
 
-        console.log('process.env', process.env);
+        console.log('env',process.env);
         
         emedia.config({
             restPrefix: process.env.REACT_APP_HOST
@@ -211,7 +209,6 @@ class Room extends Component {
                     item.val == 'become_admin' && 
                     item.op == 'ADD'
                 ) { //处理下麦
-                    console.log(item.key + '变成了管理员')
                     _this.handle_become_admin(item.key)
                     return
                 }
@@ -220,7 +217,6 @@ class Room extends Component {
 
         emedia.mgr.onRoleChanged = function (role, confr) {
             let { user_room } = _this.state;
-            console.log('onRole', JSON.stringify(user_room.role), role, confr);
 
             // 被允许上麦
             if(
