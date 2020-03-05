@@ -14,7 +14,8 @@ import './room.less';
 
 import emedia from 'easemob-emedia';
 import login from './login.js'
-import { req_create } from '../../api';
+
+console.log('process.env.NODE_ENV', process.env);
 
 const Item = Form.Item 
 
@@ -47,79 +48,32 @@ class Room extends Component {
         };
 
         this.toggle_main = this.toggle_main.bind(this);
-        // this._get_action_buttons = this._get_action_buttons.bind(this);
-        // this.toggle_own_video = this.toggle_own_video.bind(this);
     }
 
     // join fun start
-    async create() {
+    async join() {
 
         this.setState({ loading:true })
-
         let {
             roomName,
             password
         } = this.state;
 
+        let { role } = this.state.user_room;
         let {
             name:memName,
             token
         } = this.state.user;
         
-
-        if(
-            !roomName ||
-            !password ||
-            !memName ||
-            !token
-        ) {
-            return
-        }
-
-        
         let params = {
             roomName,
             password,
+            role,
             memName,
             token
         }
-        const room = await req_create(params);
 
-        if(!room.confrId){
-          return
-        };
-
-        this.setState({ room },this.join)
-    }
-
-    async join() {
-        let {
-            confrId, 
-            password
-        } = this.state.room;
-
-        let { name,token } = this.state.user
-        if(
-            !confrId || 
-            !password ||
-            !name ||
-            !token
-        ) {
-            return
-        }
-
-        let params = {
-            name,
-            token,
-            confrId,
-            password,
-            role: this.state.user_room.role
-        }
-
-        emedia.mgr.setIdentity(name, token);
-      
-        let { ticket } = await emedia.mgr.reqTkt(params);
-        let user_room = await emedia.mgr.joinConferenceWithTicket(confrId, ticket);
+        const user_room = await emedia.mgr.joinRoom(params);
 
         this.setState({ 
             joined: true,
@@ -127,8 +81,8 @@ class Room extends Component {
         },this.publish)
 
         this.startTime()
+        
     }
-
     join_handle(role){
         var _this = this;
         let { user_room } = this.state;
@@ -141,7 +95,7 @@ class Room extends Component {
                 user_room
             },() => {
                 if (!err) {
-                    _this.create()
+                    _this.join()
                 }
             })
         });
@@ -165,8 +119,10 @@ class Room extends Component {
     init_emedia_callback() {
         let _this = this;
 
+        console.log('process.env', process.env);
+        
         emedia.config({
-            restPrefix: "http://a1-hsb.easemob.com"
+            restPrefix: process.env.REACT_APP_HOST
         });
         emedia.mgr.onStreamAdded = function (member, stream) {
             console.log('onStreamAdded >>>', member, stream);
