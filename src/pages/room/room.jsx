@@ -183,8 +183,8 @@ class Room extends Component {
             
         };
 
-        emedia.mgr.onMemberLeave = function (member, reason) {
-            console.log('onMemberLeave', member, reason);
+        emedia.mgr.onMemberLeave = function (member, reason, failed) {
+            console.log('onMemberLeave', member, reason, failed);
 
             function get_failed_reason(failed) {
                 let reasons = {
@@ -294,7 +294,7 @@ class Room extends Component {
 
     leave() {
 
-        let is_confirm = confirm('确定退出会议吗？');
+        let is_confirm = window.confirm('确定退出会议吗？');
 
         if(is_confirm){
             emedia.mgr.exitConference();
@@ -711,7 +711,7 @@ class Room extends Component {
             <div 
                 key={id} 
                 className="item"
-                onDoubleClick={() => { index ? this.toggle_main(index) : '' }} //mian 图不需要点击事件，所以不传index
+                onDoubleClick={ index ? () => {this.toggle_main(index)} : ''} //mian 图不需要点击事件，所以不传index÷
             >
 
                 {/* {this._get_action_buttons(stream)} */}
