@@ -685,7 +685,7 @@ class Room extends Component {
                     <Form className="login-form">
                         <Item>
                         {getFieldDecorator('roomName', {
-                            initialValue: 'room-3',
+                            initialValue: '',
                             rules: [
                                 { required: true, message: '请输入房间名称' },
                                 { min:3 , message: '房间名称不能少于3位'}
@@ -699,7 +699,7 @@ class Room extends Component {
                         </Item>
                         <Item>
                         {getFieldDecorator('password', {
-                            initialValue: '123',
+                            initialValue: '',
                             rules: [
                                 { required: true, message: '请输入房间密码' },
                                 { min:3 , message: '密码长度不能小于3位'}

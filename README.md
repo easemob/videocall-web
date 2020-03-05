@@ -7,7 +7,9 @@
 
 3. npm start
 
+4. npm run build:test 测试环境
 
+5. npm run build:prod 生产环境
 `使用技术栈`
 
 
