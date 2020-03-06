@@ -7,7 +7,10 @@ import {
     Icon,
     Modal,
     Form,
-    Input
+    Input,
+    Checkbox,
+    Row,
+    Col
 } from 'antd';
 import './room.less';
 
@@ -37,9 +40,10 @@ class Room extends Component {
             own_stream:null,
             // join end
             time:0,// 秒的单位
-            stream_list: [null],
-            aoff: false,
-            voff: false,
+            stream_list: [null],//默认 main画面为空
+
+            audio:true,
+            video:false,
 
             joined: false,
             loading: false
@@ -247,7 +251,6 @@ class Room extends Component {
 
         if(is_confirm){
             emedia.mgr.exitConference();
-            // this.setState({ joined:false });
             window.location.reload()
         }
         
@@ -257,7 +260,8 @@ class Room extends Component {
         if(role == 1){
             return
         }
-        emedia.mgr.publish({ audio: true, video: true });
+        let { audio,video } = this.state //push 流取off(关) 的反值
+        emedia.mgr.publish({ audio, video });
     }
 
     // 上麦申请
@@ -415,19 +419,23 @@ class Room extends Component {
             return
         }
 
-        let { voff } = this.state
-        if(voff){
-            await emedia.mgr.resumeVideo(own_stream);
-            voff = !voff
-            this.setState({ voff })
-        }else {
+        let { video } = this.state
+        if(video){
             await emedia.mgr.pauseVideo(own_stream);
-            voff = !voff
-            this.setState({ voff })
+            video = !video
+            this.setState({ video })
+        }else {
+            await emedia.mgr.resumeVideo(own_stream);
+            video = !video
+            this.setState({ video })
         }
 
     }
-    
+    video_change = e => {
+        this.setState({
+          video: e.target.checked,
+        });
+    };
     async toggle_audio() {
         let { role } = this.state.user_room;
         let { own_stream } = this.state;
@@ -439,17 +447,23 @@ class Room extends Component {
             return
         }
 
-        let { aoff } = this.state
-        if(aoff){
-            await emedia.mgr.resumeAudio(own_stream);
-            aoff = !aoff
-            this.setState({ aoff })
-        }else {
+        let { audio } = this.state
+        if(audio){
             await emedia.mgr.pauseAudio(own_stream);
-            aoff = !aoff
-            this.setState({ aoff })
+            audio = !audio
+            this.setState({ audio })
+        }else {
+            await emedia.mgr.resumeAudio(own_stream);
+            audio = !audio
+            this.setState({ audio })
         }
     }
+
+    audio_change = e => {
+        this.setState({
+          audio: e.target.checked,
+        });
+    };
     
     _on_stream_added(member, stream) {
         if(!member || !stream) {
@@ -612,7 +626,7 @@ class Room extends Component {
 
     _get_footer_el() {
         let { role } = this.state.user_room
-        let {aoff, voff} = this.state
+        let { audio, video } = this.state
         
         return (
             <div className="actions-wrap">
@@ -630,13 +644,13 @@ class Room extends Component {
                 {
                    <Button 
                         type="primary"
-                        onClick={() => this.toggle_video()}>{voff ? '打开摄像头' : '关闭摄像头'}</Button>
+                        onClick={() => this.toggle_video()}>{video ? '关闭摄像头' : '打开摄像头'}</Button>
                                 
                 }
                 {
                     <Button 
                         type="primary"
-                        onClick={() => this.toggle_audio()}>{aoff ? '打开麦克风' : '关闭麦克风'}</Button>
+                        onClick={() => this.toggle_audio()}>{audio ? '关闭麦克风' : '打开麦克风'}</Button>
                 }
             </div>
         )
@@ -683,9 +697,11 @@ class Room extends Component {
                 {/* join compoent */}
                 <div className="login-wrap" style={{display: joined ? 'none' : 'flex'}}>
                     <Form className="login-form">
+
+                        <h1 className="title">Video Call</h1>
                         <Item>
                         {getFieldDecorator('roomName', {
-                            initialValue: '',
+                            initialValue: 'room-3',
                             rules: [
                                 { required: true, message: '请输入房间名称' },
                                 { min:3 , message: '房间名称不能少于3位'}
@@ -699,7 +715,7 @@ class Room extends Component {
                         </Item>
                         <Item>
                         {getFieldDecorator('password', {
-                            initialValue: '',
+                            initialValue: '123',
                             rules: [
                                 { required: true, message: '请输入房间密码' },
                                 { min:3 , message: '密码长度不能小于3位'}
@@ -713,6 +729,23 @@ class Room extends Component {
                         )}
                         </Item>
         
+                        {/* <div>会议设置</div> */}
+                        
+                        <Row 
+                            type="flex"
+                            justify="space-between"
+                            style={{margin: '-15px 0 60px 0'}}>
+                            <Checkbox
+                                checked={!this.state.audio}
+                                onChange={this.audio_change}
+                            >不自动连接音频</Checkbox>
+                            <Checkbox
+                                checked={this.state.video}
+                                onChange={this.video_change}
+                            >入会开启摄像头</Checkbox>
+                        </Row>
+
+
                         <Button 
                             style={{ marginBottom:'15px' }}
                             type="primary"  
@@ -729,6 +762,8 @@ class Room extends Component {
                         >
                             以观众身份进入
                         </Button>
+
+                        
                     </Form>
                 </div>
                 

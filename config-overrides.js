@@ -1,4 +1,9 @@
-const {override, fixBabelImports, addLessLoader} = require('customize-cra');
+const {
+  override, 
+  fixBabelImports, 
+  addLessLoader,
+  disableEsLint
+} = require('customize-cra');
 
 module.exports = override(
   // 针对antd实现按需打包: 根据import来打包(使用babel-plugin-import)
@@ -13,4 +18,7 @@ module.exports = override(
     javascriptEnabled: true,
     // modifyVars: {'@primary-color': '#1DA57A'},
   }),
+
+  // 忽略严格模式
+  disableEsLint()
 )
