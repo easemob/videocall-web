@@ -45,7 +45,9 @@ class Room extends Component {
             video:false,
 
             joined: false,
-            loading: false
+            loading: false,
+
+            talker_is_full:false //主播已满
         };
 
         this.toggle_main = this.toggle_main.bind(this);
@@ -74,18 +76,25 @@ class Room extends Component {
             token
         }
 
-        const user_room = await emedia.mgr.joinRoom(params);
-
-        let _this = this;
-        this.setState({ 
-            joined: true,
-            user_room
-        },() => {
-            _this.publish();
-            _this.get_confr_info();
-        })
-
-        this.startTime()
+        try {
+            const user_room = await emedia.mgr.joinRoom(params);
+    
+            let _this = this;
+            this.setState({ 
+                joined: true,
+                user_room
+            },() => {
+                _this.publish();
+                _this.get_confr_info();
+            })
+    
+            this.startTime()
+            
+        } catch (error) { 
+            if(error.error == -200){//主播人数已满
+                this.setState({ talker_is_full: true })
+            }
+        }
     }
     join_handle(role){
         var _this = this;
@@ -305,7 +314,7 @@ class Room extends Component {
                 emedia.mgr.deleteConferenceAttrs(options)
             },
             cancelText:'取消',
-            okText:'确定'
+            okText:'同意'
         });
 
 
@@ -356,7 +365,7 @@ class Room extends Component {
                     emedia.mgr.deleteConferenceAttrs(options)
                 },
                 cancelText:'取消',
-                okText:'确定'
+                okText:'同意'
             });
         }
     }
@@ -705,6 +714,11 @@ class Room extends Component {
         this.setState({ confr:confr.confr })
         
     }
+    close_talker_model = () => {
+        this.setState({
+            talker_is_full: false
+        })
+    }
     render() {
 
         const { getFieldDecorator } = this.props.form;
@@ -780,6 +794,18 @@ class Room extends Component {
 
                         
                     </Form>
+                
+                    {/* 主播人数已满提醒框 */}
+                    <Modal
+                        visible={this.state.talker_is_full}
+                        onOk={this.close_talker_model}
+                        onCancel={this.close_talker_model}
+                        okText="确定"
+                        cancelText="取消"
+                        centered={true}
+                    >
+                        <p>主播人数已满，以观众身份进入！</p>
+                    </Modal>
                 </div>
                 
                 {/* room compoent */}
