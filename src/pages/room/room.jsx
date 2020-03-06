@@ -9,8 +9,7 @@ import {
     Form,
     Input,
     Checkbox,
-    Row,
-    Col
+    Row
 } from 'antd';
 import './room.less';
 
@@ -33,10 +32,10 @@ class Room extends Component {
             roomName:'',
             password:'',
             user: {},
-            room: {},
             user_room: {
                 role: undefined
             },
+            confr: {},
             own_stream:null,
             // join end
             time:0,// 秒的单位
@@ -77,13 +76,16 @@ class Room extends Component {
 
         const user_room = await emedia.mgr.joinRoom(params);
 
+        let _this = this;
         this.setState({ 
             joined: true,
             user_room
-        },this.publish)
+        },() => {
+            _this.publish();
+            _this.get_confr_info();
+        })
 
         this.startTime()
-        
     }
     join_handle(role){
         var _this = this;
@@ -114,6 +116,7 @@ class Room extends Component {
             emedia.mgr.exitConference();
         } 
     }
+
 
     componentWillUnmount() {
         clearInterval(this.timeID);
@@ -322,7 +325,6 @@ class Room extends Component {
         }
         emedia.mgr.setConferenceAttrs(options)
     }
-
     
     async handle_apply_audience(useid) {
         if(!useid){
@@ -564,6 +566,9 @@ class Room extends Component {
     _get_silder_component() {
         let _this = this;
         let { stream_list } = this.state;
+        let { talkers, audienceTotal } = this.state.confr;
+
+        
         return (
             <Sider 
                 width="300" 
@@ -571,7 +576,7 @@ class Room extends Component {
                 // defaultCollapsed={true}
                 // collapsedWidth='0'
             >
-                <div className="total">主播6 观众234</div>
+                <div className="total">主播{talkers && talkers.length} 观众{audienceTotal}</div>
                 <div className="item-wrap">
                     { stream_list.map((item, index) => {
                         if(index != 0 && item){
@@ -685,6 +690,21 @@ class Room extends Component {
         }
         return time_str
     }
+
+    // 获取会议信息
+    get_confr_info = async () => {
+        let { confrId } = this.state.user_room;
+        let { password } = this.state;
+
+        if(!confrId){
+            return
+        }
+
+        const confr = await emedia.mgr.selectConfr(confrId, password);
+
+        this.setState({ confr:confr.confr })
+        
+    }
     render() {
 
         const { getFieldDecorator } = this.props.form;
@@ -734,17 +754,12 @@ class Room extends Component {
                         <Row 
                             type="flex"
                             justify="space-between"
-                            style={{margin: '-15px 0 60px 0'}}>
-                            <Checkbox
-                                checked={!this.state.audio}
-                                onChange={this.audio_change}
-                            >不自动连接音频</Checkbox>
+                            style={{margin: '-8px 0px 30px'}}>
                             <Checkbox
                                 checked={this.state.video}
                                 onChange={this.video_change}
                             >入会开启摄像头</Checkbox>
                         </Row>
-
 
                         <Button 
                             style={{ marginBottom:'15px' }}
@@ -777,7 +792,6 @@ class Room extends Component {
                         <Content>
                             {main_stream ? this._get_video_item(main_stream) : ''}
                         </Content>
-                        {/* {this._get_main_video_el()} */}
                         {this._get_silder_component()}
                     </Layout>
                     <Footer>
