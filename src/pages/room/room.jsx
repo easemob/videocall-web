@@ -91,7 +91,7 @@ class Room extends Component {
                 _this.get_confr_info();
             })
     
-            this.startTime()
+            // this.startTime()
             
         } catch (error) { 
             if(error.error == -200){//主播人数已满
@@ -479,12 +479,12 @@ class Room extends Component {
         });
     };
     
-    async toggle_share_desktop() {
+    async share_desktop() {
         try {
             let _this = this; 
 
             var options = {
-                stopSharedCallback: () => _this.stopShareDesktop()
+                stopSharedCallback: () => _this.stop_share_desktop()
             }
             await emedia.mgr.shareDesktopWithAudio(options);
             
@@ -497,6 +497,24 @@ class Room extends Component {
                 message.error('请确认已安装共享桌面插件 或者是否使用的 https域名');
             }
         }
+    }
+
+    stop_share_desktop() {
+        let { stream_list } = this.state;
+
+        stream_list.map((item) => {
+            if(
+                item &&
+                item.stream &&
+                item.stream.type == emedia.StreamType.DESKTOP
+            ){
+                emedia.mgr.unpublish(item.stream);
+            }
+        })
+        
+        this.setState({ 
+            shared_desktop:false
+        });
     }
     _on_stream_added(member, stream) {
         if(!member || !stream) {
@@ -604,8 +622,6 @@ class Room extends Component {
             <Sider 
                 width="300" 
                 className="talker-list"
-                // defaultCollapsed={true}
-                // collapsedWidth='0'
             >
                 <div className="total">主播{talkers && talkers.length} 观众{audienceTotal}</div>
                 <div className="item-wrap">
@@ -689,9 +705,13 @@ class Room extends Component {
                         onClick={() => this.toggle_audio()}>{audio ? '关闭麦克风' : '打开麦克风'}</Button>
                 }
                 {
+                    shared_desktop ? 
                     <Button 
                         type="primary"
-                        onClick={() => this.toggle_share_desktop()}>{shared_desktop ? '停止共享桌面' : '共享桌面'}</Button>
+                        onClick={() => this.stop_share_desktop()}>停止共享桌面</Button> :
+                    <Button 
+                        type="primary"
+                        onClick={() => this.share_desktop()}>共享桌面</Button>
                 }
             </div>
         )
