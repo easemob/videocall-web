@@ -9,7 +9,8 @@ import {
     Form,
     Input,
     Checkbox,
-    Row
+    Row,
+    message
 } from 'antd';
 import './room.less';
 
@@ -47,7 +48,9 @@ class Room extends Component {
             joined: false,
             loading: false,
 
-            talker_is_full:false //主播已满
+            talker_is_full:false, //主播已满
+
+            shared_desktop:false
         };
 
         this.toggle_main = this.toggle_main.bind(this);
@@ -476,6 +479,25 @@ class Room extends Component {
         });
     };
     
+    async toggle_share_desktop() {
+        try {
+            let _this = this; 
+
+            var options = {
+                stopSharedCallback: () => _this.stopShareDesktop()
+            }
+            await emedia.mgr.shareDesktopWithAudio(options);
+            
+            this.setState({ shared_desktop:true });
+        } catch (err) {
+            if( //用户取消也是 -201 所以两层判断
+                err.error == -201 &&
+                err.errorMessage.indexOf('ShareDesktopExtensionNotFound') > 0
+            ){
+                message.error('请确认已安装共享桌面插件 或者是否使用的 https域名');
+            }
+        }
+    }
     _on_stream_added(member, stream) {
         if(!member || !stream) {
             return
@@ -640,7 +662,7 @@ class Room extends Component {
 
     _get_footer_el() {
         let { role } = this.state.user_room
-        let { audio, video } = this.state
+        let { audio, video, shared_desktop} = this.state
         
         return (
             <div className="actions-wrap">
@@ -665,6 +687,11 @@ class Room extends Component {
                     <Button 
                         type="primary"
                         onClick={() => this.toggle_audio()}>{audio ? '关闭麦克风' : '打开麦克风'}</Button>
+                }
+                {
+                    <Button 
+                        type="primary"
+                        onClick={() => this.toggle_share_desktop()}>{shared_desktop ? '停止共享桌面' : '共享桌面'}</Button>
                 }
             </div>
         )
