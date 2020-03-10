@@ -526,7 +526,13 @@ class Room extends Component {
         if(stream.located()) {//自己 publish的流，添加role 属性
             let { role } = this.state.user_room;
             member.role = role;
-            this.setState({ own_stream: stream }) //用来控制流
+
+            if( 
+                stream.type &&
+                stream.type != emedia.StreamType.DESKTOP
+            ) { // 自己推的人像流（用来被控制开关摄像头）
+                this.setState({ own_stream: stream }) //用来控制流
+            }
         }
 
         if(stream.located() && !stream_list[0]){// 自己publish的流 并且main没有画面
