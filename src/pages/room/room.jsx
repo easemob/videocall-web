@@ -527,10 +527,7 @@ class Room extends Component {
             let { role } = this.state.user_room;
             member.role = role;
 
-            if( 
-                stream.type &&
-                stream.type != emedia.StreamType.DESKTOP
-            ) { // 自己推的人像流（用来被控制开关摄像头）
+            if( stream.type != emedia.StreamType.DESKTOP ) { // 自己推的人像流（用来被控制开关摄像头）
                 this.setState({ own_stream: stream }) //用来控制流
             }
         }
@@ -621,15 +618,29 @@ class Room extends Component {
     _get_silder_component() {
         let _this = this;
         let { stream_list } = this.state;
-        let { talkers, audienceTotal } = this.state.confr;
+        let { audienceTotal } = this.state.confr;
 
+        function get_talkers() {
+            let talkers = 0;
+            let { stream_list } = _this.state;
+            stream_list.map(item => {
+                if(
+                    item &&
+                    item.stream &&
+                    item.stream.type != emedia.StreamType.DESKTOP
+                ){ //null 的不计数 共享桌面不计数
+                    talkers++
+                }
+            })
+            return talkers
+        }
         
         return (
             <Sider 
                 width="300" 
                 className="talker-list"
             >
-                <div className="total">主播{talkers && talkers.length} 观众{audienceTotal}</div>
+                <div className="total">主播{get_talkers()} 观众{audienceTotal}</div>
                 <div className="item-wrap">
                     { stream_list.map((item, index) => {
                         if(index != 0 && item){
