@@ -91,7 +91,7 @@ class Room extends Component {
                 _this.get_confr_info();
             })
     
-            // this.startTime()
+            this.startTime()
             
         } catch (error) { 
             if(error.error == -200){//主播人数已满
@@ -788,7 +788,7 @@ class Room extends Component {
                         <h1 className="title">Video Call</h1>
                         <Item>
                         {getFieldDecorator('roomName', {
-                            initialValue: 'room-3',
+                            initialValue: '',
                             rules: [
                                 { required: true, message: '请输入房间名称' },
                                 { min:3 , message: '房间名称不能少于3位'}
@@ -802,7 +802,7 @@ class Room extends Component {
                         </Item>
                         <Item>
                         {getFieldDecorator('password', {
-                            initialValue: '123',
+                            initialValue: '',
                             rules: [
                                 { required: true, message: '请输入房间密码' },
                                 { min:3 , message: '密码长度不能小于3位'}
