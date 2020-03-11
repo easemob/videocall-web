@@ -6,48 +6,218 @@
     justify-content: center;
     align-items: center;
 
+    background: url(../../assets/images/login-bg.png);
+    background-size: cover;
+
+    .header {
+        line-height: 60px;
+        position: absolute;
+        background: #fff;
+        top: 0;
+        width: 100%;
+        padding-left: 26px;
+    }
 }
 .login-form {
-    // height: 300px;
-    width: 360px; 
-    box-shadow: rgba(222, 222, 222, 0.5) 0px 6px 8px 3px; 
-    border-radius: 4px;
-    padding: 20px;
+    width:470px;
+    background:rgba(255,255,255,1);
+    box-shadow:0px 0px 1px 0px rgba(0,0,0,0.25);
 
+    padding: 43px;
+
+    text-align: center;
     .title {
         text-align: center;
         padding: 15px;
         color: #938e8e;
         font-weight: bold;
     }
+
+    input {
+        height: 40px;
+    }
+
+    .action {
+        display: flex;
+        justify-content: space-between;
+    }
+    button {
+        width: 182px;
+        height: 40px;
+    }
+
+    .ant-form-explain {
+        text-align: left;
+    }
 }
 
-.login-form button {
-    width: 100%;
-}
+.ant-modal-content {
+    text-align: center;
+    overflow: hidden;
+    border-radius: 0;
+    img {
+        margin: 82px 0 26px 0;
+    }
+    .ant-modal-footer {
+        margin: 96px 0 32px 0;
+        border: none;
 
+        > div {
+            display: flex;
+            justify-content: space-between;
+            width: 100%;
+
+        }
+        button {
+            width: 182px;
+            height: 40px;
+        }
+
+    }
+}
 .meeting {
     height: 100%;
+    background: #dadada;
     .ant-layout-has-sider {
         height: calc(100% - 130px);
     }
-    .ant-layout-header {
-        background: #fff;
-        padding: 0 20px;
-    };
-    .logo {
-        // display: inline-block;
-        // width: 15%;
-    };
-
-    .info {
-        display: inline-flex;
+    .ant-layout-header, .ant-layout-footer {
+        position: absolute;
         width: 100%;
-        justify-content: space-between;
-        align-items: center;
+        z-index: 1;
+        padding: 0 26px;
+        background: transparent;
+    }
+    .ant-layout-header {
+        top: 0;
+        height: auto;
+        line-height: 60px;
 
-        
-    };
+        .info {
+            display: inline-flex;
+            width: 100%;
+            justify-content: space-between;
+            align-items: center;
+    
+            .name {
+                font-size:18px;
+                font-family:PingFangSC-Regular,PingFang SC;
+                font-weight:400;
+                color:rgba(255,255,255,1);
+                line-height:20px;
+            }
+            
+            .time {
+                float: right;
+                font-size: 12px;
+                margin-right: 2em;
+                padding: 2px 5px;
+
+                background:rgba(0,0,0,0.8);
+                border-radius:7px;
+                font-size:10px;
+                font-family:PingFangSC-Regular,PingFang SC;
+                font-weight:400;
+                color:rgba(255,255,255,1);
+                line-height:10px;
+            }
+        };
+    }
+    .ant-drawer-content {
+        background:rgba(0,0,0,0.8);
+
+        .ant-drawer-header {
+            background: rgba(0, 0, 0, 0.8);
+            line-height: 14px;
+            border: none;
+            position: absolute;
+            top: 0;
+            width: 100%;
+            z-index: 1;
+            border-radius: 0;
+            
+            .ant-drawer-title {
+                font-size:14px;
+                font-family:Alibaba-PuHuiTi-R,Alibaba-PuHuiTi;
+                color:rgba(255,255,255,1);
+                text-align: center;
+            }
+        }
+        .ant-drawer-body {
+            padding: 60px 6px 6px;
+            .item {
+                height: 200px;
+                background: #fff;
+                border-bottom: 1px solid;
+    
+                position: relative;
+    
+                .name {
+                    position: absolute;
+                    // transform: translate(-50%, -50%);
+                    // left: 50%;
+                    // top: 50%;
+                    line-height: 1.5;
+                    color: #fff;
+                }
+    
+                i {
+                    position: absolute;
+                    left: 0;
+                    bottom: 0;
+                    font-size: 20px;
+                }
+    
+                video {
+                    width: 100%;
+                    height: 100%;
+                    background: #b6b5b5;
+                }
+            }
+    
+            .total {
+                line-height: 40px;
+                text-align: center;
+                
+            };
+    
+            .item-wrap {
+                max-height: calc(100% - 40px);
+                overflow: auto;
+    
+                
+            };
+    
+            
+        };
+    }
+
+    .ant-layout-footer {
+        bottom: 16px;
+        .actions-wrap {
+            display: flex;
+            justify-content: space-between;
+
+            .actions {
+                width:194px;
+                height:60px;
+                background:rgba(0,0,0,0.8);
+                border-radius:30px;
+
+                display: flex;
+                justify-content: center;
+                align-items: center;
+                span {
+                    display: inline-block;
+                    width: 40px;
+                    height: 40px;
+
+                    background: rgba(255,255,255,1);
+                }
+            }
+        }
+    }
+    
 
     .ant-layout-content {
         padding: 20px;
@@ -74,52 +244,7 @@
         }
     };
 
-    .talker-list {
-        background: transparent;
-
-        .total {
-            line-height: 40px;
-            text-align: center;
-            
-        };
-
-        .item-wrap {
-            max-height: calc(100% - 40px);
-            overflow: auto;
-
-            .item {
-                height: 200px;
-                background: #fff;
-                border-bottom: 1px solid;
-
-                position: relative;
-
-                .name {
-                    position: absolute;
-                    // transform: translate(-50%, -50%);
-                    // left: 50%;
-                    // top: 50%;
-                    line-height: 1.5;
-                    color: #fff;
-                }
-
-                i {
-                    position: absolute;
-                    left: 0;
-                    bottom: 0;
-                    font-size: 20px;
-                }
-
-                video {
-                    width: 100%;
-                    height: 100%;
-                    background: #b6b5b5;
-                }
-            }
-        };
-
-        
-    };
+    
 
     .action {
         position: absolute;
@@ -132,14 +257,8 @@
         }
     }
 
-    .ant-layout-footer {
-        position: absolute;
-        bottom: 0;
-        width: 100%;
-
-        .actions-wrap {
-            display: flex;
-            justify-content: space-around;
-        }
-    }
+    
+}
+.ant-tooltip-inner {
+    border-radius: 4px;
 }

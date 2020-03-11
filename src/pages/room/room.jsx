@@ -10,13 +10,25 @@ import {
     Input,
     Checkbox,
     Row,
-    message
+    message,
+    Tooltip,
+    Drawer
 } from 'antd';
 import './room.less';
 
 
 import emedia from 'easemob-emedia';
 import login from './login.js'
+
+// assets
+import warning_icon from '../../assets/images/warning-icon.png';
+import logo_text_login from '../../assets/images/logo-text-login.png';
+import logo_text_room from '../../assets/images/logo-text-room.png';
+import logo from '../../assets/images/logo.png';
+import admin_icon from '../../assets/images/admin-icon.png';
+import leave_icon from '../../assets/images/leave-icon.png';
+import apply_icon from '../../assets/images/apply-icon.png';
+
 
 const Item = Form.Item 
 
@@ -40,12 +52,38 @@ class Room extends Component {
             own_stream:null,
             // join end
             time:0,// 秒的单位
-            stream_list: [null],//默认 main画面为空
+            // stream_list: [null],//默认 main画面为空
+            stream_list: [
+                {
+                    member:{name:'sqx'},
+                    stream:{type:0,id:1}
+                },
+                {
+                    member:{name:'sqx'},
+                    stream:{type:0,id:1}
+                },
+                {
+                    member:{name:'sqx'},
+                    stream:{type:0,id:1}
+                },
+                {
+                    member:{name:'sqx'},
+                    stream:{type:0,id:1}
+                },
+                {
+                    member:{name:'sqx'},
+                    stream:{type:0,id:1}
+                },
+                {
+                    member:{name:'sqx'},
+                    stream:{type:0,id:1}
+                },
+            ],//默认 main画面为空
 
             audio:true,
             video:false,
 
-            joined: false,
+            joined: true,
             loading: false,
 
             talker_is_full:false, //主播已满
@@ -599,57 +637,88 @@ class Room extends Component {
         return (
             <div className="info">
                 <div>
-                    <span className="logo">logo</span>  
-                    <span>network</span>
+                    <img src={logo_text_room}/>
                 </div>
-                <div>
-                    <span style={{marginRight:'10px'}}>{roomName}</span>
-                    <span>{this._get_tick()}</span>
+                <div style={{lineHeight:1}}>
+                    <div>
+                        <Tooltip title={'主持人: ' + (admin || 'sqx')} placement="bottom">
+                            <img src={admin_icon} style={{marginTop:'-5px'}}/>
+                        </Tooltip>
+                        {/* <span>network</span> */}
+                        <span className="name">{roomName || '房间名称'}</span>
+                    </div>
+                    <div className="time">{this._get_tick()}</div>
                 </div>
-                <div>
-                    <span>admin: {admin}</span>
-                </div>
-                <div>
-                    <Button type="primary" onClick={() => this.leave()}>离开</Button>
+
+                <div onClick={() => this.leave()} style={{cursor: 'pointer',color:'#EF413F'}}>
+                    <img src={leave_icon} />
+                    <span>离开房间</span>
                 </div>
             </div>
         )
     }
-    _get_silder_component() {
-        let _this = this;
-        let { stream_list } = this.state;
-        let { audienceTotal } = this.state.confr;
+    _get_drawer_component() {
 
-        function get_talkers() {
-            let talkers = 0;
-            let { stream_list } = _this.state;
-            stream_list.map(item => {
-                if(
-                    item &&
-                    item.stream &&
-                    item.stream.type != emedia.StreamType.DESKTOP
-                ){ //null 的不计数 共享桌面不计数
-                    talkers++
-                }
-            })
-            return talkers
-        }
-        
+        let { stream_list } = this.state;
+
+
         return (
-            <Sider 
-                width="300" 
-                className="talker-list"
+            <Drawer 
+                title="主播 观众"
+                placement="right"
+                closable={false}
+                onClose={this.onClose}
+                visible={true}
+                getContainer={false}
             >
-                <div className="total">主播{get_talkers()} 观众{audienceTotal}</div>
-                <div className="item-wrap">
-                    { stream_list.map((item, index) => {
-                        if(index != 0 && item){
-                            return _this._get_video_item(item,index);
-                        }
-                    }) }
-                </div>
-            </Sider>
+                {stream_list.map((item, index) => {
+
+                    return (
+                        <div className="item" key={index}>
+                            <span className="name">
+                                { item.name }
+                            </span>
+                        </div>
+                    )
+                })}
+            </Drawer>
         )
+
+
+        // let _this = this;
+        // let { stream_list } = this.state;
+        // let { audienceTotal } = this.state.confr;
+
+        // function get_talkers() {
+        //     let talkers = 0;
+        //     let { stream_list } = _this.state;
+        //     stream_list.map(item => {
+        //         if(
+        //             item &&
+        //             item.stream &&
+        //             item.stream.type != emedia.StreamType.DESKTOP
+        //         ){ //null 的不计数 共享桌面不计数
+        //             talkers++
+        //         }
+        //     })
+        //     return talkers
+        // }
+        
+        // return (
+        //     <Sider 
+        //         width="300" 
+        //         className="talker-list"
+        //     >
+        //         <div className="total">主播{get_talkers()} 观众{audienceTotal}</div>
+        //         <div className="item-wrap">
+        //             { stream_list.map((item, index) => {
+        //                 if(index != 0 && item){
+        //                     return _this._get_video_item(item,index);
+        //                 }
+        //             }) }
+        //         </div>
+        //     </Sider>
+        // )
 
     }
 
@@ -699,37 +768,46 @@ class Room extends Component {
         
         return (
             <div className="actions-wrap">
-                {
-                    role == 1 ? 
-                    <Button 
-                    type="primary" 
-                    onClick={() => this.apply_talker()} 
-                    style={{marginRight:'10px'}}>申请上麦</Button> : 
-                    <Button type="primary" 
-                    onClick={() => this.apply_audience()}
-                                    style={{marginRight:'10px'}}>申请下麦</Button>
-                }
 
-                {
-                   <Button 
-                        type="primary"
-                        onClick={() => this.toggle_video()}>{video ? '关闭摄像头' : '打开摄像头'}</Button>
-                                
-                }
-                {
+                <img src={apply_icon} />
+                <div className="actions">
+                    {/* {
+                        role == 1 ? 
+                        <Button 
+                        type="primary" 
+                        onClick={() => this.apply_talker()} 
+                        style={{marginRight:'10px'}}>申请上麦</Button> : 
+                        <Button type="primary" 
+                        onClick={() => this.apply_audience()}
+                                        style={{marginRight:'10px'}}>申请下麦</Button>
+                    }
+
+                    {
                     <Button 
-                        type="primary"
-                        onClick={() => this.toggle_audio()}>{audio ? '关闭麦克风' : '打开麦克风'}</Button>
-                }
-                {
-                    shared_desktop ? 
-                    <Button 
-                        type="primary"
-                        onClick={() => this.stop_share_desktop()}>停止共享桌面</Button> :
-                    <Button 
-                        type="primary"
-                        onClick={() => this.share_desktop()}>共享桌面</Button>
-                }
+                            type="primary"
+                            onClick={() => this.toggle_video()}>{video ? '关闭摄像头' : '打开摄像头'}</Button>
+                                    
+                    }
+                    {
+                        <Button 
+                            type="primary"
+                            onClick={() => this.toggle_audio()}>{audio ? '关闭麦克风' : '打开麦克风'}</Button>
+                    }
+                    {
+                        shared_desktop ? 
+                        <Button 
+                            type="primary"
+                            onClick={() => this.stop_share_desktop()}>停止共享桌面</Button> :
+                        <Button 
+                            type="primary"
+                            onClick={() => this.share_desktop()}>共享桌面</Button>
+                    } */}
+
+                    <span></span>
+                    <span style={{margin:'0 10px'}}></span>
+                    <span></span>
+                </div>
+                <img src={apply_icon}/>
             </div>
         )
     }
@@ -794,22 +872,25 @@ class Room extends Component {
             <div style={{width:'100%', height:'100%'}}>
                 {/* join compoent */}
                 <div className="login-wrap" style={{display: joined ? 'none' : 'flex'}}>
+                    <div className="header">
+                        <img src={logo_text_login} />
+                    </div>
                     <Form className="login-form">
-
-                        <h1 className="title">Video Call</h1>
+                        <img src={logo} />
+                        <div style={{margin:'17px 0 45px'}}>欢迎使用环信多人会议</div>
                         <Item>
-                        {getFieldDecorator('roomName', {
-                            initialValue: '',
-                            rules: [
-                                { required: true, message: '请输入房间名称' },
-                                { min:3 , message: '房间名称不能少于3位'}
-                            ],
-                        })(
-                            <Input
-                            prefix={<Icon type="user" style={{ color: 'rgba(0,0,0,.25)' }} />}
-                            placeholder="房间名称"
-                            />,
-                        )}
+                            {getFieldDecorator('roomName', {
+                                initialValue: '',
+                                rules: [
+                                    { required: true, message: '请输入房间名称' },
+                                    { min:3 , message: '房间名称不能少于3位'}
+                                ],
+                            })(
+                                <Input
+                                prefix={<Icon type="user" style={{ color: 'rgba(0,0,0,.25)' }} />}
+                                placeholder="房间名称"
+                                />,
+                            )}
                         </Item>
                         <Item>
                         {getFieldDecorator('password', {
@@ -839,22 +920,22 @@ class Room extends Component {
                             >入会开启摄像头</Checkbox>
                         </Row>
 
-                        <Button 
-                            style={{ marginBottom:'15px' }}
-                            type="primary"  
-                            onClick={() => this.join_handle(3)}
-                            loading={this.state.loading}
-                        >
-                            以主播身份进入
-                        </Button>
-                        <Button 
-                            style={{ marginBottom:'15px' }}
-                            type="primary"  
-                            onClick={() => this.join_handle(1)}
-                            loading={this.state.loading}
-                        >
-                            以观众身份进入
-                        </Button>
+                        <div className="action">
+                            <Button 
+                                type="primary"  
+                                onClick={() => this.join_handle(3)}
+                                loading={this.state.loading}
+                            >
+                                以主播身份进入
+                            </Button>
+                            <Button 
+                                type="primary"  
+                                onClick={() => this.join_handle(1)}
+                                loading={this.state.loading}
+                            >
+                                以观众身份进入
+                            </Button>
+                        </div>
 
                         
                     </Form>
@@ -862,13 +943,21 @@ class Room extends Component {
                     {/* 主播人数已满提醒框 */}
                     <Modal
                         visible={this.state.talker_is_full}
+                        closable={false}
                         onOk={this.close_talker_model}
                         onCancel={this.close_talker_model}
-                        okText="确定"
-                        cancelText="取消"
+                        okText="以观众身份登录"
+                        cancelText="暂不登录"
                         centered={true}
+                        mask={false}
+                        maskClosable={false}
+                        width='470px'
+
                     >
-                        <p>主播人数已满，以观众身份进入！</p>
+                        <div>
+                            <img src={warning_icon}/>
+                        </div>
+                        <div>主播人数已满<br></br>是否以观众身份进入？</div>
                     </Modal>
                 </div>
                 
@@ -878,12 +967,10 @@ class Room extends Component {
                     <Header>
                         {this._get_header_el()}
                     </Header>
-                    <Layout>
-                        <Content>
-                            {main_stream ? this._get_video_item(main_stream) : ''}
-                        </Content>
-                        {this._get_silder_component()}
-                    </Layout>
+                    <Content>
+                        {/* {main_stream ? this._get_video_item(main_stream) : ''} */}
+                    </Content>
+                    {this._get_drawer_component()}
                     <Footer>
                         {this._get_footer_el()}
                     </Footer>
