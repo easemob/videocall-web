@@ -135,7 +135,7 @@ class Room extends Component {
                 _this.get_confr_info();
             })
     
-            this.startTime()
+            // this.startTime()
             
         } catch (error) { 
             if(error.error == -200){//主播人数已满
@@ -621,9 +621,54 @@ class Room extends Component {
                     emedia.mgr.subscribe(member, stream, true, true, el)
                 }
             }
-        })
+        });
+
+        // 当bind stream to video 就监听一下video
+        this._on_media_chanaged();
     }
 
+    //监听音视频变化
+    _on_media_chanaged() {
+        
+
+         this.set_stream_item_changed = (constaints, id) => {
+
+            if(!id || !constaints) {
+                return
+            }
+
+
+            let { stream_list } = this.state
+            let { aoff,voff } = constaints
+            stream_list = stream_list.map(item => {
+                if(
+                    item &&
+                    item.stream &&
+                    item.stream.id == id
+                ){
+                    item.stream.aoff = aoff
+                    item.stream.voff = voff
+                }
+
+                return item
+            })
+
+            this.setState({ stream_list })
+        }
+
+
+        let _this = this;
+        for (const key in this.refs) {
+            let el = this.refs[key];
+            let stream_id = key.split('-')[2];
+            emedia.mgr.onMediaChanaged(el, function (constaints) {
+                console.log('stream_id',stream_id);
+                console.log('constaints',constaints);
+                
+                _this.set_stream_item_changed(constaints, stream_id)
+            });
+        } 
+    }
     _get_header_el() { 
 
         let { roomName, stream_list } = this.state;
@@ -781,7 +826,7 @@ class Room extends Component {
         return (
             <div className="actions-wrap">
 
-                <img src={get_img_url_by_name('expand-icon')} />
+                <img src={get_img_url_by_name('apply-icon')} />
                 <div className="actions">
                     {
                         <img src={audio ? 
