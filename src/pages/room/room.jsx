@@ -22,16 +22,13 @@ import emedia from 'easemob-emedia';
 import login from './login.js'
 
 // assets
-import warning_icon from '../../assets/images/warning-icon.png';
-import logo_text_login from '../../assets/images/logo-text-login.png';
-import logo_text_room from '../../assets/images/logo-text-room.png';
-import logo from '../../assets/images/logo.png';
-import admin_icon from '../../assets/images/admin-icon.png';
-import leave_icon from '../../assets/images/leave-icon.png';
-import expand_icon from '../../assets/images/apply-icon.png';
-import audio_icon from '../../assets/images/audio-icon.png';
-import video_icon from '../../assets/images/video-icon.png';
-import no_speak_icon from '../../assets/images/no-speak-icon.png';
+const requireContext = require.context('../../assets/images', true, /^\.\/.*\.png$/)// 通过webpack 获取 img
+const get_img_url_by_name = (name) => {
+    if(!name){
+        return
+    }
+    return requireContext.resolve(`./${name}.png`);
+}
 
 
 const Item = Form.Item 
@@ -56,38 +53,38 @@ class Room extends Component {
             own_stream:null,
             // join end
             time:0,// 秒的单位
-            // stream_list: [null],//默认 main画面为空
-            stream_list: [
-                {
-                    member:{name:'sqx'},
-                    stream:{type:0,id:1}
-                },
-                {
-                    member:{name:'sqx'},
-                    stream:{type:0,id:1}
-                },
-                {
-                    member:{name:'sqx'},
-                    stream:{type:0,id:1}
-                },
-                {
-                    member:{name:'sqx'},
-                    stream:{type:0,id:1}
-                },
-                {
-                    member:{name:'sqx'},
-                    stream:{type:0,id:1}
-                },
-                {
-                    member:{name:'sqx'},
-                    stream:{type:0,id:1}
-                },
-            ],//默认 main画面为空
+            stream_list: [null],//默认 main画面为空
+            // stream_list: [
+            //     {
+            //         member:{name:'sqx'},
+            //         stream:{type:0,id:1}
+            //     },
+            //     {
+            //         member:{name:'sqx'},
+            //         stream:{type:0,id:1}
+            //     },
+            //     {
+            //         member:{name:'sqx'},
+            //         stream:{type:0,id:1}
+            //     },
+            //     {
+            //         member:{name:'sqx'},
+            //         stream:{type:0,id:1}
+            //     },
+            //     {
+            //         member:{name:'sqx'},
+            //         stream:{type:0,id:1}
+            //     },
+            //     {
+            //         member:{name:'sqx'},
+            //         stream:{type:0,id:1}
+            //     },
+            // ],//默认 main画面为空
             talker_list_show:false,
             audio:true,
             video:false,
 
-            joined: true,
+            joined: false,
             loading: false,
 
             talker_is_full:false, //主播已满
@@ -641,12 +638,12 @@ class Room extends Component {
         return (
             <div className="info">
                 <div>
-                    <img src={logo_text_room}/>
+                    <img src={get_img_url_by_name('logo-text-room')}/>
                 </div>
                 <div style={{lineHeight:1}}>
                     <div>
                         <Tooltip title={'主持人: ' + (admin || 'sqx')} placement="bottom">
-                            <img src={admin_icon} style={{marginTop:'-5px'}}/>
+                            <img src={get_img_url_by_name('admin-icon')} style={{marginTop:'-5px'}}/>
                         </Tooltip>
                         {/* <span>network</span> */}
                         <span className="name">{roomName || '房间名称'}</span>
@@ -655,97 +652,54 @@ class Room extends Component {
                 </div>
 
                 <div onClick={() => this.leave()} style={{cursor: 'pointer',color:'#EF413F'}}>
-                    <img src={leave_icon} />
+                    <img src={get_img_url_by_name('leave-icon')} />
                     <span>离开房间</span>
                 </div>
             </div>
         )
     }
     _get_drawer_component() {
-
+        let _this = this;
         let { stream_list } = this.state;
+        let { audienceTotal } = this.state.confr;
+
+        function get_talkers() {
+            let talkers = 0;
+            let { stream_list } = _this.state;
+            stream_list.map(item => {
+                if(
+                    item &&
+                    item.stream &&
+                    item.stream.type != emedia.StreamType.DESKTOP
+                ){ //null 的不计数 共享桌面不计数
+                    talkers++
+                }
+            })
+            return talkers
+        }
 
 
         return (
             <Drawer 
-                title="主播 观众"
+                title={`主播${get_talkers()} 观众${audienceTotal}`}
                 placement="right"
                 closable={false}
-                onClose={this.onClose}
                 visible={this.state.talker_list_show}
                 mask={false}
                 getContainer={false}
                 width="336px"
             >
-                <img src={expand_icon} className='expand-icon' onClick={this.collapse_talker_list}/>
-                {stream_list.map((item, index) => {
-
-                    return (
-                        <div className="item" key={index}>
-                            <div className="info">
-                                <span className="name">
-                                    { item.member.name }
-                                </span>
-
-                                <img src={no_speak_icon}/>
-                                <div className="status-icon">
-                                    <img src={audio_icon} style={{marginRight:'4px'}}/>
-                                    <img src={video_icon} />
-                                </div>
-                            </div>
-
-                            <Popconfirm
-                                title="是否禁言该用户?"
-                                placement="topLeft"
-                                // onConfirm={confirm}
-                                // onCancel={cancel}
-                                okText="禁言"
-                                cancelText="取消"
-                                getPopupContainer = {() => document.querySelector('.ant-drawer-body')}
-                            >
-                                <span className="no-speak-action">禁言</span>
-                            </Popconfirm>
-                        </div>
-                    )
-                })}
+                <img src={get_img_url_by_name('expand-icon')} className='expand-icon' onClick={this.collapse_talker_list}/>
+                { stream_list.map((item, index) => {
+                    if(index != 0 && item){
+                        return _this._get_video_item(item,index);
+                    }
+                }) }
             </Drawer>
         )
 
 
-        // let _this = this;
-        // let { stream_list } = this.state;
-        // let { audienceTotal } = this.state.confr;
-
-        // function get_talkers() {
-        //     let talkers = 0;
-        //     let { stream_list } = _this.state;
-        //     stream_list.map(item => {
-        //         if(
-        //             item &&
-        //             item.stream &&
-        //             item.stream.type != emedia.StreamType.DESKTOP
-        //         ){ //null 的不计数 共享桌面不计数
-        //             talkers++
-        //         }
-        //     })
-        //     return talkers
-        // }
-        
-        // return (
-        //     <Sider 
-        //         width="300" 
-        //         className="talker-list"
-        //     >
-        //         <div className="total">主播{get_talkers()} 观众{audienceTotal}</div>
-        //         <div className="item-wrap">
-        //             { stream_list.map((item, index) => {
-        //                 if(index != 0 && item){
-        //                     return _this._get_video_item(item,index);
-        //                 }
-        //             }) }
-        //         </div>
-        //     </Sider>
-        // )
+       
 
     }
 
@@ -780,13 +734,35 @@ class Room extends Component {
                 onDoubleClick={ index ? () => {this.toggle_main(index)} : () => {}} //mian 图不需要点击事件，所以不传index÷
             >
 
-                <span className="name">
-                    { name + (role == 7 ? '(管理员)' : '') + (is_me ? '(我)' : '')}
-                </span>
+                <div className="info">
+                    <span className="name">
+                        { name + (role == 7 ? '(管理员)' : '') + (is_me ? '(我)' : '')}
+                    </span>
+
+                    <img src={get_img_url_by_name('no-speak-icon')}/>
+                    <div className="status-icon">
+                        <img src={get_img_url_by_name('audio-icon')} style={{marginRight:'4px'}}/>
+                        <img src={get_img_url_by_name('video-icon')} />
+                    </div>
+                </div>
+
+                <Popconfirm
+                    title="是否禁言该用户?"
+                    placement="topLeft"
+                    // onConfirm={confirm}
+                    // onCancel={cancel}
+                    okText="禁言"
+                    cancelText="取消"
+                    getPopupContainer = {() => document.querySelector('.ant-drawer-body')}
+                >
+                    <span className="no-speak-action">禁言</span>
+                </Popconfirm>
+                
                 <video ref={`list-video-${id}`} autoPlay></video>
             </div>
         )
 
+                            
     }
 
     _get_footer_el() {
@@ -796,31 +772,29 @@ class Room extends Component {
         return (
             <div className="actions-wrap">
 
-                <img src={expand_icon} />
+                <img src={get_img_url_by_name('expand-icon')} />
                 <div className="actions">
-                    {/* {
+                    {
                         role == 1 ? 
-                        <Button 
-                        type="primary" 
-                        onClick={() => this.apply_talker()} 
-                        style={{marginRight:'10px'}}>申请上麦</Button> : 
-                        <Button type="primary" 
-                        onClick={() => this.apply_audience()}
-                                        style={{marginRight:'10px'}}>申请下麦</Button>
+                        <img src={get_img_url_by_name('apply-to-talker')} onClick={() => this.apply_talker()}/> :
+                        <img src={get_img_url_by_name('apply-to-audience')} onClick={() => this.apply_audience()}/> 
                     }
 
                     {
-                    <Button 
-                            type="primary"
-                            onClick={() => this.toggle_video()}>{video ? '关闭摄像头' : '打开摄像头'}</Button>
-                                    
+                        <img style={{margin:'0 10px'}}
+                             src={audio ? 
+                                    get_img_url_by_name('audio-is-open-icon') : 
+                                    get_img_url_by_name('audio-is-close-icon')} 
+                                onClick={() => this.toggle_video()}/>
+                           
                     }
                     {
-                        <Button 
-                            type="primary"
-                            onClick={() => this.toggle_audio()}>{audio ? '关闭麦克风' : '打开麦克风'}</Button>
+                         <img src={video ? 
+                                    get_img_url_by_name('video-is-open-icon') : 
+                                    get_img_url_by_name('video-is-close-icon')} 
+                                onClick={() => this.toggle_video()}/>
                     }
-                    {
+                    {/* {
                         shared_desktop ? 
                         <Button 
                             type="primary"
@@ -829,12 +803,11 @@ class Room extends Component {
                             type="primary"
                             onClick={() => this.share_desktop()}>共享桌面</Button>
                     } */}
-
-                    <span></span>
-                    <span style={{margin:'0 10px'}}></span>
-                    <span></span>
                 </div>
-                <img src={expand_icon} onClick={this.expand_talker_list} />
+                <img 
+                    src={get_img_url_by_name('expand-icon')} 
+                    onClick={this.expand_talker_list} 
+                    style={{visibility:this.state.talker_list_show ? 'hidden' : 'visible'}}/>
             </div>
         )
     }
@@ -910,10 +883,10 @@ class Room extends Component {
                 {/* join compoent */}
                 <div className="login-wrap" style={{display: joined ? 'none' : 'flex'}}>
                     <div className="header">
-                        <img src={logo_text_login} />
+                        <img src={get_img_url_by_name('logo-text-login')} />
                     </div>
                     <Form className="login-form">
-                        <img src={logo} />
+                        <img src={get_img_url_by_name('logo')} />
                         <div style={{margin:'17px 0 45px'}}>欢迎使用环信多人会议</div>
                         <Item>
                             {getFieldDecorator('roomName', {
@@ -992,7 +965,7 @@ class Room extends Component {
 
                     >
                         <div>
-                            <img src={warning_icon}/>
+                            <img src={get_img_url_by_name('warning-icon')}/>
                         </div>
                         <div>主播人数已满<br></br>是否以观众身份进入？</div>
                     </Modal>
@@ -1006,6 +979,7 @@ class Room extends Component {
                     </Header>
                     <Content>
                         {/* {main_stream ? this._get_video_item(main_stream) : ''} */}
+                        {main_stream ? <video ref={`list-video-${main_stream.stream.id}`} autoPlay></video> : ''}
                     </Content>
                     {this._get_drawer_component()}
                     <Footer>
