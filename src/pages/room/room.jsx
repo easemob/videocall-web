@@ -22,18 +22,23 @@ import emedia from 'easemob-emedia';
 import login from './login.js'
 
 // assets
+import logo from '../../assets/images/logo.png';
+console.log('logo url', logo);
+
 const requireContext = require.context('../../assets/images', true, /^\.\/.*\.png$/)// 通过webpack 获取 img
 const get_img_url_by_name = (name) => {
     if(!name){
         return
     }
-    return requireContext.resolve(`./${name}.png`);
+    let id = requireContext.resolve(`./${name}.png`);
+
+    return __webpack_require__(id);
 }
 
 
 const Item = Form.Item 
 
-const { Header, Sider, Content, Footer } = Layout;
+const { Header, Content, Footer } = Layout;
 
 class Room extends Component {
     constructor(props) {
@@ -715,7 +720,7 @@ class Room extends Component {
             return ''
         }
 
-        let { id } = stream;
+        let { id, aoff, voff } = stream;
         let { name, role } = member;
         name = name.split('_')[1];
 
@@ -741,8 +746,12 @@ class Room extends Component {
 
                     <img src={get_img_url_by_name('no-speak-icon')}/>
                     <div className="status-icon">
-                        <img src={get_img_url_by_name('audio-icon')} style={{marginRight:'4px'}}/>
-                        <img src={get_img_url_by_name('video-icon')} />
+                        <img 
+                            src={get_img_url_by_name('audio-icon')} 
+                            style={{marginRight:'4px',visibility: aoff ? 'hidden' : 'visible'}}/>
+                        <img 
+                            src={get_img_url_by_name('video-icon')} 
+                            style={{visibility: voff ? 'hidden' : 'visible'}}/>
                     </div>
                 </div>
 
@@ -775,24 +784,23 @@ class Room extends Component {
                 <img src={get_img_url_by_name('expand-icon')} />
                 <div className="actions">
                     {
-                        role == 1 ? 
-                        <img src={get_img_url_by_name('apply-to-talker')} onClick={() => this.apply_talker()}/> :
-                        <img src={get_img_url_by_name('apply-to-audience')} onClick={() => this.apply_audience()}/> 
-                    }
-
-                    {
-                        <img style={{margin:'0 10px'}}
-                             src={audio ? 
+                        <img src={audio ? 
                                     get_img_url_by_name('audio-is-open-icon') : 
                                     get_img_url_by_name('audio-is-close-icon')} 
-                                onClick={() => this.toggle_video()}/>
+                                onClick={() => this.toggle_audio()}/>
                            
                     }
                     {
-                         <img src={video ? 
+                         <img style={{margin:'0 10px'}}
+                                src={video ? 
                                     get_img_url_by_name('video-is-open-icon') : 
                                     get_img_url_by_name('video-is-close-icon')} 
                                 onClick={() => this.toggle_video()}/>
+                    }
+                    {
+                        role == 1 ? 
+                        <img src={get_img_url_by_name('apply-to-talker')} onClick={() => this.apply_talker()}/> :
+                        <img src={get_img_url_by_name('apply-to-audience')} onClick={() => this.apply_audience()}/> 
                     }
                     {/* {
                         shared_desktop ? 
