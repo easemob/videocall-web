@@ -125,7 +125,7 @@
     }
     .ant-drawer-content {
         background:rgba(0,0,0,0.8);
-
+        
         .ant-drawer-header {
             background: rgba(0, 0, 0, 0.8);
             line-height: 14px;
@@ -144,29 +144,50 @@
             }
         }
         .ant-drawer-body {
-            padding: 60px 6px 6px;
+            padding: 0;
+            padding-top: 60px;
             .item {
                 height: 200px;
-                background: #fff;
+                background: #dadada;
                 border-bottom: 1px solid;
     
                 position: relative;
-    
-                .name {
+                margin: 5px 6px;
+
+                .info {
                     position: absolute;
-                    // transform: translate(-50%, -50%);
-                    // left: 50%;
-                    // top: 50%;
-                    line-height: 1.5;
-                    color: #fff;
+                    top: 0;
+                    width: 100%;
+                    line-height: 24px;
+                    background: transparent;
+                    padding: 0 6px;
+                    .name {
+                        font-size:12px;
+                        font-family:Alibaba-PuHuiTi-R,Alibaba-PuHuiTi;
+                        color:#fff;
+                        margin-right: 4px;
+                    }
+
+                    .status-icon {
+                        float: right;
+                    }
                 }
-    
-                i {
+                
+                .no-speak-action {
                     position: absolute;
-                    left: 0;
-                    bottom: 0;
-                    font-size: 20px;
+                    left: 6px;
+                    bottom: 6px;
+
+                    line-height:20px;
+                    background:rgba(0,0,0,1);
+                    border-radius:10px;
+                    padding: 0 6px;
+                    color:rgba(239,65,63,1);
+                    font-size: 12px;
+
+                    cursor: pointer;
                 }
+                
     
                 video {
                     width: 100%;
@@ -181,15 +202,36 @@
                 
             };
     
-            .item-wrap {
-                max-height: calc(100% - 40px);
-                overflow: auto;
-    
-                
-            };
-    
+            .ant-popover-arrow {
+                border-right-color: rgba(0,0,0,0.75);
+                border-bottom-color: rgba(0,0,0,0.75);
+            }
+            .ant-popover-inner {
+                border-radius: 4px;
+                background: rgba(0,0,0,0.75);
+                color:#fff;
+
+                .ant-popover-message {
+                    color: #fff
+                }
+                .ant-btn-sm {
+                    color: #fff;
+                    background: transparent;
+                }
+                .ant-btn-primary {
+                    background:rgba(239,65,63,1);
+                    border-color: rgba(239,65,63,1);
+                }
+            }
             
         };
+        .expand-icon{
+            position: absolute;
+            left: 16px;
+            bottom: 16px;
+            z-index: 1;
+            cursor: pointer;
+        }   
     }
 
     .ant-layout-footer {
@@ -198,6 +240,9 @@
             display: flex;
             justify-content: space-between;
 
+            img {
+                cursor: pointer;
+            }
             .actions {
                 width:194px;
                 height:60px;

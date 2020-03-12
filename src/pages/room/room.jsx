@@ -12,7 +12,8 @@ import {
     Row,
     message,
     Tooltip,
-    Drawer
+    Drawer,
+    Popconfirm
 } from 'antd';
 import './room.less';
 
@@ -27,7 +28,10 @@ import logo_text_room from '../../assets/images/logo-text-room.png';
 import logo from '../../assets/images/logo.png';
 import admin_icon from '../../assets/images/admin-icon.png';
 import leave_icon from '../../assets/images/leave-icon.png';
-import apply_icon from '../../assets/images/apply-icon.png';
+import expand_icon from '../../assets/images/apply-icon.png';
+import audio_icon from '../../assets/images/audio-icon.png';
+import video_icon from '../../assets/images/video-icon.png';
+import no_speak_icon from '../../assets/images/no-speak-icon.png';
 
 
 const Item = Form.Item 
@@ -79,7 +83,7 @@ class Room extends Component {
                     stream:{type:0,id:1}
                 },
             ],//默认 main画面为空
-
+            talker_list_show:false,
             audio:true,
             video:false,
 
@@ -668,16 +672,39 @@ class Room extends Component {
                 placement="right"
                 closable={false}
                 onClose={this.onClose}
-                visible={true}
+                visible={this.state.talker_list_show}
+                mask={false}
                 getContainer={false}
+                width="336px"
             >
+                <img src={expand_icon} className='expand-icon' onClick={this.collapse_talker_list}/>
                 {stream_list.map((item, index) => {
 
                     return (
                         <div className="item" key={index}>
-                            <span className="name">
-                                { item.name }
-                            </span>
+                            <div className="info">
+                                <span className="name">
+                                    { item.member.name }
+                                </span>
+
+                                <img src={no_speak_icon}/>
+                                <div className="status-icon">
+                                    <img src={audio_icon} style={{marginRight:'4px'}}/>
+                                    <img src={video_icon} />
+                                </div>
+                            </div>
+
+                            <Popconfirm
+                                title="是否禁言该用户?"
+                                placement="topLeft"
+                                // onConfirm={confirm}
+                                // onCancel={cancel}
+                                okText="禁言"
+                                cancelText="取消"
+                                getPopupContainer = {() => document.querySelector('.ant-drawer-body')}
+                            >
+                                <span className="no-speak-action">禁言</span>
+                            </Popconfirm>
                         </div>
                     )
                 })}
@@ -769,7 +796,7 @@ class Room extends Component {
         return (
             <div className="actions-wrap">
 
-                <img src={apply_icon} />
+                <img src={expand_icon} />
                 <div className="actions">
                     {/* {
                         role == 1 ? 
@@ -807,9 +834,19 @@ class Room extends Component {
                     <span style={{margin:'0 10px'}}></span>
                     <span></span>
                 </div>
-                <img src={apply_icon}/>
+                <img src={expand_icon} onClick={this.expand_talker_list} />
             </div>
         )
+    }
+    expand_talker_list = () => {
+        this.setState({
+            talker_list_show:true
+        })
+    }
+    collapse_talker_list = () => {
+        this.setState({
+            talker_list_show:false
+        })
     }
     startTime() {
         let _this = this;
