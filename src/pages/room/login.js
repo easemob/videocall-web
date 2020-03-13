@@ -26,7 +26,7 @@ function Login() {
             result.entities[0].activated
         ){
             let user = {
-                name: params.username,
+                username: params.username,
                 password:params.password
             }
             this.user = user;
@@ -36,7 +36,7 @@ function Login() {
     this.login = async () => {
         let params = {
             grant_type: "password",
-            username: this.user.name,
+            username: this.user.username,
             password: this.user.password,
             timestamp: new Date().getTime()
         }
@@ -47,7 +47,7 @@ function Login() {
         };
 
         let user = {
-            name: user_info.user && 'easemob-demo#chatdemoui_' + user_info.user.username,
+            username: user_info.user && user_info.user.username,
             token: user_info.access_token,
             uuid: user_info.user && user_info.user.uuid
         }
@@ -59,7 +59,7 @@ function Login() {
 
         if(
             !this.user ||
-            !this.user.name || 
+            !this.user.username || 
             !this.user.password
         ) {
             await this.register();

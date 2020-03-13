@@ -50,6 +50,7 @@ class Room extends Component {
             // join start
             roomName:'',
             password:'',
+            nickName:'',
             user: {},
             user_room: {
                 role: undefined
@@ -59,32 +60,6 @@ class Room extends Component {
             // join end
             time:0,// 秒的单位
             stream_list: [null],//默认 main画面为空
-            // stream_list: [
-            //     {
-            //         member:{name:'sqx'},
-            //         stream:{type:0,id:1}
-            //     },
-            //     {
-            //         member:{name:'sqx'},
-            //         stream:{type:0,id:1}
-            //     },
-            //     {
-            //         member:{name:'sqx'},
-            //         stream:{type:0,id:1}
-            //     },
-            //     {
-            //         member:{name:'sqx'},
-            //         stream:{type:0,id:1}
-            //     },
-            //     {
-            //         member:{name:'sqx'},
-            //         stream:{type:0,id:1}
-            //     },
-            //     {
-            //         member:{name:'sqx'},
-            //         stream:{type:0,id:1}
-            //     },
-            // ],//默认 main画面为空
             talker_list_show:false,
             audio:true,
             video:false,
@@ -106,12 +81,13 @@ class Room extends Component {
         this.setState({ loading:true })
         let {
             roomName,
-            password
+            password,
+            nickName
         } = this.state;
 
         let { role } = this.state.user_room;
         let {
-            name:memName,
+            username,
             token
         } = this.state.user;
         
@@ -119,8 +95,9 @@ class Room extends Component {
             roomName,
             password,
             role,
-            memName,
-            token
+            memName: 'easemob-demo#chatdemoui_' + username, // appkey + username 格式（后台必须）
+            token,
+            config:{ nickName }
         }
 
         try {
@@ -135,7 +112,7 @@ class Room extends Component {
                 _this.get_confr_info();
             })
     
-            // this.startTime()
+            this.startTime()
             
         } catch (error) { 
             if(error.error == -200){//主播人数已满
@@ -148,10 +125,10 @@ class Room extends Component {
         let { user_room } = this.state;
         user_room.role = role;
         this.props.form.validateFields((err, values) => {
-
             _this.setState({
                 roomName: values.roomName,
                 password: values.password,
+                nickName: values.nickName,
                 user_room
             },() => {
                 if (!err) {
@@ -195,10 +172,12 @@ class Room extends Component {
         };
         emedia.mgr.onMemberJoined = function (member) {
             console.log('onMemberJoined',member);
+            message.success(`${member.nickName || member.name} 加入了会议`);
         };
 
         emedia.mgr.onMemberLeave = function (member, reason, failed) {
             console.log('onMemberLeave', member, reason, failed);
+            message.success(`${member.nickName || member.name} 退出了会议`);
 
             function get_failed_reason(failed) {
                 let reasons = {
@@ -239,13 +218,13 @@ class Room extends Component {
         emedia.mgr.onConfrAttrsUpdated = function(cattrs){ 
             console.log('onConfrAttrsUpdated', cattrs);
             // 会议属性变更
-            // 上麦、下麦、管理员变更 便利判断
+            // 上麦、下麦、管理员变更 遍历判断
             // 
-            let { name } = _this.state.user //自己的name
-            name = name.split('_')[0] // easemob-demo#chatdemoui_xxx fk格式 裁剪为 昵称
+
+            let { username:my_username } = _this.state.user //自己的name
             let { role } = _this.state.user_room
             cattrs.map(item => {
-                if(item.key == name){
+                if(item.key == my_username && role != emedia.mgr.Role.ADMIN ){
                     return
                 }
                 if(
@@ -268,14 +247,16 @@ class Room extends Component {
                 if(
                     item.val == 'become_admin' && 
                     item.op == 'ADD'
-                ) { //处理下麦
+                ) { //处理管理员变更
                     _this.handle_become_admin(item.key)
                     return
                 }
             })
         };
 
-        emedia.mgr.onRoleChanged = function (role, confr) {
+        emedia.mgr.onRoleChanged = function (role) {
+
+            
             let { user_room } = _this.state;
 
             // 被允许上麦
@@ -285,6 +266,7 @@ class Room extends Component {
             ) {
                 user_room.role = role;
                 _this.setState({ user_room },_this.publish);
+                message.success('你已经上麦成功,并且推流成功')
                 return
             }
 
@@ -294,12 +276,24 @@ class Room extends Component {
                 role == 7
             ) {
                 _this.become_admin()
+                user_room.role = role;
+                _this.setState({ user_room });
+
+                return
             }
             
             
-            user_room.role = role;
 
-            _this.setState({ user_room });
+            // 被允许下麦
+            if(
+                (user_room.role == 3 || user_room.role == 7) &&
+                role == 1
+            ) {
+                user_room.role = role;
+                _this.setState({ user_room });
+                message.success('你已经下麦了,并且停止推流')
+                return
+            }
 
         };
     }
@@ -323,42 +317,63 @@ class Room extends Component {
         emedia.mgr.publish({ audio, video });
     }
 
-    // 上麦申请
-    apply_talker() {
-        let { name } = this.state.user;
-
-        if(!name) {
+    _get_nickName_by_username(username) {
+        if(!username){
             return
         }
 
-        name = name.split('_')[1] // easemob_xxx fk格式请求后台 设置会议属性使用昵称
+        let member_name = 'easemob-demo#chatdemoui_' + username;
+        let nickName = username;
+        let { stream_list } = this.state;
+        stream_list.map(item => {
+            if(
+                item &&
+                item.member &&
+                item.member.name == member_name
+            ){
+                nickName = item.member.nickName || username
+            }
+        })
+
+        return nickName
+    }
+    // 上麦申请
+    apply_talker() {
+        let { username } = this.state.user;
+
+        message.success('上麦申请已发出，请等待主持人同意')
+        
+        if(!username) {
+            return
+        }
+
         let options = {
-            key:name,
+            key:username,
             val:'request_tobe_speaker'
         }
         emedia.mgr.setConferenceAttrs(options)
     }
-    handle_apply_talker(useid) {
-        if(!useid){
+    handle_apply_talker(username) {
+        if(!username){
             return
         }
 
-        let member_name = 'easemob-demo#chatdemoui_' + useid; // sdk 需要一个fk 格式的name
+        let member_name = 'easemob-demo#chatdemoui_' + username; // sdk 需要一个fk 格式的username
         const { confirm } = Modal;
 
         let confr = this.state.user_room;
 
-        // delete cattrs,处理完请求删除会议属性
-        let options = {
-            key:useid,
-            val:'request_tobe_speaker'
-        }
-
         confirm({
-            title:`是否同意${useid}的上麦请求`,
+            title:`是否同意${this._get_nickName_by_username(username)}的上麦请求`,
             async onOk() {
                 await emedia.mgr.grantRole(confr, [member_name], 3);
-                emedia.mgr.deleteConferenceAttrs(options)
+
+                // delete cattrs,处理完请求删除会议属性
+                let options = {
+                    key:username,
+                    val:'request_tobe_speaker'
+                }
+                emedia.mgr.deleteConferenceAttrs(options);
             },
             cancelText:'取消',
             okText:'同意'
@@ -369,44 +384,48 @@ class Room extends Component {
     // 下麦申请
     apply_audience() {
 
-        let { name } = this.state.user;
+        let { username } = this.state.user;
+        let { role } = this.state.user_room
 
-        if(!name) {
+        if(!username) {
             return
         }
-        name = name.split('_')[1] // easemob_xxx fk格式请求后台 设置会议属性使用昵称
+
+        if(role != 7){
+            message.success('下麦申请已发出，请等待主持人同意')
+        }
         let options = {
-            key:name,
+            key:username,
             val:'request_tobe_audience'
         }
         emedia.mgr.setConferenceAttrs(options)
     }
     
-    async handle_apply_audience(useid) {
-        if(!useid){
+    async handle_apply_audience(username) {
+        if(!username){
             return
         }
 
         const { confirm } = Modal;
 
-        let member_name = 'easemob-demo#chatdemoui_' + useid; // sdk 需要一个fk 格式的name
+        let member_name = 'easemob-demo#chatdemoui_' + username; // sdk 需要一个fk 格式的name
         let confr = this.state.user_room;
 
         // delete cattrs,处理完请求删除会议属性
         let options = {
-            key:useid,
+            key:username,
             val:'request_tobe_audience'
         }
 
-        let { name } = this.state.user;
-        name = name.split('_')[1];
-        if( useid == name) { //管理员下麦自己
+        let { username:my_username } = this.state.user;
+
+        if( username == my_username) { //管理员下麦自己
             await emedia.mgr.grantRole(confr, [member_name], 1);
             emedia.mgr.deleteConferenceAttrs(options)
 
         }else {
             confirm({
-                title:`是否同意${useid}的下麦请求`,
+                title:`是否同意${this._get_nickName_by_username(username)}的下麦请求`,
                 async onOk() {
                     await emedia.mgr.grantRole(confr, [member_name], 1);
                     emedia.mgr.deleteConferenceAttrs(options)
@@ -418,29 +437,33 @@ class Room extends Component {
     }
 
     become_admin() {
-        let useid = this.state.user.name.split('_')[1]
+        let { username} = this.state.user
 
         let options = {
-            key:useid,
+            key:username,
             val:'become_admin'
         }
         emedia.mgr.setConferenceAttrs(options)
+        emedia.mgr.deleteConferenceAttrs(options)
     }
-    handle_become_admin(useid) {
+    handle_become_admin(username) {
 
-        if(!useid) {
+        if(!username) {
             return
         }
 
         let { stream_list } = this.state;
 
-        stream_list.map(item => { //便利所有 stream_list 将这个流的role 变为管理员
+        let _this = this;
+        stream_list.map(item => { //遍历所有 stream_list 将这个流的role 变为管理员
             if(item && item.member){
-                let name = item.member.name;
+                let name = item.member.name; //带有 appkey + usernmae 的格式
                 name = name.split('_')[1]
-                if(name == useid) {
+                if(name == username) {
                     item.member.role = emedia.mgr.Role.ADMIN
+                    message.success(`${_this._get_nickName_by_username(username)} 成为了管理员`)
                 }
+
             }
         })
 
@@ -766,8 +789,7 @@ class Room extends Component {
         }
 
         let { id, aoff, voff } = stream;
-        let { name, role } = member;
-        name = name.split('_')[1];
+        let { nickName, role } = member;
 
         let is_me = false; //判断是否是自己
         if(
@@ -786,10 +808,10 @@ class Room extends Component {
 
                 <div className="info">
                     <span className="name">
-                        { name + (role == 7 ? '(管理员)' : '') + (is_me ? '(我)' : '')}
+                        { nickName + (role == 7 ? '(管理员)' : '') + (is_me ? '(我)' : '')}
                     </span>
 
-                    <img src={get_img_url_by_name('no-speak-icon')}/>
+                    {/* <img src={get_img_url_by_name('no-speak-icon')}/> */}
                     <div className="status-icon">
                         <img 
                             src={get_img_url_by_name('audio-icon')} 
@@ -800,7 +822,7 @@ class Room extends Component {
                     </div>
                 </div>
 
-                <Popconfirm
+                {/* <Popconfirm
                     title="是否禁言该用户?"
                     placement="topLeft"
                     // onConfirm={confirm}
@@ -810,7 +832,7 @@ class Room extends Component {
                     getPopupContainer = {() => document.querySelector('.ant-drawer-body')}
                 >
                     <span className="no-speak-action">禁言</span>
-                </Popconfirm>
+                </Popconfirm> */}
                 
                 <video ref={`list-video-${id}`} autoPlay></video>
             </div>
@@ -826,36 +848,57 @@ class Room extends Component {
         return (
             <div className="actions-wrap">
 
-                <img src={get_img_url_by_name('apply-icon')} />
+                <img src={get_img_url_by_name('apply-icon')} style={{visibility:'hidden'}}/>
                 <div className="actions">
                     {
-                        <img src={audio ? 
-                                    get_img_url_by_name('audio-is-open-icon') : 
-                                    get_img_url_by_name('audio-is-close-icon')} 
-                                onClick={() => this.toggle_audio()}/>
+                        <Tooltip title={ audio ? '静音' : '解除静音'}>
+                            <img src={audio ? 
+                                        get_img_url_by_name('audio-is-open-icon') : 
+                                        get_img_url_by_name('audio-is-close-icon')} 
+                                    onClick={() => this.toggle_audio()}/>
+                        </Tooltip>
                            
                     }
                     {
-                         <img style={{margin:'0 10px'}}
-                                src={video ? 
-                                    get_img_url_by_name('video-is-open-icon') : 
-                                    get_img_url_by_name('video-is-close-icon')} 
-                                onClick={() => this.toggle_video()}/>
+                        <Tooltip title={ video ? '关闭视频' : '开启视频'}>
+                            <img style={{margin:'0 10px'}}
+                                   src={video ? 
+                                       get_img_url_by_name('video-is-open-icon') : 
+                                       get_img_url_by_name('video-is-close-icon')} 
+                                   onClick={() => this.toggle_video()}/>
+                        </Tooltip>
                     }
                     {
                         role == 1 ? 
-                        <img src={get_img_url_by_name('apply-to-talker')} onClick={() => this.apply_talker()}/> :
-                        <img src={get_img_url_by_name('apply-to-audience')} onClick={() => this.apply_audience()}/> 
+                        <Tooltip title='申请上麦'>
+                            <img 
+                                src={get_img_url_by_name('apply-to-talker-icon')} 
+                                onClick={() => this.apply_talker()}
+                            />
+                        </Tooltip> :
+                        <Tooltip title='下麦'>
+                            <img 
+                                src={get_img_url_by_name('apply-to-audience-icon')} 
+                                onClick={() => this.apply_audience()}
+                            /> 
+                        </Tooltip>
+
                     }
-                    {/* {
+                    {
                         shared_desktop ? 
-                        <Button 
-                            type="primary"
-                            onClick={() => this.stop_share_desktop()}>停止共享桌面</Button> :
-                        <Button 
-                            type="primary"
-                            onClick={() => this.share_desktop()}>共享桌面</Button>
-                    } */}
+                        <Tooltip title='停止共享桌面'>
+                            <img 
+                                src={get_img_url_by_name('stop-share-desktop-icon')} 
+                                onClick={() => this.stop_share_desktop()}
+                            />
+                        </Tooltip> :
+                        <Tooltip title='共享桌面'>
+                            <img 
+                                src={get_img_url_by_name('share-desktop-icon')} 
+                                onClick={() => this.share_desktop()}
+                            /> 
+                        </Tooltip>
+                    }
                 </div>
                 <img 
                     src={get_img_url_by_name('expand-icon')} 
@@ -950,9 +993,9 @@ class Room extends Component {
                                 ],
                             })(
                                 <Input
-                                prefix={<Icon type="user" style={{ color: 'rgba(0,0,0,.25)' }} />}
+                                prefix={<Icon type="home" style={{ color: 'rgba(0,0,0,.25)' }} />}
                                 placeholder="房间名称"
-                                />,
+                                />
                             )}
                         </Item>
                         <Item>
@@ -967,10 +1010,19 @@ class Room extends Component {
                             prefix={<Icon type="lock" style={{ color: 'rgba(0,0,0,.25)' }} />}
                             type="password"
                             placeholder="房间密码"
-                            />,
+                            />
                         )}
                         </Item>
-        
+                        <Item>
+                        {getFieldDecorator('nickName')(
+                            <Input
+                                prefix={<Icon type="user" style={{ color: 'rgba(0,0,0,.25)' }} />}
+                                type="text"
+                                placeholder="加入会议的昵称"
+                            />
+                        )}
+                        </Item>
+
                         {/* <div>会议设置</div> */}
                         
                         <Row 
