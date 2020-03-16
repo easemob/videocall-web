@@ -12,8 +12,8 @@
 5. npm run build:prod 生产环境
 
 6. HTTPS=true npm start 使用 HTTPS 环境（共享桌面必须） 
-`使用技术栈`
 
+`使用技术栈`
 
 1. create-react-app + antd + axios
 

@@ -103,6 +103,11 @@ class Room extends Component {
         try {
             const user_room = await emedia.mgr.joinRoom(params);
     
+            if(user_room.error){
+                message.error(user_room.errorMessage);
+                this.setState({ loading:false })
+                return
+            }
             let _this = this;
             this.setState({ 
                 joined: true,
