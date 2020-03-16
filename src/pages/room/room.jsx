@@ -22,8 +22,6 @@ import emedia from 'easemob-emedia';
 import login from './login.js'
 
 // assets
-import logo from '../../assets/images/logo.png';
-console.log('logo url', logo);
 
 const requireContext = require.context('../../assets/images', true, /^\.\/.*\.png$/)// 通过webpack 获取 img
 const get_img_url_by_name = (name) => {
@@ -150,7 +148,6 @@ class Room extends Component {
         } 
     }
 
-
     componentWillUnmount() {
         clearInterval(this.timeID);
     }
@@ -249,7 +246,6 @@ class Room extends Component {
 
         emedia.mgr.onRoleChanged = function (role) {
 
-            
             let { user_room } = _this.state;
 
             // 被允许上麦
@@ -263,9 +259,6 @@ class Room extends Component {
                 return
             }
 
-            
-            
-
             // 被允许下麦
             if(
                 (user_room.role == 3 || user_room.role == 7) &&
@@ -277,6 +270,9 @@ class Room extends Component {
                 return
             }
 
+            // 变成管理员
+            user_room.role = role;
+            _this.setState({ user_room });
         };
 
         emedia.mgr.onAdminChanged = function(admin) {
@@ -300,7 +296,7 @@ class Room extends Component {
     }
     publish() {
         let { role } = this.state.user_room
-        if(role == 1){
+        if(role == 1){//观众不推流
             return
         }
         let { audio,video } = this.state //push 流取off(关) 的反值
@@ -630,8 +626,6 @@ class Room extends Component {
 
     //监听音视频变化
     _on_media_chanaged() {
-        
-
          this.set_stream_item_changed = (constaints, id) => {
 
             if(!id || !constaints) {
@@ -663,9 +657,6 @@ class Room extends Component {
             let el = this.refs[key];
             let stream_id = key.split('-')[2];
             emedia.mgr.onMediaChanaged(el, function (constaints) {
-                console.log('stream_id',stream_id);
-                console.log('constaints',constaints);
-                
                 _this.set_stream_item_changed(constaints, stream_id)
             });
         } 
