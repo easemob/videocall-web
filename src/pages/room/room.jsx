@@ -794,7 +794,8 @@ class Room extends Component {
         }
 
         let { id, aoff, voff } = stream;
-        let { nickName, role } = member;
+        let { role } = member;
+        let nickName = member.nickName || member.name;
 
         let is_me = false; //判断是否是自己
         if(
