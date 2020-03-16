@@ -112,7 +112,7 @@ class Room extends Component {
                 _this.get_confr_info();
             })
     
-            this.startTime()
+            // this.startTime()
             
         } catch (error) { 
             if(error.error == -200){//主播人数已满
@@ -168,7 +168,7 @@ class Room extends Component {
         emedia.mgr.onStreamRemoved = function (member, stream) {
             console.log('onStreamRemoved',member,stream);
 
-            _this._on_stream_removeed(stream)
+            _this._on_stream_removed(stream)
         };
         emedia.mgr.onMemberJoined = function (member) {
             console.log('onMemberJoined',member);
@@ -218,7 +218,7 @@ class Room extends Component {
         emedia.mgr.onConfrAttrsUpdated = function(cattrs){ 
             console.log('onConfrAttrsUpdated', cattrs);
             // 会议属性变更
-            // 上麦、下麦、管理员变更 遍历判断
+            // 上麦、下麦、申请成为管理员 遍历判断
             // 
 
             let { username:my_username } = _this.state.user //自己的name
@@ -244,13 +244,6 @@ class Room extends Component {
                     return
                 }
 
-                if(
-                    item.val == 'become_admin' && 
-                    item.op == 'ADD'
-                ) { //处理管理员变更
-                    _this.handle_become_admin(item.key)
-                    return
-                }
             })
         };
 
@@ -270,17 +263,6 @@ class Room extends Component {
                 return
             }
 
-            // 变为管理员
-            if(
-                user_room.role == 3 &&
-                role == 7
-            ) {
-                _this.become_admin()
-                user_room.role = role;
-                _this.setState({ user_room });
-
-                return
-            }
             
             
 
@@ -296,6 +278,14 @@ class Room extends Component {
             }
 
         };
+
+        emedia.mgr.onAdminChanged = function(admin) {
+            let { memberId } = admin;
+            if(!memberId){
+                return
+            }
+            _this.admin_changed(memberId)
+        }
     }
 
     leave() {
@@ -436,32 +426,20 @@ class Room extends Component {
         }
     }
 
-    become_admin() {
-        let { username} = this.state.user
+    admin_changed(memberId) {
 
-        let options = {
-            key:username,
-            val:'become_admin'
-        }
-        emedia.mgr.setConferenceAttrs(options)
-        emedia.mgr.deleteConferenceAttrs(options)
-    }
-    handle_become_admin(username) {
-
-        if(!username) {
+        if(!memberId) {
             return
         }
 
         let { stream_list } = this.state;
 
-        let _this = this;
         stream_list.map(item => { //遍历所有 stream_list 将这个流的role 变为管理员
             if(item && item.member){
-                let name = item.member.name; //带有 appkey + usernmae 的格式
-                name = name.split('_')[1]
-                if(name == username) {
-                    item.member.role = emedia.mgr.Role.ADMIN
-                    message.success(`${_this._get_nickName_by_username(username)} 成为了管理员`)
+                if(memberId == item.member.id) {
+                    item.member.role = emedia.mgr.Role.ADMIN;
+                    let name = item.member.nickName || item.member.name //优先获取昵称
+                    message.success(`${name} 成为了管理员`)
                 }
 
             }
@@ -607,7 +585,7 @@ class Room extends Component {
 
         this.setState({ stream_list:stream_list },this._stream_bind_video)
     } 
-    _on_stream_removeed(stream) {
+    _on_stream_removed(stream) {
         if(!stream){
             return
         }
@@ -986,7 +964,7 @@ class Room extends Component {
                         <div style={{margin:'17px 0 45px'}}>欢迎使用环信多人会议</div>
                         <Item>
                             {getFieldDecorator('roomName', {
-                                initialValue: '',
+                                initialValue: 'room-8',
                                 rules: [
                                     { required: true, message: '请输入房间名称' },
                                     { min:3 , message: '房间名称不能少于3位'}
@@ -1000,7 +978,7 @@ class Room extends Component {
                         </Item>
                         <Item>
                         {getFieldDecorator('password', {
-                            initialValue: '',
+                            initialValue: '123',
                             rules: [
                                 { required: true, message: '请输入房间密码' },
                                 { min:3 , message: '密码长度不能小于3位'}
