@@ -130,10 +130,18 @@ class Room extends Component {
         let { user_room } = this.state;
         user_room.role = role;
         this.props.form.validateFields((err, values) => {
+            
+            let { audio, video } = _this.state;
+            if(role == 1){//观众默认关闭摄像头、麦克风
+                audio = false;
+                video = false;
+            }
             _this.setState({
                 roomName: values.roomName,
                 password: values.password,
                 nickName: values.nickName,
+                audio,
+                video,
                 user_room
             },() => {
                 if (!err) {
@@ -270,7 +278,8 @@ class Room extends Component {
                 role == 3
             ) {
                 user_room.role = role;
-                _this.setState({ user_room },_this.publish);
+                let audio = true;//放开音频,否则无法推流
+                _this.setState({ user_room, audio },_this.publish);
                 message.success('你已经上麦成功,并且推流成功')
                 return
             }
