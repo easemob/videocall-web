@@ -995,12 +995,16 @@ class Room extends Component {
                                 initialValue: '',
                                 rules: [
                                     { required: true, message: '请输入房间名称' },
-                                    { min:3 , message: '房间名称不能少于3位'}
+                                    { min:3 , message: '房间名称不能少于3位'},
+                                    { pattern: /^[a-zA-Z0-9_-]*$/, message: '请输入中文、英文、数字、减号或下划线'},
                                 ],
+                                
                             })(
                                 <Input
                                 prefix={<Icon type="home" style={{ color: 'rgba(0,0,0,.25)' }} />}
                                 placeholder="房间名称"
+                                maxLength={18}
+                                autoComplete="off"
                                 />
                             )}
                         </Item>
@@ -1009,13 +1013,16 @@ class Room extends Component {
                             initialValue: '',
                             rules: [
                                 { required: true, message: '请输入房间密码' },
-                                { min:3 , message: '密码长度不能小于3位'}
+                                { min:3 , message: '密码长度不能小于3位'},
+                                { pattern: /^[a-zA-Z0-9_-]*$/, message: '请输入中文、英文、数字、减号或下划线'},
+                                { max:18, message:'请小于18位'}
                             ],
                         })(
                             <Input
                             prefix={<Icon type="lock" style={{ color: 'rgba(0,0,0,.25)' }} />}
                             type="password"
                             placeholder="房间密码"
+                            autoComplete="off"
                             />
                         )}
                         </Item>
