@@ -976,7 +976,7 @@ class Room extends Component {
                         <div style={{margin:'17px 0 45px'}}>欢迎使用环信多人会议</div>
                         <Item>
                             {getFieldDecorator('roomName', {
-                                initialValue: 'room-8',
+                                initialValue: '',
                                 rules: [
                                     { required: true, message: '请输入房间名称' },
                                     { min:3 , message: '房间名称不能少于3位'},
@@ -994,7 +994,7 @@ class Room extends Component {
                         </Item>
                         <Item>
                         {getFieldDecorator('password', {
-                            initialValue: '123',
+                            initialValue: '',
                             rules: [
                                 { required: true, message: '请输入房间密码' },
                                 { min:3 , message: '密码长度不能小于3位'},
