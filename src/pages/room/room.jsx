@@ -1005,7 +1005,7 @@ class Room extends Component {
                                 rules: [
                                     { required: true, message: '请输入房间名称' },
                                     { min:3 , message: '房间名称不能少于3位'},
-                                    { pattern: /^[a-zA-Z0-9_-]*$/, message: '请输入中文、英文、数字、减号或下划线'},
+                                    { pattern: /^[\u4e00-\u9fa5\w-]*$/, message: '请输入中文、英文、数字、减号或下划线'},
                                 ],
                                 
                             })(
@@ -1023,7 +1023,7 @@ class Room extends Component {
                             rules: [
                                 { required: true, message: '请输入房间密码' },
                                 { min:3 , message: '密码长度不能小于3位'},
-                                { pattern: /^[a-zA-Z0-9_-]*$/, message: '请输入中文、英文、数字、减号或下划线'},
+                                { pattern: /^[\u4e00-\u9fa5\w-]*$/, message: '请输入中文、英文、数字、减号或下划线'},
                                 { max:18, message:'请小于18位'}
                             ],
                         })(
