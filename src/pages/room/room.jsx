@@ -285,8 +285,14 @@ class Room extends Component {
             }
 
             // 变成管理员
-            user_room.role = role;
-            _this.setState({ user_room });
+            if(
+                user_room.role == 3 &&
+                role == 7
+            ) {
+                let { joinId } = _this.state.user_room;
+                user_room.role = role;
+                _this.setState({ user_room }, _this.admin_changed(joinId));//变为管理员，修改显示
+            }
         };
 
         emedia.mgr.onAdminChanged = function(admin) {
@@ -351,6 +357,7 @@ class Room extends Component {
             key:username,
             val:'request_tobe_speaker'
         }
+        
         emedia.mgr.setConferenceAttrs(options)
     }
     handle_apply_talker(username) {
@@ -459,7 +466,6 @@ class Room extends Component {
 
     }
     toggle_main(index) {
-
         if(!index) {
             return
         }
