@@ -97,7 +97,7 @@ class Room extends Component {
             token,
             config:{ 
                 nickName,
-                // maxTalkerCount: 1
+                maxTalkerCount: 1
             }
         }
 
@@ -105,7 +105,7 @@ class Room extends Component {
             const user_room = await emedia.mgr.joinRoom(params);
     
             if(user_room.error == -200) { //主播已满
-                this.setState({ talker_is_full: true });
+                this.setState({ talker_is_full: true, loading:false });
                 return
             }
             if(user_room.error){
