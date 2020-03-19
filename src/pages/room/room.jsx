@@ -95,12 +95,19 @@ class Room extends Component {
             role,
             memName: 'easemob-demo#chatdemoui_' + username, // appkey + username 格式（后台必须）
             token,
-            config:{ nickName }
+            config:{ 
+                nickName,
+                // maxTalkerCount: 1
+            }
         }
 
         try {
             const user_room = await emedia.mgr.joinRoom(params);
     
+            if(user_room.error == -200) { //主播已满
+                this.setState({ talker_is_full: true });
+                return
+            }
             if(user_room.error){
                 message.error(user_room.errorMessage);
                 this.setState({ loading:false })
@@ -115,12 +122,11 @@ class Room extends Component {
                 _this.get_confr_info();
             })
     
-            // this.startTime()
+            this.startTime()
             
         } catch (error) { 
-            if(error.error == -200){//主播人数已满
-                this.setState({ talker_is_full: true })
-            }
+            message.error(user_room.errorMessage);
+            this.setState({ loading:false })
         }
     }
     join_handle(role){
@@ -168,7 +174,7 @@ class Room extends Component {
         let _this = this;
         
         emedia.config({
-            restPrefix: process.env.REACT_APP_HOST
+            restPrefix: process.env.REACT_APP_RTC_HOST
         });
         emedia.mgr.onStreamAdded = function (member, stream) {
             console.log('onStreamAdded >>>', member, stream);
@@ -652,7 +658,6 @@ class Room extends Component {
                 return
             }
 
-
             let { stream_list } = this.state
             let { aoff,voff } = constaints
             stream_list = stream_list.map(item => {
@@ -675,7 +680,7 @@ class Room extends Component {
         let _this = this;
         for (const key in this.refs) {
             let el = this.refs[key];
-            let stream_id = key.split('-')[2];
+            let stream_id = key.split('list-video-')[1];// 截取id list-video-***(stream_id)
             emedia.mgr.onMediaChanaged(el, function (constaints) {
                 _this.set_stream_item_changed(constaints, stream_id)
             });
@@ -976,7 +981,7 @@ class Room extends Component {
                         <div style={{margin:'17px 0 45px'}}>欢迎使用环信多人会议</div>
                         <Item>
                             {getFieldDecorator('roomName', {
-                                initialValue: '',
+                                initialValue: process.env.REACT_APP_ROOMNAME,
                                 rules: [
                                     { required: true, message: '请输入房间名称' },
                                     { min:3 , message: '房间名称不能少于3位'},
@@ -994,7 +999,7 @@ class Room extends Component {
                         </Item>
                         <Item>
                         {getFieldDecorator('password', {
-                            initialValue: '',
+                            initialValue: process.env.REACT_APP_ROOMPASSWORD,
                             rules: [
                                 { required: true, message: '请输入房间密码' },
                                 { min:3 , message: '密码长度不能小于3位'},

@@ -1,6 +1,6 @@
 import ajax from './ajax';
 
-const BASE = process.env.REACT_APP_HOST;
+const BASE = process.env.REACT_APP_IM_HOST;
 // const BASE = ''
 
 export const req_register = params => ajax(
