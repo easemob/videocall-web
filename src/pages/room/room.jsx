@@ -397,6 +397,11 @@ class Room extends Component {
     // 下麦申请
     apply_audience() {
 
+        let { stream_list } = this.state;
+        if(stream_list.length == 1){
+            message.warn('当前您是唯一主播，不允许下麦');
+            return
+        }
         let { username } = this.state.user;
         let { role } = this.state.user_room
 
