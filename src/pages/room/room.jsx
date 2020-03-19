@@ -76,7 +76,7 @@ class Room extends Component {
     // join fun start
     async join() {
 
-        this.setState({ loading:true })
+        this.setState({ loading:true, talker_is_full:false })
         let {
             roomName,
             password,
@@ -97,7 +97,7 @@ class Room extends Component {
             token,
             config:{ 
                 nickName,
-                maxTalkerCount: 1
+                // maxTalkerCount: 1
             }
         }
 
@@ -1061,7 +1061,7 @@ class Room extends Component {
                     <Modal
                         visible={this.state.talker_is_full}
                         closable={false}
-                        onOk={this.close_talker_model}
+                        onOk={() => this.join_handle(1)}
                         onCancel={this.close_talker_model}
                         okText="以观众身份登录"
                         cancelText="暂不登录"
