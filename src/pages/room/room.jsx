@@ -97,7 +97,7 @@ class Room extends Component {
             token,
             config:{ 
                 nickName,
-                // maxTalkerCount: 1
+                maxTalkerCount: 1
             }
         }
 
@@ -379,8 +379,22 @@ class Room extends Component {
         confirm({
             title:`是否同意${this._get_nickName_by_username(username)}的上麦请求`,
             async onOk() {
-                await emedia.mgr.grantRole(confr, [member_name], 3);
 
+                try {
+                    await emedia.mgr.grantRole(confr, [member_name], 3);
+                } catch (error) {
+                    if(error.error == -523){
+                        confirm({
+                            title:'主播人数已满，请选人下麦',
+                            cancelText:'取消',
+                            okText:'确定',
+                            onOk() {
+                                alert('选人下麦')
+                            }
+                        })
+                    }
+                }
+                
                 // delete cattrs,处理完请求删除会议属性
                 let options = {
                     key:username,
