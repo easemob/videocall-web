@@ -13,7 +13,9 @@ import {
     message,
     Tooltip,
     Drawer,
-    Popconfirm
+    Popconfirm,
+    List,
+    Avatar
 } from 'antd';
 import './room.less';
 
@@ -37,7 +39,121 @@ const get_img_url_by_name = (name) => {
 const Item = Form.Item 
 
 const { Header, Content, Footer } = Layout;
+class ToAudienceList extends Component {
+    state = {
+        checked_talkers: []//checked talkers name(also username)
+    }
+    onChange = (checkedValues) => {
+        this.setState({ checked_talkers: checkedValues})
+    }
+    confirm = () => {
+        let confr = this.props.user_room;
+        let { checked_talkers } = this.state
+        emedia.mgr.grantRole(confr, checked_talkers, 1);
+    }
+    render() {
+        let { stream_list, to_audience_list_show} = this.props;
+        return (
+            <Drawer 
+                title='主播人数已满，请选人下麦'
+                placement="left"
+                closable={false}
+                visible={to_audience_list_show}
+                mask={false}
+                getContainer={false}
+                width="336px"
+                className="to-audience-list"
+            >
+               <Checkbox.Group 
+                    onChange={this.onChange}
+               >
 
+                    { stream_list.map(item => {
+                        if(
+                            item &&
+                            item.member &&
+                            !item.member.is_me
+                        ) {
+                            return <Checkbox 
+                                        value={item.member.name}
+                                        key={item.member.name}
+                                   >
+                                        {item.member.nickName || item.member.name}
+                                   </Checkbox>
+                        }
+                    })}
+               </Checkbox.Group>
+               <div className='actions'>
+                    <Button 
+                        size='small' 
+                        style={{background:'transparent',color:'#fff'}}
+                        onClick={this.props.close_to_audience_list}
+                    >返回</Button> 
+                    <Button 
+                        size='small'
+                        onClick={this.confirm}
+                    >确定</Button> 
+               </div>
+            </Drawer>
+        )
+    }
+}
+
+class MuteAction extends Component {
+    state = {
+        mute_all: false
+    }
+    mute_all_action = () => {
+        let { mute_all } = this.state;
+        if(mute_all){
+            return
+        }
+
+        let { username } = this.props.user;
+
+        let options = {
+            key:username,
+            val:'mute_all'
+        }
+        
+        emedia.mgr.setConferenceAttrs(options)
+
+        message.success('已全体静音')
+        this.setState({ mute_all:true })
+    }
+    unmute_all_action = () => {
+        let { username } = this.props.user;
+
+        let options = {
+            key:username,
+            val:'unmute_all'
+        }
+        
+        emedia.mgr.setConferenceAttrs(options)
+        message.success('已解除全体静音')
+        this.setState({ mute_all:false })
+    }
+    render() {
+        let { mute_all } = this.state
+        return(
+            <div className='mute-action-wrapper'>
+                <Button 
+                    type={mute_all ? 'primary' : ''}
+                    onClick={this.mute_all_action}>全体静音</Button>
+                <Button
+                    onClick={this.unmute_all_action}>解除全体静音</Button>
+            </div>
+        )
+    }
+}
+
+class ManageTalker extends Component {
+    render() {
+        return (
+            <div className='manage-talker-mask'></div>
+        )
+    }
+}
 class Room extends Component {
     constructor(props) {
         super(props);
@@ -59,6 +175,7 @@ class Room extends Component {
             time:0,// 秒的单位
             stream_list: [null],//默认 main画面为空
             talker_list_show:false,
+            to_audience_list_show: true,
             audio:true,
             video:false,
 
@@ -97,7 +214,7 @@ class Room extends Component {
             token,
             config:{ 
                 nickName,
-                maxTalkerCount: 1
+                maxTalkerCount: 5
             }
         }
 
@@ -259,6 +376,70 @@ class Room extends Component {
                     _this.handle_apply_audience(item.key);
                     return
                 }
+                // 全体静音
+                if(
+                    item.val == 'mute_all' && 
+                    item.op == 'ADD'
+                ){
+
+                    if(role == emedia.mgr.Role.ADMIN ){
+                        let options = {
+                            key:my_username,
+                            val:'mute_all'
+                        }
+                        emedia.mgr.deleteConferenceAttrs(options);
+                    } else{
+                        //静音自己
+                        _this.close_audio()
+                    }
+
+                    return
+                }
+                
+
+                // 解除全体静音
+                if(
+                    item.val == 'unmute_all' && 
+                    item.op == 'ADD'
+                ){
+                    if(role == emedia.mgr.Role.ADMIN ){
+                        let options = {
+                            key:my_username,
+                            val:'unmute_all'
+                        }
+                        emedia.mgr.deleteConferenceAttrs(options);
+                    } else{
+                        //解除静音自己
+                        _this.open_audio()
+                    }
+                }
+
+                // 某些人员静音
+                if(
+                    item.val.indexOf('"action":"mute"') > -1 &&
+                    item.op == 'ADD'
+                ) {
+                    let val = JSON.parse(item.val);
+                    if(val.uids){
+                        if(val.uids.indexOf(my_username) > -1) {
+                            _this.close_audio()
+                        }
+                    }
+                }
+                // 某些人员解除静音
+                if(
+                    item.val.indexOf('"action":"unmute"') > -1 &&
+                    item.op == 'ADD'
+                ) {
+                    let val = JSON.parse(item.val);
+                    if(val.uids){
+                        if(val.uids.indexOf(my_username) > -1) {
+                            _this.open_audio()
+                        }
+                    }
+                }
+
+                
 
             })
         };
@@ -376,6 +557,7 @@ class Room extends Component {
 
         let confr = this.state.user_room;
 
+        let _this = this;
         confirm({
             title:`是否同意${this._get_nickName_by_username(username)}的上麦请求`,
             async onOk() {
@@ -389,7 +571,7 @@ class Room extends Component {
                             cancelText:'取消',
                             okText:'确定',
                             onOk() {
-                                alert('选人下麦')
+                                _this.setState({to_audience_list_show: true})
                             }
                         })
                     }
@@ -515,10 +697,11 @@ class Room extends Component {
             return
         }
 
+        
         if(!own_stream) {
             return
         }
-
+        
         let { video } = this.state
         if(video){
             await emedia.mgr.pauseVideo(own_stream);
@@ -557,6 +740,36 @@ class Room extends Component {
             audio = !audio
             this.setState({ audio })
         }
+    }
+
+    close_audio = async () => {
+        let { role } = this.state.user_room;
+        let { own_stream } = this.state;
+        if(role == 1){
+            return
+        }
+
+        if(!own_stream) {
+            return
+        }
+
+        await emedia.mgr.pauseAudio(own_stream);
+        this.setState({ audio:false })
+    }
+    open_audio = async () => {
+        let { role } = this.state.user_room;
+        let { own_stream } = this.state;
+        if(role == 1){
+            return
+        }
+
+        if(!own_stream) {
+            return
+        }
+
+        
+        await emedia.mgr.resumeAudio(own_stream);
+        this.setState({ audio: true })
     }
 
     audio_change = e => {
@@ -747,6 +960,7 @@ class Room extends Component {
     _get_drawer_component() {
         let _this = this;
         let { stream_list } = this.state;
+        let { role } = this.state.user_room;
         let { audienceTotal } = this.state.confr;
 
         function get_talkers() {
@@ -781,6 +995,7 @@ class Room extends Component {
                         return _this._get_video_item(item,index);
                     }
                 }) }
+                { role == 7 ? <MuteAction {...this.state}/> : ''}
             </Drawer>
         )
 
@@ -803,6 +1018,8 @@ class Room extends Component {
 
         let { id, aoff, voff } = stream;
         let { role } = member;
+        let { role:my_role } = this.state.user_room;//拿到我自己的角色
+
         let nickName = member.nickName || member.name.split('_')[1];
 
         let is_me = false; //判断是否是自己
@@ -849,6 +1066,7 @@ class Room extends Component {
                 </Popconfirm> */}
                 
                 <video ref={`list-video-${id}`} autoPlay></video>
+                { my_role == 7 ? <ManageTalker {...talker_item}/> : ''} {/* 不是管理员 不加载 */}
             </div>
         )
 
@@ -931,6 +1149,9 @@ class Room extends Component {
             talker_list_show:false
         })
     }
+    close_to_audience_list = () => {
+        this.setState({ to_audience_list_show: false })
+    }
     startTime() {
         let _this = this;
         this.timeID = setInterval(
@@ -986,7 +1207,8 @@ class Room extends Component {
         const { getFieldDecorator } = this.props.form;
 
         let { joined } = this.state;
-        let main_stream = this.state.stream_list[0]
+        let main_stream = this.state.stream_list[0];
+        let { role } = this.state.user_room;
 
         return (
             <div style={{width:'100%', height:'100%'}}>
@@ -1111,6 +1333,11 @@ class Room extends Component {
                     <Footer>
                         {this._get_footer_el()}
                     </Footer>
+                    {
+                        role == 7 ?
+                        <ToAudienceList {...this.state} close_to_audience_list={this.close_to_audience_list}/> :
+                        <i></i>
+                    }
                 </Layout>
             </div>
         )

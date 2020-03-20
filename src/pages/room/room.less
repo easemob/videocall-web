@@ -192,6 +192,32 @@
                     cursor: pointer;
                     z-index:1
                 }
+
+                .manage-talker-mask {
+                    box-sizing: content-box;
+                    position: absolute;
+                    top: 0;
+                    bottom: 0;
+                    left: 0px;
+                    right: 0px;
+                    overflow: hidden;
+                    &:before {
+                        content: ' ';
+                        position: absolute;
+                        z-index: 1;
+                        background-color: fade(#000, 50%);
+                        transition: all 0.3s;
+                        width: 100%;
+                        height: 100%;
+                        opacity: 0;
+                    }
+                }
+                .manage-talker-mask:hover {
+                    &:before {
+                      opacity: 1;
+                    }
+                    
+                  }
                 
             }
     
@@ -224,6 +250,7 @@
             }
             
         };
+        
         .expand-icon{
             position: absolute;
             left: 16px;
@@ -231,9 +258,32 @@
             z-index: 1;
             cursor: pointer;
             transform: rotate(180deg);
-        }   
-    }
+        }
+        
+        .mute-action-wrapper {
+            width: 100%;
+            position: absolute;
+            bottom: 0;
+            text-align: center;
 
+            button {
+                margin: 0 15px;
+            }
+            
+        }
+    }
+    .to-audience-list {
+        .ant-checkbox-wrapper {
+            color: #fff;
+        }
+
+        .actions {
+            text-align: center;
+            button {
+                margin: 0 14px;
+            }
+        }
+    }
     .ant-layout-footer {
         bottom: 16px;
         .actions-wrap {
