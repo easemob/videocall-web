@@ -150,7 +150,7 @@ class MuteAction extends Component {
 }
 
 class ManageTalker extends Component {
-    // 
+    // 静音某一人
     mute = usernames => {
         if(
             !usernames ||
@@ -177,6 +177,7 @@ class ManageTalker extends Component {
             message.success(`已设置${get_nickname(item)}为静音`)
         })
     }
+    // 解除静音某人
     unmute = usernames => {
         if(
             !usernames ||
@@ -201,23 +202,46 @@ class ManageTalker extends Component {
 
 
     }
+    // 更多的操作
+    more_action = ( {key} ) => {
+        
+        if(key == 'appoint_as_admin'){
+
+        } else if(key == 'move_out'){
+            this.move_out()
+        }
+    }
+    // 移出会议
+    move_out = () => {
+        
+
+        let { confr } = this.props;
+        let { memName } = this.props.member;
+
+        if(!confr || !memName){
+            return
+        }
+        emedia.mgr.kickMembersById(confr, [memName]);
+
+    }
+
     render() {
 
+        let { aoff } = this.props.stream;
+        let { name, id } = this.props.member;
+            name = name.split('_')[1]// delete appkey
 
         const menu = (
-            <Menu>
-                <Menu.Item>
+            <Menu onClick={this.more_action}>
+                <Menu.Item key="appoint_as_admin">
                     设为主持人
                 </Menu.Item>
-                <Menu.Item>
+                <Menu.Item key="move_out">
                     移出会议
                 </Menu.Item>
             </Menu>
         );
 
-        let { aoff } = this.props.stream;
-        let { name } = this.props.member;
-            name = name.split('_')[1]// delete appkey
         return (
             <div className='manage-talker-mask'>
                 <div className="action" ref="action-wrapper">
@@ -403,6 +427,9 @@ class Room extends Component {
             console.log('onMemberLeave', member, reason, failed);
             message.success(`${member.nickName || member.name} 退出了会议`);
 
+        };
+
+        emedia.mgr.onConferenceExit = function (reason, failed) {
             function get_failed_reason(failed) {
                 let reasons = {
                     '-9527' : "失败,网络原因",
@@ -427,7 +454,8 @@ class Room extends Component {
                 4: "网络原因",
                 5: "不支持",
                 10: "其他设备登录",
-                11: "会议关闭"
+                11: "会议关闭",
+                12: "被踢出了会议"
             }
 
             if(reason){
@@ -437,8 +465,8 @@ class Room extends Component {
             if(reason == 4 && failed){
                 reason_text = get_failed_reason(failed);
             }
+            message.warn(reason_text, 2, () => window.location.reload())
         };
-
         emedia.mgr.onConfrAttrsUpdated = function(cattrs){ 
             console.log('onConfrAttrsUpdated', cattrs);
             // 会议属性变更
@@ -604,7 +632,6 @@ class Room extends Component {
 
         if(is_confirm){
             emedia.mgr.exitConference();
-            window.location.reload()
         }
         
     }
@@ -933,7 +960,7 @@ class Room extends Component {
         if(stream.located()) {//自己 publish的流，添加role 属性
             let { role } = this.state.user_room;
             member.role = role;
-
+            member.is_me = true;
             if( stream.type != emedia.StreamType.DESKTOP ) { // 自己推的人像流（用来被控制开关摄像头）
                 this.setState({ own_stream: stream }) //用来控制流
             }
@@ -1128,7 +1155,7 @@ class Room extends Component {
         let { role, is_me } = member;
         let { role:my_role } = this.state.user_room;//拿到我自己的角色
         let { username:my_username } = this.state.user;//拿到我自己的username
-
+        let { confr } = this.state
         
         let nickName = member.nickName || member.name.split('_')[1];
 
@@ -1170,8 +1197,7 @@ class Room extends Component {
                 
                 <video ref={`list-video-${id}`} autoPlay></video>
                 { my_role == 7 ? <ManageTalker 
-                                    { ...talker_item } 
-                                    my_username={ my_username } 
+                                    { ...{stream, member, my_username, confr} } 
                                     _get_nickName_by_username={username => this._get_nickName_by_username(username)}/>
                                : ''} {/* 不是管理员 不加载 */}
             </div>
