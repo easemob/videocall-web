@@ -15,7 +15,9 @@ import {
     Drawer,
     Popconfirm,
     List,
-    Avatar
+    Avatar,
+    Dropdown,
+    Menu
 } from 'antd';
 import './room.less';
 
@@ -148,9 +150,93 @@ class MuteAction extends Component {
 }
 
 class ManageTalker extends Component {
+    // 
+    mute = usernames => {
+        if(
+            !usernames ||
+            !(usernames instanceof Array) ||
+            usernames.length == 0
+        ) {
+            return
+        }
+
+        let { my_username } = this.props;
+
+        let options = {
+            key:my_username,
+            val: JSON.stringify( { action:"mute","uids":usernames } ) 
+        }
+        
+        emedia.mgr.setConferenceAttrs(options);
+
+        let get_nickname = this.props._get_nickName_by_username;
+
+        usernames.map(item => {
+            console.log('get_nick', item);
+            
+            message.success(`已设置${get_nickname(item)}为静音`)
+        })
+    }
+    unmute = usernames => {
+        if(
+            !usernames ||
+            !(usernames instanceof Array) ||
+            usernames.length == 0
+        ) {
+            return
+        }
+
+        let { my_username } = this.props;
+        let options = {
+            key:my_username,
+            val: JSON.stringify( { action:"unmute","uids":usernames } ) 
+        }
+        
+        emedia.mgr.setConferenceAttrs(options);
+
+        let get_nickname = this.props._get_nickName_by_username;
+        usernames.map(item => {
+            message.success(`已解除${get_nickname(item)}的静音`)
+        })
+
+
+    }
     render() {
+
+
+        const menu = (
+            <Menu>
+                <Menu.Item>
+                    设为主持人
+                </Menu.Item>
+                <Menu.Item>
+                    移出会议
+                </Menu.Item>
+            </Menu>
+        );
+
+        let { aoff } = this.props.stream;
+        let { name } = this.props.member;
+            name = name.split('_')[1]// delete appkey
         return (
-            <div className='manage-talker-mask'></div>
+            <div className='manage-talker-mask'>
+                <div className="action" ref="action-wrapper">
+
+                    {
+                        aoff ? <Button size='small' onClick={() => this.unmute([name])}>解除静音</Button>
+                             : <Button size='small' onClick={() => this.mute([name])}>静音</Button>
+                    }
+                    
+                    <Dropdown 
+                        overlay={menu} 
+                        placement="bottomLeft"
+                        trigger={["click"]}
+                        getPopupContainer={() => this.refs['action-wrapper']}
+                    >
+                        <Button size='small'>更多</Button>
+                    </Dropdown>
+                </div>
+            </div>
         )
     }
 }
@@ -167,15 +253,20 @@ class Room extends Component {
             nickName:'',
             user: {},
             user_room: {
-                role: undefined
+                // role: undefined
+                role: 7
             },
             confr: {},
             own_stream:null,
             // join end
             time:0,// 秒的单位
             stream_list: [null],//默认 main画面为空
-            talker_list_show:false,
-            to_audience_list_show: true,
+            // stream_list: [null,{
+            //     member:{name:'sqx',role:3,id:1},
+            //     stream:{id:0}
+            // }],//默认 main画面为空
+            talker_list_show:true,
+            to_audience_list_show: false,
             audio:true,
             video:false,
 
@@ -239,7 +330,7 @@ class Room extends Component {
                 _this.get_confr_info();
             })
     
-            this.startTime()
+            // this.startTime()
             
         } catch (error) { 
             message.error(user_room.errorMessage);
@@ -419,10 +510,18 @@ class Room extends Component {
                     item.val.indexOf('"action":"mute"') > -1 &&
                     item.op == 'ADD'
                 ) {
-                    let val = JSON.parse(item.val);
-                    if(val.uids){
-                        if(val.uids.indexOf(my_username) > -1) {
-                            _this.close_audio()
+                    if( role == emedia.mgr.Role.ADMIN ) {
+                        let options = {
+                            key:my_username,
+                            val:item.val
+                        }
+                        emedia.mgr.deleteConferenceAttrs(options);
+                    } else {
+                        let val = JSON.parse(item.val);
+                        if(val.uids){
+                            if(val.uids.indexOf(my_username) > -1) {
+                                _this.close_audio()
+                            }
                         }
                     }
                 }
@@ -431,12 +530,20 @@ class Room extends Component {
                     item.val.indexOf('"action":"unmute"') > -1 &&
                     item.op == 'ADD'
                 ) {
-                    let val = JSON.parse(item.val);
-                    if(val.uids){
-                        if(val.uids.indexOf(my_username) > -1) {
-                            _this.open_audio()
+                    if( role == emedia.mgr.Role.ADMIN ) {
+                        let options = {
+                            key:my_username,
+                            val:item.val
                         }
-                    }
+                        emedia.mgr.deleteConferenceAttrs(options);
+                    } else {
+                        let val = JSON.parse(item.val);
+                        if(val.uids){
+                            if(val.uids.indexOf(my_username) > -1) {
+                                _this.open_audio()
+                            }
+                        }
+                    }    
                 }
 
                 
@@ -515,9 +622,11 @@ class Room extends Component {
             return
         }
 
+        
         let member_name = 'easemob-demo#chatdemoui_' + username;
         let nickName = username;
         let { stream_list } = this.state;
+        
         stream_list.map(item => {
             if(
                 item &&
@@ -527,7 +636,6 @@ class Room extends Component {
                 nickName = item.member.nickName || username
             }
         })
-
         return nickName
     }
     // 上麦申请
@@ -1017,17 +1125,12 @@ class Room extends Component {
         }
 
         let { id, aoff, voff } = stream;
-        let { role } = member;
+        let { role, is_me } = member;
         let { role:my_role } = this.state.user_room;//拿到我自己的角色
+        let { username:my_username } = this.state.user;//拿到我自己的username
 
+        
         let nickName = member.nickName || member.name.split('_')[1];
-
-        let is_me = false; //判断是否是自己
-        if(
-            this.state.user_room.joinId == stream.owner.id
-        ) {
-            is_me = true
-        }
 
 
         return (
@@ -1066,7 +1169,11 @@ class Room extends Component {
                 </Popconfirm> */}
                 
                 <video ref={`list-video-${id}`} autoPlay></video>
-                { my_role == 7 ? <ManageTalker {...talker_item}/> : ''} {/* 不是管理员 不加载 */}
+                { my_role == 7 ? <ManageTalker 
+                                    { ...talker_item } 
+                                    my_username={ my_username } 
+                                    _get_nickName_by_username={username => this._get_nickName_by_username(username)}/>
+                               : ''} {/* 不是管理员 不加载 */}
             </div>
         )
 
