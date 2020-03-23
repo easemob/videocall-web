@@ -1,5 +1,5 @@
 import React, {Component} from 'react' 
-
+import ReactDOM from 'react-dom'
 
 import { 
     Layout,
@@ -264,6 +264,45 @@ class ManageTalker extends Component {
         )
     }
 }
+
+
+const LeaveConfirmModal = {
+
+    visible: false,
+    show() {
+        this.visible = true;
+        this.render();
+    },
+
+    close() {
+        this.visible = false;
+        this.render()
+    },
+
+
+    render() {
+        let dom = document.querySelector('#leave-confirm-modal');
+        if(!dom) {
+            dom = document.createElement('div');
+            dom.setAttribute('id', 'leave-confirm-modal');
+            document.body.appendChild(dom);
+        }
+
+        ReactDOM.render(
+            <Modal 
+                visible={this.visible}
+                onCancel={() => this.close()}
+                footer={null}
+            >
+                <p>如果您不想结束会议请在离开会议前指定新的主持人</p>
+                <Button type="primary">离开会议</Button>
+                <Button type="primary">结束会议</Button>
+                <Button >取消</Button>
+            </Modal>, dom)
+    }
+}
+
+
 class Room extends Component {
     constructor(props) {
         super(props);
@@ -389,6 +428,8 @@ class Room extends Component {
     // join fun end
 
     async componentDidMount () {
+
+        LeaveConfirmModal.show();
 
         const user = await login();
         this.setState({ user })
@@ -628,11 +669,20 @@ class Room extends Component {
 
     leave() {
 
+        let { role } = this.state.user_room;
+
+        if(role == 7) {
+            
+            // this.setState({ leave_confirm_show: true})
+        }
+
+        return
         let is_confirm = window.confirm('确定退出会议吗？');
 
         if(is_confirm){
             emedia.mgr.exitConference();
         }
+
         
     }
     publish() {
