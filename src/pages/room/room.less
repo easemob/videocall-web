@@ -17,8 +17,15 @@
         width: 100%;
         padding-left: 26px;
     }
+
+    .set-nickname-modal, .setting-modal {
+        .ant-modal-content {
+            border-radius: 5px;
+        }
+    }
 }
 .login-form {
+    position: relative;
     width:470px;
     background:rgba(255,255,255,1);
     box-shadow:0px 0px 1px 0px rgba(0,0,0,0.25);
@@ -49,32 +56,46 @@
     .ant-form-explain {
         text-align: left;
     }
+
+    .setting-handle {
+        position: absolute;
+        width: 60px;
+        height: 30px;
+
+        right: 20px;
+        top: 20px;
+    }
+
 }
 
-.ant-modal-content {
-    text-align: center;
-    overflow: hidden;
-    border-radius: 0;
-    img {
-        margin: 82px 0 26px 0;
-    }
-    .ant-modal-footer {
-        margin: 96px 0 32px 0;
-        border: none;
-
-        > div {
-            display: flex;
-            justify-content: space-between;
-            width: 100%;
-
+.talker-is-full-modal {
+    .ant-modal-content {
+        text-align: center;
+        overflow: hidden;
+        border-radius: 0;
+        img {
+            margin: 82px 0 26px 0;
         }
-        button {
-            width: 182px;
-            height: 40px;
+        .ant-modal-footer {
+            margin: 96px 0 32px 0;
+            border: none;
+    
+            > div {
+                display: flex;
+                justify-content: space-between;
+                width: 100%;
+    
+            }
+            button {
+                width: 182px;
+                height: 40px;
+            }
+    
         }
-
     }
 }
+
+
 .meeting {
     height: 100%;
     background: #dadada;

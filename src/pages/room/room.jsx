@@ -17,7 +17,8 @@ import {
     List,
     Avatar,
     Dropdown,
-    Menu
+    Menu,
+    Switch
 } from 'antd';
 import './room.less';
 
@@ -76,12 +77,12 @@ class ToAudienceList extends Component {
                             item.member &&
                             !item.member.is_me
                         ) {
-                            return <Checkbox 
+                            return (<Checkbox 
                                         value={item.member.name}
                                         key={item.member.name}
                                    >
                                         {item.member.nickName || item.member.name}
-                                   </Checkbox>
+                                   </Checkbox>)
                         }
                     })}
                </Checkbox.Group>
@@ -206,9 +207,27 @@ class ManageTalker extends Component {
     more_action = ( {key} ) => {
         
         if(key == 'appoint_as_admin'){
-
+            this.appoint_as_admin()
         } else if(key == 'move_out'){
             this.move_out()
+        }
+    }
+    // 指定为主持人
+    appoint_as_admin = async () => {
+        let { confr } = this.props;
+        let { memName } = this.props.member;
+
+        if(!confr || !memName){
+            return
+        }
+
+        try {
+            await emedia.mgr.grantRole(confr, [memName], 7);
+
+            let get_nickname = this.props._get_nickName_by_username;
+            message.success(`已把${get_nickname(memName)}设为主持人`)
+        } catch (error) {
+            message.error('设为主持人失败')
         }
     }
     // 移出会议
@@ -228,14 +247,14 @@ class ManageTalker extends Component {
     render() {
 
         let { aoff } = this.props.stream;
-        let { name, id } = this.props.member;
+        let { name } = this.props.member;
             name = name.split('_')[1]// delete appkey
 
         const menu = (
             <Menu onClick={this.more_action}>
-                <Menu.Item key="appoint_as_admin">
+                {/* <Menu.Item key="appoint_as_admin">
                     设为主持人
-                </Menu.Item>
+                </Menu.Item> */}
                 <Menu.Item key="move_out">
                     移出会议
                 </Menu.Item>
@@ -265,7 +284,7 @@ class ManageTalker extends Component {
     }
 }
 
-
+// 以函数调用的形式，显示提示框 appendChild + ReactDom.render()
 const LeaveConfirmModal = {
 
     visible: false,
@@ -323,6 +342,120 @@ const LeaveConfirmModal = {
     }
 }
 
+// 设置 昵称、音视频开关、头像 modal
+class Setting extends Component {
+
+    state = {
+        visible: false
+    }
+
+    show = () => {
+        this.setState({ visible: true })
+    }
+    handleCancel = () => {
+        this.setState({ visible: false })
+    }
+    handleSubmit = () => {
+        let _this = this;
+        this.props.form.validateFields((err, values) => {
+            // 回调上去
+            _this.props._get_setting_values(values)
+            _this.setState({ visible: false })
+            window.sessionStorage.setItem('easemob-nickName', values.nickName); //保存 nickName
+        })
+    }
+    render() {
+        let { visible } = this.state;
+
+        const { getFieldDecorator } = this.props.form;
+        const formItemLayout = {
+            labelCol: { span: 6 },
+            wrapperCol: { span: 14 },
+        };
+
+        let { audio, video, nickName } = this.props;
+        return (
+            <Modal 
+                title="个人设置"
+                visible={visible}
+                onOk={this.handleSubmit}
+                onCancel={this.handleCancel}
+                okText="确认"
+                cancelText="取消"
+                getContainer={false}
+                className="setting-modal"
+            >
+                <Form {...formItemLayout} onSubmit={this.handleSubmit}>
+                    <Form.Item label="头像">
+                        <span className="ant-form-text">China</span>
+                    </Form.Item>
+
+
+                    <Form.Item label="昵称">
+                        {getFieldDecorator('nickName', { initialValue: nickName })(<Input placeholder="请输入昵称" />)}
+                    </Form.Item>
+
+                    <Form.Item label="摄像头">
+                        {getFieldDecorator('video', { valuePropName: 'checked', initialValue: video })(<Switch />)}
+                    </Form.Item>
+                    <Form.Item label="麦克风">
+                        {getFieldDecorator('audio', { valuePropName: 'checked', initialValue: audio })(<Switch />)}
+                    </Form.Item>
+                </Form>
+            </Modal>
+        )
+    }
+}
+const SettingWrap = Form.create()(Setting)
+
+// 设置昵称 modal
+class SetNickName extends Component {
+    state = {
+        visible: false,
+        nickName:''
+    }
+
+    show = () => {
+        this.setState({ visible: true })
+    }
+
+    hide() {
+        this.setState({ visible: false })
+    }
+    onChange = e => {
+        const { value } = e.target;
+
+        this.setState({
+            nickName: value
+        })
+    }
+    submit() {
+        let { nickName } = this.state;
+        this.props._set_nickname(nickName);
+        window.sessionStorage.setItem('easemob-nickName', nickName);
+
+        this.setState({ visible: false })
+    }
+
+    render() {
+        return (
+            <Modal 
+                title="请设置昵称"
+                visible={this.state.visible}
+                onCancel={() => this.hide()}
+                onOk={() => this.submit()}
+                okText="确定"
+                cancelText="取消"
+                getContainer={false}
+                width="350px"
+                centered={true}
+                className="set-nickname-modal"
+            >
+                <Input onChange={this.onChange}/>
+            </Modal>
+        )
+    }
+}
 
 class Room extends Component {
     constructor(props) {
@@ -337,29 +470,26 @@ class Room extends Component {
             nickName:'',
             user: {},
             user_room: {
-                // role: undefined
-                role: 7
+                role: undefined
             },
             confr: {},
             own_stream:null,
             // join end
             time:0,// 秒的单位
             stream_list: [null],//默认 main画面为空
-            // stream_list: [null,{
-            //     member:{name:'sqx',role:3,id:1},
-            //     stream:{id:0}
-            // }],//默认 main画面为空
-            talker_list_show:true,
+            talker_list_show:false,
             to_audience_list_show: false,
             audio:true,
-            video:false,
+            video:true,
 
             joined: false,
             loading: false,
 
             talker_is_full:false, //主播已满
 
-            shared_desktop:false
+            shared_desktop:false,
+
+            set_nickname_modal_show: false
         };
 
         this.toggle_main = this.toggle_main.bind(this);
@@ -435,7 +565,6 @@ class Room extends Component {
             _this.setState({
                 roomName: values.roomName,
                 password: values.password,
-                nickName: values.nickName,
                 audio,
                 video,
                 user_room
@@ -448,8 +577,21 @@ class Room extends Component {
     }
     // join fun end
 
+    // 收集设置表单的数据， setState
+    _get_setting_values = (values) => {
+        if(!values) {
+            return
+        }
+
+        console.log('this outer', this);
+        
+        for (const key in values) {
+            this.setState({ [key]: values[key]})
+        }
+    }
     async componentDidMount () {
 
+        
         const user = await login();
         this.setState({ user })
         this.init_emedia_callback();
@@ -457,6 +599,8 @@ class Room extends Component {
             var e = window.event||e;  
             emedia.mgr.exitConference();
         } 
+
+        this._get_nickname_from_session()
     }
 
     componentWillUnmount() {
@@ -686,6 +830,20 @@ class Room extends Component {
         }
     }
 
+    // 从 sessionStore 拿昵称
+    _get_nickname_from_session() {
+        let nickName = window.sessionStorage.getItem('easemob-nickName');
+
+        if(nickName) {
+            this.setState({ nickName })
+        } else {
+            this.set_nickname_modal.show()
+        }
+    }
+    _set_nickname = nickName => {
+
+        this.setState({ nickName })
+    }
     leave() {
 
         let { role, confrId } = this.state.user_room;
@@ -1130,7 +1288,7 @@ class Room extends Component {
                 item.member && 
                 item.member.role == 7
             ) {
-                admin = item.member.name.slice(-5);
+                admin = item.member.nickName || item.member.name.slice(-5);
                 return
             }
         })
@@ -1413,6 +1571,7 @@ class Room extends Component {
         let main_stream = this.state.stream_list[0];
         let { role } = this.state.user_room;
 
+        let { audio, video, nickName } = this.state;
         return (
             <div style={{width:'100%', height:'100%'}}>
                 {/* join compoent */}
@@ -1421,6 +1580,12 @@ class Room extends Component {
                         <img src={get_img_url_by_name('logo-text-login')} />
                     </div>
                     <Form className="login-form">
+                        <Button 
+                            type="primary" 
+                            className="setting-handle" 
+                            onClick={() => this.setting_modal.show()}> 
+                            设置
+                        </Button>
                         <img src={get_img_url_by_name('logo')} />
                         <div style={{margin:'17px 0 45px'}}>欢迎使用环信多人会议</div>
                         <Item>
@@ -1459,27 +1624,6 @@ class Room extends Component {
                             />
                         )}
                         </Item>
-                        <Item>
-                        {getFieldDecorator('nickName')(
-                            <Input
-                                prefix={<Icon type="user" style={{ color: 'rgba(0,0,0,.25)' }} />}
-                                type="text"
-                                placeholder="加入会议的昵称"
-                            />
-                        )}
-                        </Item>
-
-                        {/* <div>会议设置</div> */}
-                        
-                        <Row 
-                            type="flex"
-                            justify="space-between"
-                            style={{margin: '-8px 0px 30px'}}>
-                            <Checkbox
-                                checked={this.state.video}
-                                onChange={this.video_change}
-                            >入会开启摄像头</Checkbox>
-                        </Row>
 
                         <div className="action">
                             <Button 
@@ -1513,6 +1657,7 @@ class Room extends Component {
                         mask={false}
                         maskClosable={false}
                         width='470px'
+                        className="talker-is-full-modal"
 
                     >
                         <div>
@@ -1520,6 +1665,18 @@ class Room extends Component {
                         </div>
                         <div>主播人数已满<br></br>是否以观众身份进入？</div>
                     </Modal>
+
+                    {/* 设置框 */}
+                    <SettingWrap 
+                        { ...{audio, video, nickName} }
+                        _get_setting_values={this._get_setting_values} 
+                        wrappedComponentRef={setting_modal => this.setting_modal = setting_modal} />
+
+                    {/* 设置昵称框 */}
+                    <SetNickName 
+                        ref={set_nickname_modal => this.set_nickname_modal = set_nickname_modal}
+                        _set_nickname={this._set_nickname}
+                    />    
                 </div>
                 
                 {/* room compoent */}
