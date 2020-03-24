@@ -269,35 +269,56 @@ class ManageTalker extends Component {
 const LeaveConfirmModal = {
 
     visible: false,
-    show() {
+    roleToken:null,
+    show(roleToken) {
+        
+        this.roleToken = roleToken;
         this.visible = true;
         this.render();
     },
 
-    close() {
+    hide() {
         this.visible = false;
         this.render()
     },
 
+    leave() {
+        emedia.mgr.exitConference();
+        this.visible = false;
+        this.render()
+    },
+
+    end() {
+        if(!this.roleToken) {
+            return
+        }
+        this.visible = false;
+        emedia.mgr.destroyConference(this.roleToken);
+        this.render()
+    },
 
     render() {
         let dom = document.querySelector('#leave-confirm-modal');
         if(!dom) {
             dom = document.createElement('div');
             dom.setAttribute('id', 'leave-confirm-modal');
-            document.body.appendChild(dom);
+            document.querySelector('.meeting').appendChild(dom);
         }
 
         ReactDOM.render(
             <Modal 
                 visible={this.visible}
-                onCancel={() => this.close()}
+                onCancel={() => this.hide()}
                 footer={null}
+                getContainer={false}
             >
-                <p>如果您不想结束会议请在离开会议前指定新的主持人</p>
-                <Button type="primary">离开会议</Button>
-                <Button type="primary">结束会议</Button>
-                <Button >取消</Button>
+                <p>如果您不想结束会议<br></br>请在离开会议前指定新的主持人</p>
+                <div className="action-wrapper">
+
+                    <Button type="primary" onClick={() => this.leave()}>离开会议</Button>
+                    <Button type="primary" onClick={() => this.end()}>结束会议</Button>
+                    <Button onClick={() => this.hide()}>取消</Button>
+                </div>
             </Modal>, dom)
     }
 }
@@ -428,8 +449,6 @@ class Room extends Component {
     // join fun end
 
     async componentDidMount () {
-
-        LeaveConfirmModal.show();
 
         const user = await login();
         this.setState({ user })
@@ -669,21 +688,18 @@ class Room extends Component {
 
     leave() {
 
-        let { role } = this.state.user_room;
+        let { role, confrId } = this.state.user_room;
 
         if(role == 7) {
-            
-            // this.setState({ leave_confirm_show: true})
+            LeaveConfirmModal.show(confrId);
+        } else {
+            let is_confirm = window.confirm('确定退出会议吗？');
+    
+            if(is_confirm){
+                emedia.mgr.exitConference();
+            }
         }
 
-        return
-        let is_confirm = window.confirm('确定退出会议吗？');
-
-        if(is_confirm){
-            emedia.mgr.exitConference();
-        }
-
-        
     }
     publish() {
         let { role } = this.state.user_room
@@ -1246,10 +1262,14 @@ class Room extends Component {
                 </Popconfirm> */}
                 
                 <video ref={`list-video-${id}`} autoPlay></video>
-                { my_role == 7 ? <ManageTalker 
-                                    { ...{stream, member, my_username, confr} } 
-                                    _get_nickName_by_username={username => this._get_nickName_by_username(username)}/>
-                               : ''} {/* 不是管理员 不加载 */}
+                {/* 不是管理员并且不是管理员自己 不加载 */}
+                { 
+                    (my_role == 7 && !is_me) ?  
+                    <ManageTalker 
+                        { ...{stream, member, my_username, confr} } 
+                        _get_nickName_by_username={username => this._get_nickName_by_username(username)}/> :
+                    ''
+                } 
             </div>
         )
 
