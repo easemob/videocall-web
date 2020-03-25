@@ -163,7 +163,7 @@ class ManageTalker extends Component {
 
         let options = {
             key:my_username,
-            val: JSON.stringify( { action:"mute","uids":[name] } ) 
+            val: JSON.stringify( { action:"mute",uids:[name], timestamp: new Date().getTime() } ) 
         }
         
         emedia.mgr.setConferenceAttrs(options);
@@ -180,7 +180,7 @@ class ManageTalker extends Component {
         let { my_username } = this.props;
         let options = {
             key:my_username,
-            val: JSON.stringify( { action:"unmute","uids":[name] } ) 
+            val: JSON.stringify( { action:"unmute",uids:[name], timestamp: new Date().getTime() } ) 
         }
         
         emedia.mgr.setConferenceAttrs(options);
@@ -326,11 +326,35 @@ const LeaveConfirmModal = {
     }
 }
 
+// 获取头像组件
+import axios from 'axios'
+
+const HeadImages = {
+    url_list:{},
+
+    async get_url_json () {
+        const result = await axios.get('https://download-sdk.oss-cn-beijing.aliyuncs.com/downloads/RtcDemo/headImage/headImage.conf')
+        this.url_list = result; 
+    },
+    async get() {
+        if(
+            !this.url_list ||
+            Object.keys(this.url_list).length == 0
+        ) {
+            await this.get_url_json();
+
+            return this.url_list
+        }
+
+        return this.url_list
+    }
+} 
 // 设置 昵称、音视频开关、头像 modal
 class Setting extends Component {
 
     state = {
-        visible: false
+        visible: false,
+        headimg_url: ''
     }
 
     show = () => {
@@ -348,8 +372,16 @@ class Setting extends Component {
             window.sessionStorage.setItem('easemob-nickName', values.nickName); //保存 nickName
         })
     }
+
+    // 更换头像
+    get_headimg_url = async () => {
+        let headimg_url = await HeadImages.get();
+
+        console.log(headimg_url);
+        
+    }
     render() {
-        let { visible } = this.state;
+        let { visible, headimg_url } = this.state;
 
         const { getFieldDecorator } = this.props.form;
         const formItemLayout = {
@@ -371,7 +403,7 @@ class Setting extends Component {
             >
                 <Form {...formItemLayout} onSubmit={this.handleSubmit}>
                     <Form.Item label="头像">
-                        <span className="ant-form-text">China</span>
+                        <Avatar src={headimg_url} onClick={this.get_headimg_url}/>
                     </Form.Item>
 
 
@@ -440,6 +472,7 @@ class SetNickName extends Component {
         )
     }
 }
+
 
 class Room extends Component {
     constructor(props) {
@@ -681,68 +714,49 @@ class Room extends Component {
                     return
                 }
                 // 全体静音 key value 变换 与上面的
-                setTimeout(() => { // 等到拿到 自己的流再操作
-                    if( item.key == 'muteall' ){
-                        let value = JSON.parse(item.val);
-                        let { setter, status } = value;
-    
-                        if(my_username == setter ){ //自己设置的全体静音，不静音自己
-                            return
-                        }
+                if( item.key == 'muteall' ){
+                    let value = JSON.parse(item.val);
+                    let { setter, status } = value;
 
-
-                        if(status == 1 ){//关闭麦克风
-                            
-                            _this.close_audio()
-                        } else{
-                            _this.open_audio()
-                        }
+                    if(my_username == setter ){ //自己设置的全体静音，不静音自己
                         return
                     }
-                },200)
+
+
+                    if(status == 1 ){//关闭麦克风
+                        setTimeout(() => { // 等到拿到 自己的流再操作
+                            _this.close_audio()
+                        },200)
+                    } else{
+                        _this.open_audio()
+                    }
+                    return
+                }
                 
 
                 
 
                 // 某些人员静音
                 if(
-                    item.val.indexOf('"action":"mute"') > -1 &&
-                    item.op == 'ADD'
+                    item.val.indexOf('"action":"mute"') > -1 
                 ) {
-                    if( role == emedia.mgr.Role.ADMIN ) {
-                        let options = {
-                            key:my_username,
-                            val:item.val
-                        }
-                        emedia.mgr.deleteConferenceAttrs(options);
-                    } else {
-                        let val = JSON.parse(item.val);
-                        if(val.uids){
-                            if(val.uids.indexOf(my_username) > -1) {
-                                _this.close_audio()
-                            }
+                    let val = JSON.parse(item.val);
+                    if(val.uids){
+                        if(val.uids.indexOf(my_username) > -1) {
+                            _this.close_audio()
                         }
                     }
                 }
                 // 某些人员解除静音
                 if(
-                    item.val.indexOf('"action":"unmute"') > -1 &&
-                    item.op == 'ADD'
+                    item.val.indexOf('"action":"unmute"') > -1 
                 ) {
-                    if( role == emedia.mgr.Role.ADMIN ) {
-                        let options = {
-                            key:my_username,
-                            val:item.val
+                    let val = JSON.parse(item.val);
+                    if(val.uids){
+                        if(val.uids.indexOf(my_username) > -1) {
+                            _this.open_audio()
                         }
-                        emedia.mgr.deleteConferenceAttrs(options);
-                    } else {
-                        let val = JSON.parse(item.val);
-                        if(val.uids){
-                            if(val.uids.indexOf(my_username) > -1) {
-                                _this.open_audio()
-                            }
-                        }
-                    }    
+                    }  
                 }
 
                 
