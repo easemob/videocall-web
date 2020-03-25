@@ -107,16 +107,16 @@ class MuteAction extends Component {
         mute_all: false
     }
     mute_all_action = () => {
-        let { mute_all } = this.state;
-        if(mute_all){
-            return
-        }
+        // let { mute_all } = this.state;
+        // if(mute_all){
+        //     return
+        // }
 
         let { username } = this.props.user;
 
         let options = {
-            key:username,
-            val:'mute_all'
+            key:'muteall',
+            val:JSON.stringify({status: 1, setter:username, timestamp: new Date().getTime() })
         }
         
         emedia.mgr.setConferenceAttrs(options)
@@ -128,8 +128,8 @@ class MuteAction extends Component {
         let { username } = this.props.user;
 
         let options = {
-            key:username,
-            val:'unmute_all'
+            key:'muteall',
+            val:JSON.stringify({status: 0, setter:username, timestamp: new Date().getTime() })
         }
         
         emedia.mgr.setConferenceAttrs(options)
@@ -152,56 +152,40 @@ class MuteAction extends Component {
 
 class ManageTalker extends Component {
     // 静音某一人
-    mute = usernames => {
-        if(
-            !usernames ||
-            !(usernames instanceof Array) ||
-            usernames.length == 0
-        ) {
-            return
-        }
+    mute = () => {
+
+
+        let { name, nickName } = this.props.member;
+            nickName = nickName || name; 
+            name = name.split('_')[1]// delete appkey
 
         let { my_username } = this.props;
 
         let options = {
             key:my_username,
-            val: JSON.stringify( { action:"mute","uids":usernames } ) 
+            val: JSON.stringify( { action:"mute","uids":[name] } ) 
         }
         
         emedia.mgr.setConferenceAttrs(options);
 
-        let get_nickname = this.props._get_nickName_by_username;
-
-        usernames.map(item => {
-            console.log('get_nick', item);
-            
-            message.success(`已设置${get_nickname(item)}为静音`)
-        })
+        message.success(`已设置${nickName}为静音`);
     }
     // 解除静音某人
-    unmute = usernames => {
-        if(
-            !usernames ||
-            !(usernames instanceof Array) ||
-            usernames.length == 0
-        ) {
-            return
-        }
+    unmute = () => {
+
+        let { name, nickName } = this.props.member;
+            nickName = nickName || name; 
+            name = name.split('_')[1]// delete appkey
 
         let { my_username } = this.props;
         let options = {
             key:my_username,
-            val: JSON.stringify( { action:"unmute","uids":usernames } ) 
+            val: JSON.stringify( { action:"unmute","uids":[name] } ) 
         }
         
         emedia.mgr.setConferenceAttrs(options);
 
-        let get_nickname = this.props._get_nickName_by_username;
-        usernames.map(item => {
-            message.success(`已解除${get_nickname(item)}的静音`)
-        })
-
-
+        message.success(`已解除${nickName}的静音`);
     }
     // 更多的操作
     more_action = ( {key} ) => {
@@ -215,7 +199,8 @@ class ManageTalker extends Component {
     // 指定为主持人
     appoint_as_admin = async () => {
         let { confr } = this.props;
-        let { memName } = this.props.member;
+        let { memName, nickName } = this.props.member;
+            nickName = nickName || memName; //兼容显示
 
         if(!confr || !memName){
             return
@@ -224,8 +209,7 @@ class ManageTalker extends Component {
         try {
             await emedia.mgr.grantRole(confr, [memName], 7);
 
-            let get_nickname = this.props._get_nickName_by_username;
-            message.success(`已把${get_nickname(memName)}设为主持人`)
+            message.success(`已把${nickName}设为主持人`)
         } catch (error) {
             message.error('设为主持人失败')
         }
@@ -247,14 +231,13 @@ class ManageTalker extends Component {
     render() {
 
         let { aoff } = this.props.stream;
-        let { name } = this.props.member;
-            name = name.split('_')[1]// delete appkey
+        let { role } = this.props.member;
 
         const menu = (
             <Menu onClick={this.more_action}>
-                {/* <Menu.Item key="appoint_as_admin">
+                <Menu.Item key="appoint_as_admin">
                     设为主持人
-                </Menu.Item> */}
+                </Menu.Item>
                 <Menu.Item key="move_out">
                     移出会议
                 </Menu.Item>
@@ -266,18 +249,19 @@ class ManageTalker extends Component {
                 <div className="action" ref="action-wrapper">
 
                     {
-                        aoff ? <Button size='small' onClick={() => this.unmute([name])}>解除静音</Button>
-                             : <Button size='small' onClick={() => this.mute([name])}>静音</Button>
+                        aoff ? <Button size='small' onClick={() => this.unmute()}>解除静音</Button>
+                             : <Button size='small' onClick={() => this.mute()}>静音</Button>
                     }
                     
-                    <Dropdown 
-                        overlay={menu} 
-                        placement="bottomLeft"
-                        trigger={["click"]}
-                        getPopupContainer={() => this.refs['action-wrapper']}
-                    >
-                        <Button size='small'>更多</Button>
-                    </Dropdown>
+                    { role != 7 ? //非主持人才显示更多
+                        <Dropdown 
+                            overlay={menu} 
+                            placement="bottomLeft"
+                            trigger={["click"]}
+                            getPopupContainer={() => this.refs['action-wrapper']}
+                        >
+                            <Button size='small'>更多</Button>
+                        </Dropdown> : ''}
                 </div>
             </div>
         )
@@ -478,7 +462,7 @@ class Room extends Component {
             time:0,// 秒的单位
             stream_list: [null],//默认 main画面为空
             talker_list_show:false,
-            to_audience_list_show: false,
+            to_audience_list_show: true,
             audio:true,
             video:true,
 
@@ -582,9 +566,6 @@ class Room extends Component {
         if(!values) {
             return
         }
-
-        console.log('this outer', this);
-        
         for (const key in values) {
             this.setState({ [key]: values[key]})
         }
@@ -699,43 +680,29 @@ class Room extends Component {
                     _this.handle_apply_audience(item.key);
                     return
                 }
-                // 全体静音
-                if(
-                    item.val == 'mute_all' && 
-                    item.op == 'ADD'
-                ){
-
-                    if(role == emedia.mgr.Role.ADMIN ){
-                        let options = {
-                            key:my_username,
-                            val:'mute_all'
+                // 全体静音 key value 变换 与上面的
+                setTimeout(() => { // 等到拿到 自己的流再操作
+                    if( item.key == 'muteall' ){
+                        let value = JSON.parse(item.val);
+                        let { setter, status } = value;
+    
+                        if(my_username == setter ){ //自己设置的全体静音，不静音自己
+                            return
                         }
-                        emedia.mgr.deleteConferenceAttrs(options);
-                    } else{
-                        //静音自己
-                        _this.close_audio()
-                    }
 
-                    return
-                }
+
+                        if(status == 1 ){//关闭麦克风
+                            
+                            _this.close_audio()
+                        } else{
+                            _this.open_audio()
+                        }
+                        return
+                    }
+                },200)
                 
 
-                // 解除全体静音
-                if(
-                    item.val == 'unmute_all' && 
-                    item.op == 'ADD'
-                ){
-                    if(role == emedia.mgr.Role.ADMIN ){
-                        let options = {
-                            key:my_username,
-                            val:'unmute_all'
-                        }
-                        emedia.mgr.deleteConferenceAttrs(options);
-                    } else{
-                        //解除静音自己
-                        _this.open_audio()
-                    }
-                }
+                
 
                 // 某些人员静音
                 if(
@@ -1102,12 +1069,15 @@ class Room extends Component {
     }
 
     close_audio = async () => {
+
+        
         let { role } = this.state.user_room;
         let { own_stream } = this.state;
         if(role == 1){
             return
         }
-
+        
+        console.log('close audio inner own_stream', own_stream);
         if(!own_stream) {
             return
         }
@@ -1421,13 +1391,7 @@ class Room extends Component {
                 
                 <video ref={`list-video-${id}`} autoPlay></video>
                 {/* 不是管理员并且不是管理员自己 不加载 */}
-                { 
-                    (my_role == 7 && !is_me) ?  
-                    <ManageTalker 
-                        { ...{stream, member, my_username, confr} } 
-                        _get_nickName_by_username={username => this._get_nickName_by_username(username)}/> :
-                    ''
-                } 
+                { (my_role == 7 && !is_me) ? <ManageTalker { ...{stream, member, my_username, confr} } /> : '' } 
             </div>
         )
 
