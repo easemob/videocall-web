@@ -333,8 +333,28 @@ const HeadImages = {
     url_list:{},
 
     async get_url_json () {
-        const result = await axios.get('https://download-sdk.oss-cn-beijing.aliyuncs.com/downloads/RtcDemo/headImage/headImage.conf')
-        this.url_list = result; 
+        //步骤一:创建异步对象
+        var ajax = new XMLHttpRequest();
+        //步骤二:设置请求的url参数,参数一是请求的类型,参数二是请求的url,可以带参数,动态的传递参数starName到服务端
+        ajax.open('get','https://download-sdk.oss-cn-beijing.aliyuncs.com/downloads/RtcDemo/headImage/Image2.png');
+        ajax.setRequestHeader("origin",'https://127.0.0.1:3000/')
+        //步骤三:发送请求
+        ajax.send();
+        //步骤四:注册事件 onreadystatechange 状态改变就会调用
+        ajax.onreadystatechange = function () {
+        if (ajax.readyState==4 &&ajax.status==200) {
+            //步骤五 如果能够进到这个判断 说明 数据 完美的回来了,并且请求的页面是存在的
+        　　　　console.log(ajax.responseText);//输入相应的内容
+        　　}
+        }
+
+        // let url = 'https://download-sdk.oss-cn-beijing.aliyuncs.com/downloads/RtcDemo/headImage/Image1.png';
+        // const result = await axios({
+        //     method:'get',
+        //     url,
+        //     headers: {token:123}
+        // })
+        // this.url_list = result; 
     },
     async get() {
         if(
@@ -353,8 +373,11 @@ const HeadImages = {
 class Setting extends Component {
 
     state = {
+        nickName: '',
+        video: false,
+        audio: true,
         visible: false,
-        headimg_url: ''
+        headimg_url: 'https://zos.alipayobjects.com/rmsportal/ODTLcjxAfvqbxHnVXCYX.png'
     }
 
     show = () => {
@@ -364,15 +387,39 @@ class Setting extends Component {
         this.setState({ visible: false })
     }
     handleSubmit = () => {
+
+        let {
+            headimg_url,
+            nickName,
+            video,
+            audio
+        } = this.state;
+
         let _this = this;
-        this.props.form.validateFields((err, values) => {
-            // 回调上去
-            _this.props._get_setting_values(values)
-            _this.setState({ visible: false })
-            window.sessionStorage.setItem('easemob-nickName', values.nickName); //保存 nickName
+        // 回调上去
+        _this.props._get_setting_values({headimg_url, nickName,  video, audio})
+        _this.setState({ visible: false })
+        window.sessionStorage.setItem('easemob-nickName', nickName); //保存 nickName
+        
+    }
+    nick_name_change = e => {
+        this.setState({
+            nickName:e.target.value
         })
     }
+    video_change = e => {
+        console.log(e);
+        
 
+        this.setState({
+            video:e.target.checked
+        })
+    }
+    audio_change = e => {
+        this.setState({
+            audio:e.target.checked
+        })
+    }
     // 更换头像
     get_headimg_url = async () => {
         let headimg_url = await HeadImages.get();
@@ -383,7 +430,6 @@ class Setting extends Component {
     render() {
         let { visible, headimg_url } = this.state;
 
-        const { getFieldDecorator } = this.props.form;
         const formItemLayout = {
             labelCol: { span: 6 },
             wrapperCol: { span: 14 },
@@ -392,37 +438,24 @@ class Setting extends Component {
         let { audio, video, nickName } = this.props;
         return (
             <Modal 
-                title="个人设置"
                 visible={visible}
                 onOk={this.handleSubmit}
                 onCancel={this.handleCancel}
-                okText="确认"
-                cancelText="取消"
+                footer={null}
                 getContainer={false}
                 className="setting-modal"
+                width="470px"
             >
-                <Form {...formItemLayout} onSubmit={this.handleSubmit}>
-                    <Form.Item label="头像">
                         <Avatar src={headimg_url} onClick={this.get_headimg_url}/>
-                    </Form.Item>
-
-
-                    <Form.Item label="昵称">
-                        {getFieldDecorator('nickName', { initialValue: nickName })(<Input placeholder="请输入昵称" />)}
-                    </Form.Item>
-
-                    <Form.Item label="摄像头">
-                        {getFieldDecorator('video', { valuePropName: 'checked', initialValue: video })(<Switch />)}
-                    </Form.Item>
-                    <Form.Item label="麦克风">
-                        {getFieldDecorator('audio', { valuePropName: 'checked', initialValue: audio })(<Switch />)}
-                    </Form.Item>
-                </Form>
+                        <div>昵称</div>
+                        <Input placeholder="请输入昵称" value={nickName} onChange={this.nick_name_change}/>
+                        <Checkbox checked={video} onChange={this.video_change}>打开摄像头</Checkbox>
+                        <Checkbox checked={audio} onChange={this.audio_change}>打开麦克风</Checkbox>
+                
             </Modal>
         )
     }
 }
-const SettingWrap = Form.create()(Setting)
 
 // 设置昵称 modal
 class SetNickName extends Component {
@@ -1645,10 +1678,10 @@ class Room extends Component {
                     </Modal>
 
                     {/* 设置框 */}
-                    <SettingWrap 
+                    <Setting 
                         { ...{audio, video, nickName} }
                         _get_setting_values={this._get_setting_values} 
-                        wrappedComponentRef={setting_modal => this.setting_modal = setting_modal} />
+                        ref={setting_modal => this.setting_modal = setting_modal} />
 
                     {/* 设置昵称框 */}
                     <SetNickName 
