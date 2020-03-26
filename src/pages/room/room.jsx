@@ -56,9 +56,11 @@ class ToAudienceList extends Component {
     }
     render() {
         let { stream_list, to_audience_list_show} = this.props;
+
+        let base_url = 'https://download-sdk.oss-cn-beijing.aliyuncs.com/downloads/RtcDemo/headImage/';
+
         return (
             <Drawer 
-                title='主播人数已满，请选人下麦'
                 placement="left"
                 closable={false}
                 visible={to_audience_list_show}
@@ -67,36 +69,41 @@ class ToAudienceList extends Component {
                 width="336px"
                 className="to-audience-list"
             >
+
+               <div className="title">
+                    <Button 
+                        style={{background:'transparent',color:'#fff'}}
+                        onClick={this.props.close_to_audience_list}
+                    >返回</Button>
+
+                    <span style={{textAlign:'center'}}>主播人数已满<br/>可选择替换主播</span> 
+
+                    <Button onClick={this.confirm}
+                    >确定</Button>
+                </div> 
                <Checkbox.Group 
                     onChange={this.onChange}
+                    name="to-audience"
                >
-
-                    { stream_list.map(item => {
-                        if(
+                   { stream_list.map(item => {
+                        if( // 自己不显示
                             item &&
                             item.member &&
                             !item.member.is_me
                         ) {
-                            return (<Checkbox 
-                                        value={item.member.name}
-                                        key={item.member.name}
-                                   >
-                                        {item.member.nickName || item.member.name}
-                                   </Checkbox>)
+                            let { headImage } = item.member.ext;
+                            return (
+                                <div className="info-wrapper" key={item.member.name}>
+
+                                    <Avatar src={ base_url + headImage }/>
+                                    <span className="name">{item.member.nickName || item.member.name}</span>
+                                    <Checkbox value={item.member.name} />
+                                    
+                                </div>
+                            )
                         }
                     })}
                </Checkbox.Group>
-               <div className='actions'>
-                    <Button 
-                        size='small' 
-                        style={{background:'transparent',color:'#fff'}}
-                        onClick={this.props.close_to_audience_list}
-                    >返回</Button> 
-                    <Button 
-                        size='small'
-                        onClick={this.confirm}
-                    >确定</Button> 
-               </div>
             </Drawer>
         )
     }
@@ -328,47 +335,90 @@ const LeaveConfirmModal = {
 
 // 获取头像组件
 import axios from 'axios'
+class HeadImages extends Component {
 
-const HeadImages = {
-    url_list:{},
-
-    async get_url_json () {
-        //步骤一:创建异步对象
-        var ajax = new XMLHttpRequest();
-        //步骤二:设置请求的url参数,参数一是请求的类型,参数二是请求的url,可以带参数,动态的传递参数starName到服务端
-        ajax.open('get','https://download-sdk.oss-cn-beijing.aliyuncs.com/downloads/RtcDemo/headImage/Image2.png');
-        ajax.setRequestHeader("origin",'https://127.0.0.1:3000/')
-        //步骤三:发送请求
-        ajax.send();
-        //步骤四:注册事件 onreadystatechange 状态改变就会调用
-        ajax.onreadystatechange = function () {
-        if (ajax.readyState==4 &&ajax.status==200) {
-            //步骤五 如果能够进到这个判断 说明 数据 完美的回来了,并且请求的页面是存在的
-        　　　　console.log(ajax.responseText);//输入相应的内容
-        　　}
-        }
-
-        // let url = 'https://download-sdk.oss-cn-beijing.aliyuncs.com/downloads/RtcDemo/headImage/Image1.png';
-        // const result = await axios({
-        //     method:'get',
-        //     url,
-        //     headers: {token:123}
-        // })
-        // this.url_list = result; 
-    },
-    async get() {
-        if(
-            !this.url_list ||
-            Object.keys(this.url_list).length == 0
-        ) {
-            await this.get_url_json();
-
-            return this.url_list
-        }
-
-        return this.url_list
+    state = {
+        visible: false,
+        url_list:{},
+        headimg_url_suffix: ''
     }
-} 
+
+    componentDidMount() {
+        this.get_url_json()
+    }
+    async get_url_json () {
+
+        let url = 'https://download-sdk.oss-cn-beijing.aliyuncs.com/downloads/RtcDemo/headImage/headImage.conf';
+        const result = await axios({
+            method:'get',
+            url
+        })
+        this.setState({ url_list:result.data.headImageList }); 
+    }
+
+    show = () => {
+        this.setState({ visible: true })
+    }
+    handleCancel = () => {
+        this.setState({ visible: false })
+    }
+
+    change(headimg_url_suffix) {
+        if(!headimg_url_suffix) {
+            return
+        }
+        this.setState({ headimg_url_suffix })
+    }
+    handleSubmit = () => {
+        let { headimg_url_suffix } = this.state;
+        this.props.headimg_change(headimg_url_suffix);
+        this.setState({ visible:false })
+    }
+    render() {
+
+        let { visible, url_list, headimg_url_suffix } = this.state;
+        let base_url = 'https://download-sdk.oss-cn-beijing.aliyuncs.com/downloads/RtcDemo/headImage/';
+        return (
+            <Modal 
+                title="请选择头像"
+                visible={visible}
+                onOk={this.handleSubmit}
+                onCancel={this.handleCancel}
+                footer={null}
+                getContainer={false}
+                className="head-images-modal"
+                width="470px"
+            >
+                <div className="head-image-list">
+                    {
+                        Object.keys(url_list).map((item, index) => {
+                            return (
+                                <div 
+                                    className="avatar-wrapper"  
+                                    key={index}
+                                    onClick={() => this.change(url_list[item])}
+                                >
+                                    <Avatar src={ base_url + url_list[item] }/>
+                                    { headimg_url_suffix == url_list[item] ? //被选中的显示样式
+                                        <div className='checked-mask'>
+                                            <Icon type="check" />
+                                        </div> : ''
+                                    }
+                                </div>
+                            )
+                        })
+                    }
+                </div>
+                        
+                <div className="action">
+                    <Button type="primary" onClick={this.handleSubmit}>保存并返回</Button>
+                </div>
+                
+            </Modal>
+        )
+    }
+}
+
 // 设置 昵称、音视频开关、头像 modal
 class Setting extends Component {
 
@@ -377,9 +427,29 @@ class Setting extends Component {
         video: false,
         audio: true,
         visible: false,
-        headimg_url: 'https://zos.alipayobjects.com/rmsportal/ODTLcjxAfvqbxHnVXCYX.png'
+        headimg_url_suffix: ''
     }
 
+    componentDidMount() {
+        this._map_props_to_state();
+    }
+
+    componentWillReceiveProps(nextProps) {
+
+        this.setState({ 
+            nickName: nextProps.nickName,   
+            headimg_url_suffix: nextProps.headimg_url_suffix,   
+        });
+    }
+    _map_props_to_state() {
+        let { nickName, video, audio } = this.props
+
+        this.setState({
+            nickName, 
+            video, 
+            audio
+        })
+    }
     show = () => {
         this.setState({ visible: true })
     }
@@ -389,28 +459,36 @@ class Setting extends Component {
     handleSubmit = () => {
 
         let {
-            headimg_url,
+            headimg_url_suffix,
             nickName,
             video,
             audio
         } = this.state;
 
         let _this = this;
+        
         // 回调上去
-        _this.props._get_setting_values({headimg_url, nickName,  video, audio})
+        _this.props._get_setting_values({headimg_url_suffix, nickName,  video, audio})
         _this.setState({ visible: false })
         window.sessionStorage.setItem('easemob-nickName', nickName); //保存 nickName
+        window.sessionStorage.setItem('easemob-headimg_url_suffix', headimg_url_suffix); //保存 头像 url
         
     }
+    headimg_change = headimg_url_suffix => {
+
+        if(!headimg_url_suffix){
+            return
+        }
+
+        this.setState({ headimg_url_suffix })
+    }
     nick_name_change = e => {
+        const { value } = e.target;
         this.setState({
-            nickName:e.target.value
+            nickName:value
         })
     }
     video_change = e => {
-        console.log(e);
-        
-
         this.setState({
             video:e.target.checked
         })
@@ -421,21 +499,14 @@ class Setting extends Component {
         })
     }
     // 更换头像
-    get_headimg_url = async () => {
-        let headimg_url = await HeadImages.get();
-
-        console.log(headimg_url);
-        
+    get_headimg_url = () => {
+        this.head_images.show()
     }
     render() {
-        let { visible, headimg_url } = this.state;
+        let { visible, headimg_url_suffix, audio, video, nickName } = this.state;
 
-        const formItemLayout = {
-            labelCol: { span: 6 },
-            wrapperCol: { span: 14 },
-        };
+        let base_url = 'https://download-sdk.oss-cn-beijing.aliyuncs.com/downloads/RtcDemo/headImage/';
 
-        let { audio, video, nickName } = this.props;
         return (
             <Modal 
                 visible={visible}
@@ -446,11 +517,19 @@ class Setting extends Component {
                 className="setting-modal"
                 width="470px"
             >
-                        <Avatar src={headimg_url} onClick={this.get_headimg_url}/>
+                        <div className="avatar-wrapper">
+                            <Avatar src={base_url + headimg_url_suffix} onClick={this.get_headimg_url} />
+                            <HeadImages 
+                            ref={head_images => this.head_images = head_images}
+                            headimg_change={this.headimg_change}/>
+                        </div>
                         <div>昵称</div>
-                        <Input placeholder="请输入昵称" value={nickName} onChange={this.nick_name_change}/>
+                        <Input placeholder="请输入昵称" value={nickName} onChange={this.nick_name_change} />
                         <Checkbox checked={video} onChange={this.video_change}>打开摄像头</Checkbox>
                         <Checkbox checked={audio} onChange={this.audio_change}>打开麦克风</Checkbox>
+                        <div className="action">
+                            <Button type="primary" onClick={this.handleSubmit}>保存并返回</Button>
+                        </div>
                 
             </Modal>
         )
@@ -472,6 +551,7 @@ class SetNickName extends Component {
         this.setState({ visible: false })
     }
     onChange = e => {
+        
         const { value } = e.target;
 
         this.setState({
@@ -528,10 +608,10 @@ class Room extends Component {
             time:0,// 秒的单位
             stream_list: [null],//默认 main画面为空
             talker_list_show:false,
-            to_audience_list_show: true,
+            to_audience_list_show: false,
             audio:true,
-            video:true,
-
+            video:false,
+            headimg_url_suffix: '',
             joined: false,
             loading: false,
 
@@ -552,7 +632,8 @@ class Room extends Component {
         let {
             roomName,
             password,
-            nickName
+            nickName,
+            headimg_url_suffix
         } = this.state;
 
         let { role } = this.state.user_room;
@@ -569,7 +650,10 @@ class Room extends Component {
             token,
             config:{ 
                 nickName,
-                maxTalkerCount: 5
+                maxTalkerCount: 5,
+                ext: {
+                    headImage: headimg_url_suffix //头像信息，用于别人接收
+                }
             }
         }
 
@@ -629,6 +713,7 @@ class Room extends Component {
 
     // 收集设置表单的数据， setState
     _get_setting_values = (values) => {
+
         if(!values) {
             return
         }
@@ -647,7 +732,8 @@ class Room extends Component {
             emedia.mgr.exitConference();
         } 
 
-        this._get_nickname_from_session()
+        this._get_nickname_from_session();
+        this._get_headimg_url_suffix_from_session();
     }
 
     componentWillUnmount() {
@@ -853,6 +939,15 @@ class Room extends Component {
         } else {
             this.set_nickname_modal.show()
         }
+    }
+    // 从 sessionStore 拿头像 url
+    _get_headimg_url_suffix_from_session() {
+        let headimg_url_suffix = window.sessionStorage.getItem('easemob-headimg_url_suffix');
+
+        if(!headimg_url_suffix) {// 默认给的头像
+            headimg_url_suffix = 'Image1.png'
+        }
+        this.setState({ headimg_url_suffix })
     }
     _set_nickname = nickName => {
 
@@ -1582,7 +1677,7 @@ class Room extends Component {
         let main_stream = this.state.stream_list[0];
         let { role } = this.state.user_room;
 
-        let { audio, video, nickName } = this.state;
+        let { audio, video, nickName, headimg_url_suffix } = this.state;
         return (
             <div style={{width:'100%', height:'100%'}}>
                 {/* join compoent */}
@@ -1679,7 +1774,7 @@ class Room extends Component {
 
                     {/* 设置框 */}
                     <Setting 
-                        { ...{audio, video, nickName} }
+                        { ...{audio, video, nickName, headimg_url_suffix} }
                         _get_setting_values={this._get_setting_values} 
                         ref={setting_modal => this.setting_modal = setting_modal} />
 
