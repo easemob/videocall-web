@@ -682,7 +682,7 @@ class Room extends Component {
                 _this.get_confr_info();
             })
     
-            // this.startTime()
+            this.startTime()
             
         } catch (error) { 
             message.error(user_room.errorMessage);
@@ -1360,6 +1360,8 @@ class Room extends Component {
 
     //监听音视频变化
     _on_media_chanaged() {
+
+        // 音视频变化，触发 setState stream_list
          this.set_stream_item_changed = (constaints, id) => {
 
             if(!id || !constaints) {
@@ -1384,7 +1386,8 @@ class Room extends Component {
             this.setState({ stream_list })
         }
 
-        this.sound_chanaged = (id, status) => { // 有人在说话处理流 status: is_speak 在说话、no_speak 没说话
+        // 有人在说话处理流 status: is_speak 在说话、no_speak 没说话
+        this.sound_chanaged = (id, status) => { 
 
             if(!status || !id) {
                 return
@@ -1525,11 +1528,13 @@ class Room extends Component {
     _get_main_el() {
         let main_stream = this.state.stream_list[0];
 
-
         if(main_stream) {
+            let { is_speak } = main_stream.stream
             return (
                 <div className="main-video-wrapper">
-                    <img src={get_img_url_by_name('is-speak-icon')} />
+                    { is_speak ? 
+                        <img src={get_img_url_by_name('is-speak-icon')} className='is-speak-icon'/> : ''
+                    }
                     <video ref={`list-video-${main_stream.stream.id}`} autoPlay></video>
                 </div>
             )
