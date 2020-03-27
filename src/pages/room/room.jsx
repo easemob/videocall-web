@@ -114,10 +114,6 @@ class MuteAction extends Component {
         mute_all: false
     }
     mute_all_action = () => {
-        // let { mute_all } = this.state;
-        // if(mute_all){
-        //     return
-        // }
 
         let { username } = this.props.user;
 
@@ -146,12 +142,16 @@ class MuteAction extends Component {
     render() {
         let { mute_all } = this.state
         return(
+
             <div className='mute-action-wrapper'>
-                <Button 
-                    type={mute_all ? 'primary' : ''}
-                    onClick={this.mute_all_action}>全体静音</Button>
-                <Button
-                    onClick={this.unmute_all_action}>解除全体静音</Button>
+                <Tooltip title={ mute_all ? '解除禁言' : '全体禁言' } placement="left">
+                        {
+                            mute_all ? 
+                            <img src={get_img_url_by_name('mute-all-icon')} onClick={this.unmute_all_action}/> :
+                            <img src={get_img_url_by_name('unmute-all-icon')} onClick={this.mute_all_action}/>
+                            
+                        }
+                </Tooltip>
             </div>
         )
     }
@@ -316,20 +316,22 @@ const LeaveConfirmModal = {
         }
 
         ReactDOM.render(
-            <Modal 
-                visible={this.visible}
-                onCancel={() => this.hide()}
-                footer={null}
-                getContainer={false}
+            <div 
+                className="leave-confirm-modal" 
+                style={{opacity: this.visible ? 1 : 0}}
             >
-                <p>如果您不想结束会议<br></br>请在离开会议前指定新的主持人</p>
-                <div className="action-wrapper">
-
-                    <Button type="primary" onClick={() => this.leave()}>离开会议</Button>
-                    <Button type="primary" onClick={() => this.end()}>结束会议</Button>
-                    <Button onClick={() => this.hide()}>取消</Button>
+                <div className="title">
+                    <span>警告</span>
+                    <img src={get_img_url_by_name('close-handle-icon')} onClick={() => this.hide()}/>
                 </div>
-            </Modal>, dom)
+                <div className="text">
+                    如果您不想结束会议<br></br>请在离开会议前指定新的主持人
+                </div>
+                <div className="handle">
+                    <span className="leave" onClick={() => this.leave()}>离开会议</span><br />
+                    <span className="end" onClick={() => this.end()}>结束会议</span>
+                </div>
+            </div>, dom)
     }
 }
 
@@ -433,7 +435,6 @@ class Setting extends Component {
     componentDidMount() {
         this._map_props_to_state();
     }
-
     componentWillReceiveProps(nextProps) {
 
         this.setState({ 
@@ -517,8 +518,11 @@ class Setting extends Component {
                 className="setting-modal"
                 width="470px"
             >
-                        <div className="avatar-wrapper">
-                            <Avatar src={base_url + headimg_url_suffix} onClick={this.get_headimg_url} />
+                        <div className="avatar-wrapper ">
+                            <Avatar 
+                                src={base_url + headimg_url_suffix} 
+                                onClick={this.get_headimg_url} 
+                                className='setting-avatar'/>
                             <HeadImages 
                             ref={head_images => this.head_images = head_images}
                             headimg_change={this.headimg_change}/>
@@ -727,6 +731,7 @@ class Room extends Component {
         const user = await login();
         this.setState({ user })
         this.init_emedia_callback();
+
         window.onbeforeunload=function(e){     
             var e = window.event||e;  
             emedia.mgr.exitConference();
@@ -1362,7 +1367,7 @@ class Room extends Component {
             }
 
             let { stream_list } = this.state
-            let { aoff,voff } = constaints
+            let { aoff, voff } = constaints
             stream_list = stream_list.map(item => {
                 if(
                     item &&
@@ -1379,15 +1384,57 @@ class Room extends Component {
             this.setState({ stream_list })
         }
 
+        this.sound_chanaged = (id, status) => { // 有人在说话处理流 status: is_speak 在说话、no_speak 没说话
 
+            if(!status || !id) {
+                return
+            }
+
+            let { stream_list } = this.state;
+
+            stream_list = stream_list.map(item => {
+                if(
+                    item &&
+                    item.stream &&
+                    item.stream.id == id
+                ){
+                    
+                    item.stream.is_speak = (status == 'is_speak' ? true : false)
+                }
+
+                return item
+            })
+
+            this.setState({ stream_list })
+        }
         let _this = this;
         for (const key in this.refs) {
             let el = this.refs[key];
-            let stream_id = key.split('list-video-')[1];// 截取id list-video-***(stream_id)
-            emedia.mgr.onMediaChanaged(el, function (constaints) {
-                _this.set_stream_item_changed(constaints, stream_id)
+            console.log('_on_media_chanaged el',el);
+            
+            // let stream_id = key.split('list-video-')[1];// 截取id list-video-***(stream_id)
+            // 监听音视频的开关
+            emedia.mgr.onMediaChanaged(el, function (constaints, stream) {
+                _this.set_stream_item_changed(constaints, stream.id)
+            });
+
+            // 监听谁在说话
+            // 函数触发，就证明有人说话 拿 stream_id
+            emedia.mgr.onSoundChanaged(el, function (meterData, stream) {
+                
+                let { instant } = meterData;
+                if(instant * 100 > 1){
+                    _this.sound_chanaged(stream.id, 'is_speak')
+                }else {
+                    _this.sound_chanaged(stream.id, 'no_speak')
+
+                }
+                
             });
         } 
+
+
+
     }
     _get_header_el() { 
 
@@ -1421,7 +1468,7 @@ class Room extends Component {
                     <div className="time">{this._get_tick()}</div>
                 </div>
 
-                <div onClick={() => this.leave()} style={{cursor: 'pointer',color:'#EF413F'}}>
+                <div onClick={() => this.leave()} className="leave-action">
                     <img src={get_img_url_by_name('leave-icon')} />
                     <span>离开房间</span>
                 </div>
@@ -1475,6 +1522,21 @@ class Room extends Component {
 
     }
 
+    _get_main_el() {
+        let main_stream = this.state.stream_list[0];
+
+
+        if(main_stream) {
+            return (
+                <div className="main-video-wrapper">
+                    <img src={get_img_url_by_name('is-speak-icon')} />
+                    <video ref={`list-video-${main_stream.stream.id}`} autoPlay></video>
+                </div>
+            )
+        }
+
+        return <i></i>
+    }
     _get_video_item(talker_item,index) {
 
         let { stream, member } = talker_item;
@@ -1487,7 +1549,7 @@ class Room extends Component {
             return ''
         }
 
-        let { id, aoff, voff } = stream;
+        let { id, aoff, is_speak } = stream;
         let { role, is_me } = member;
         let { role:my_role } = this.state.user_room;//拿到我自己的角色
         let { username:my_username } = this.state.user;//拿到我自己的username
@@ -1509,13 +1571,20 @@ class Room extends Component {
                     </span>
 
                     {/* <img src={get_img_url_by_name('no-speak-icon')}/> */}
-                    <div className="status-icon">
-                        <img 
-                            src={get_img_url_by_name('audio-icon')} 
-                            style={{marginRight:'4px',visibility: aoff ? 'hidden' : 'visible'}}/>
-                        <img 
-                            src={get_img_url_by_name('video-icon')} 
-                            style={{visibility: voff ? 'hidden' : 'visible'}}/>
+                    {/* 
+                     * 对方没有开启音频 显示audio-is-close-icon
+                     * 对方开启音频 不说话 不显示图标
+                     * 对方开启音频 在说话 显示is-speak-icon
+                     */}
+                    <div className="status-icon"> 
+
+                        {
+                            aoff ? 
+                            <img src={get_img_url_by_name('audio-is-close-icon')} /> : 
+                            ( is_speak ? 
+                            <img src={get_img_url_by_name('is-speak-icon')} /> : '' )
+                        }
+                        
                     </div>
                 </div>
 
@@ -1552,8 +1621,8 @@ class Room extends Component {
                     {
                         <Tooltip title={ audio ? '静音' : '解除静音'}>
                             <img src={audio ? 
-                                        get_img_url_by_name('audio-is-open-icon') : 
-                                        get_img_url_by_name('audio-is-close-icon')} 
+                                        get_img_url_by_name('micro-is-open-icon') : 
+                                        get_img_url_by_name('micro-is-close-icon')} 
                                     onClick={() => this.toggle_audio()}/>
                         </Tooltip>
                            
@@ -1674,7 +1743,6 @@ class Room extends Component {
         const { getFieldDecorator } = this.props.form;
 
         let { joined } = this.state;
-        let main_stream = this.state.stream_list[0];
         let { role } = this.state.user_room;
 
         let { audio, video, nickName, headimg_url_suffix } = this.state;
@@ -1686,12 +1754,12 @@ class Room extends Component {
                         <img src={get_img_url_by_name('logo-text-login')} />
                     </div>
                     <Form className="login-form">
-                        <Button 
-                            type="primary" 
+                        <img 
+                            src={get_img_url_by_name('setting-icon')}
                             className="setting-handle" 
-                            onClick={() => this.setting_modal.show()}> 
-                            设置
-                        </Button>
+                            onClick={() => this.setting_modal.show()}
+                        /> 
+                            
                         <img src={get_img_url_by_name('logo')} />
                         <div style={{margin:'17px 0 45px'}}>欢迎使用环信多人会议</div>
                         <Item>
@@ -1791,9 +1859,9 @@ class Room extends Component {
                     <Header>
                         {this._get_header_el()}
                     </Header>
+                    
                     <Content>
-                        {/* {main_stream ? this._get_video_item(main_stream) : ''} */}
-                        {main_stream ? <video ref={`list-video-${main_stream.stream.id}`} autoPlay></video> : ''}
+                        {this._get_main_el()}
                     </Content>
                     {this._get_drawer_component()}
                     <Footer>
