@@ -812,7 +812,7 @@ class Room extends Component {
         emedia.mgr.onConfrAttrsUpdated = function(cattrs){ 
             console.log('onConfrAttrsUpdated', cattrs);
             // 会议属性变更
-            // 上麦、下麦、申请成为管理员 遍历判断
+            // 上麦、下麦、申请成为主持人 遍历判断
             // 
 
             let { username:my_username } = _this.state.user //自己的name
@@ -915,14 +915,14 @@ class Room extends Component {
                 return
             }
 
-            // 变成管理员
+            // 变成主持人
             if(
                 user_room.role == 3 &&
                 role == 7
             ) {
                 let { joinId } = _this.state.user_room;
                 user_room.role = role;
-                _this.setState({ user_room }, _this.admin_changed(joinId));//变为管理员，修改显示
+                _this.setState({ user_room }, _this.admin_changed(joinId));//变为主持人，修改显示
             }
         };
 
@@ -1106,7 +1106,7 @@ class Room extends Component {
 
         let { username:my_username } = this.state.user;
 
-        if( username == my_username) { //管理员下麦自己
+        if( username == my_username) { //主持人下麦自己
             await emedia.mgr.grantRole(confr, [member_name], 1);
             emedia.mgr.deleteConferenceAttrs(options)
 
@@ -1131,12 +1131,12 @@ class Room extends Component {
 
         let { stream_list } = this.state;
 
-        stream_list.map(item => { //遍历所有 stream_list 将这个流的role 变为管理员
+        stream_list.map(item => { //遍历所有 stream_list 将这个流的role 变为主持人
             if(item && item.member){
                 if(memberId == item.member.id) {
                     item.member.role = emedia.mgr.Role.ADMIN;
                     let name = item.member.nickName || item.member.name //优先获取昵称
-                    message.success(`${name} 成为了管理员`)
+                    message.success(`${name} 成为了主持人`)
                 }
 
             }
@@ -1572,7 +1572,7 @@ class Room extends Component {
 
                 <div className="info">
                     <span className="name">
-                        { nickName + (role == 7 ? '(管理员)' : '') + (is_me ? '(我)' : '')}
+                        { nickName + (role == 7 ? '(主持人)' : '') + (is_me ? '(我)' : '')}
                     </span>
 
                     {/* <img src={get_img_url_by_name('no-speak-icon')}/> */}
@@ -1606,7 +1606,7 @@ class Room extends Component {
                 </Popconfirm> */}
                 
                 <video ref={`list-video-${id}`} autoPlay></video>
-                {/* 不是管理员并且不是管理员自己 不加载 */}
+                {/* 不是主持人并且不是主持人自己 不加载 */}
                 { (my_role == 7 && !is_me) ? <ManageTalker { ...{stream, member, my_username, confr} } /> : '' } 
             </div>
         )
