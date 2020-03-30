@@ -540,6 +540,9 @@ class Setting extends Component {
     }
 }
 
+
+
+
 // 设置昵称 modal
 class SetNickName extends Component {
     state = {
@@ -590,7 +593,105 @@ class SetNickName extends Component {
     }
 }
 
+// 主持人申请
 
+function ApplyAdmin (props) {
+    const apply_admin = () => {
+        let { my_username } = props;
+
+        if(!my_username) {
+            console.warn('ApplyAdmin username is required');
+            return
+        }
+
+        let options = {
+            key:my_username,
+            val:'request_tobe_admin'
+        }
+        
+        emedia.mgr.setConferenceAttrs(options);
+        message.success('成为主持人申请已发出，请等待主持人同意')
+    }
+    return(
+        <Button type="primary" onClick={apply_admin}>申请主持人</Button>
+    )
+}
+// 会议属性 处理
+// 判断自己的角色 和 username
+// 非主持人 无 操作权限
+// 处理完 回调上去
+const handle_conference_attrs = (options, callback) => {
+
+
+    let {
+        confr_attrs,
+        my_username,
+        my_role,
+        confr
+    } = options;
+
+    if(my_role != emedia.Role.ADMIN) {
+        return
+    }
+    const { confirm } = Modal;
+    confr_attrs.map(item => {
+        if(
+            item.val == 'request_tobe_admin' && 
+            item.op == 'ADD'
+        ) { //处理上麦
+            let username = item.key;
+            if(!username) {
+                return
+            }
+
+            let member_name = 'easemob-demo#chatdemoui_' + username; // sdk 需要一个fk 格式的username
+
+            let nick_name = options._get_nickName_by_username(username);
+            confirm({
+                title:`是否同意${nick_name}成为主持人的请求`,
+                async onOk() {
+    
+                    try {
+                        await emedia.mgr.grantRole(confr, [member_name], 7);
+                        message.success(`已经将${nick_name}变为了主持人`)
+                    } catch (error) {
+                        
+                    }
+                    
+                    // delete confr_attrs,处理完请求删除会议属性
+                    let options = {
+                        key:username,
+                        val:'request_tobe_admin'
+                    }
+                    emedia.mgr.deleteConferenceAttrs(options);
+
+                    let result = {
+                        type:'request_tobe_admin',
+                        status:'agree'
+                    }
+
+                    callback && callback(result)//触发回调函数
+                },
+                onCancel() {
+                    let options = {
+                        key:username,
+                        val:'request_tobe_admin'
+                    }
+                    emedia.mgr.deleteConferenceAttrs(options);
+
+                    let result = {
+                        type:'request_tobe_admin',
+                        status:'refuse'
+                    }
+
+                    callback && callback(result)
+                },
+                cancelText:'拒绝',
+                okText:'同意'
+            });
+        }
+    })
+}
 class Room extends Component {
     constructor(props) {
         super(props);
@@ -809,15 +910,17 @@ class Room extends Component {
             }
             message.warn(reason_text, 2, () => window.location.reload())
         };
-        emedia.mgr.onConfrAttrsUpdated = function(cattrs){ 
-            console.log('onConfrAttrsUpdated', cattrs);
+        emedia.mgr.onConfrAttrsUpdated = function(confr_attrs){ 
+            console.log('onConfrAttrsUpdated', confr_attrs);
             // 会议属性变更
             // 上麦、下麦、申请成为主持人 遍历判断
             // 
 
             let { username:my_username } = _this.state.user //自己的name
-            let { role } = _this.state.user_room
-            cattrs.map(item => {
+            let { role } = _this.state.user_room;
+            let { confr }  = _this.state
+
+            confr_attrs.map(item => {
                 if(item.key == my_username && role != emedia.mgr.Role.ADMIN ){
                     return
                 }
@@ -882,9 +985,24 @@ class Room extends Component {
                         }
                     }  
                 }
+            });
 
-                
-
+            // 处理管理员申请
+            // 返回处理类型 和 处理结果
+            let options = {
+                confr_attrs,
+                my_username,
+                my_role: role,
+                _get_nickName_by_username: _this._get_nickName_by_username.bind(_this),
+                confr
+            }
+            handle_conference_attrs(options, result => {
+                let { type, status } = result;
+                switch (type) {
+                    case 'request_tobe_admin':
+                        console.log('request_tobe_admin status', status);
+                        break;
+                }
             })
         };
 
@@ -1442,8 +1560,11 @@ class Room extends Component {
     _get_header_el() { 
 
         let { roomName, stream_list } = this.state;
-        let admin = '';
-        stream_list.map(item => {
+
+        let { role:my_role } = this.state.user_room;
+        let { username:my_username } = this.state.user;
+        let admin = ''; 
+        stream_list.map(item => { //获取admin name
             
             if(
                 item &&
@@ -1470,7 +1591,7 @@ class Room extends Component {
                     </div>
                     <div className="time">{this._get_tick()}</div>
                 </div>
-
+                { my_role == 3 ? <ApplyAdmin my_username={my_username} /> : '' } {/* 只有主播可以申请主持人 */} 
                 <div onClick={() => this.leave()} className="leave-action">
                     <img src={get_img_url_by_name('leave-icon')} />
                     <span>离开房间</span>
