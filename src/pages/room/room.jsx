@@ -965,6 +965,7 @@ class Room extends Component {
 
                 // 某些人员静音
                 if(
+                    item.val &&
                     item.val.indexOf('"action":"mute"') > -1 
                 ) {
                     let val = JSON.parse(item.val);
@@ -976,6 +977,7 @@ class Room extends Component {
                 }
                 // 某些人员解除静音
                 if(
+                    item.val &&
                     item.val.indexOf('"action":"unmute"') > -1 
                 ) {
                     let val = JSON.parse(item.val);
