@@ -769,31 +769,7 @@ class NetworkStatus extends Component {
         ) 
     }
 }
-// function NetworkStatus() {
-//     const get_network_status = () => {
-//         const onConnectionChange = () => {
-//             const { effectiveType } = navigator.connection;
-//             console.log(`有效网络连接类型: ${effectiveType}`);
-//         }
-         
-//         navigator.connection.addEventListener('change', onConnectionChange);
-//     }
-//     get_network_status();
-//     if(navigator.onLine){
-//         console.log("online")
-//     }
-//     window.addEventListener("offline", function(e) {console.log("offline")})
 
-//     window.addEventListener("online", function(e) {console.log("online");})
-//     return (
-//         <div className="network-wrapper">
-//             <div className="network-item one"></div>
-//             <div className="network-item two"></div>
-//             <div className="network-item three"></div>
-//             <div className="network-item four"></div>
-//         </div>
-//     )
-// }
 class Room extends Component {
     constructor(props) {
         super(props);
@@ -819,7 +795,7 @@ class Room extends Component {
             audio:true,
             video:false,
             headimg_url_suffix: '',
-            joined: true,
+            joined: false,
             loading: false,
 
             talker_is_full:false, //主播已满
@@ -885,7 +861,7 @@ class Room extends Component {
                 _this.get_confr_info();
             })
     
-            this.startTime()
+            // this.startTime()
             
         } catch (error) { 
             message.error(user_room.errorMessage);
@@ -1010,7 +986,7 @@ class Room extends Component {
             if(reason == 4 && failed){
                 reason_text = get_failed_reason(failed);
             }
-            message.warn(reason_text, 2, () => window.location.reload())
+            // message.warn(reason_text, 2, () => window.location.reload())
         };
         emedia.mgr.onConfrAttrsUpdated = function(confr_attrs){ 
             console.log('onConfrAttrsUpdated', confr_attrs);
@@ -1068,7 +1044,8 @@ class Room extends Component {
                 // 某些人员静音
                 if(
                     item.val &&
-                    item.val.indexOf('"action":"mute"') > -1 
+                    item.val.indexOf('"action"') > -1 &&
+                    item.val.indexOf('"mute"') > -1 
                 ) {
                     let val = JSON.parse(item.val);
                     if(val.uids){
@@ -1080,7 +1057,8 @@ class Room extends Component {
                 // 某些人员解除静音
                 if(
                     item.val &&
-                    item.val.indexOf('"action":"unmute"') > -1 
+                    item.val.indexOf('"action"') > -1 &&
+                    item.val.indexOf('"unmute"') > -1 
                 ) {
                     let val = JSON.parse(item.val);
                     if(val.uids){
