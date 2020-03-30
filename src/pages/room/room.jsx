@@ -692,6 +692,108 @@ const handle_conference_attrs = (options, callback) => {
         }
     })
 }
+
+// 网络状态
+
+class NetworkStatus extends Component {
+
+    // network_status
+    //  0 : offline、1: slow-2g、2: 2g、3: 3g、4: 4g
+    state = {
+        network_status: 0
+    }
+
+    componentWillMount() {
+        this.get_network_status();
+        this.on_network_status_changed()
+    }
+
+    on_network_status_changed = () => {
+        let _this = this;
+        window.addEventListener("offline", function() {
+            _this.setState({ network_status: 0 })
+        })
+
+        window.addEventListener("online", this.get_network_status);
+
+        // chrome 网络状态 变化
+        if(navigator.connection) {
+            navigator.connection.addEventListener('change', this.onConnectionChange);
+        }
+    }
+
+    // 只适用于 chrome 网络状态 变化
+    onConnectionChange = () => {
+        let { effectiveType } = navigator.connection;
+
+        switch(effectiveType){
+            case 'slow-2g':
+                this.setState({ network_status: 1})
+                break;
+            case '2g':
+                this.setState({ network_status: 2})
+                break;
+            case '3g':
+                this.setState({ network_status: 3})
+                break;
+            case '4g':
+                this.setState({ network_status: 4})
+                break;
+        }
+    }
+
+    get_network_status = () => {
+        if(navigator.onLine){//已经联网 简单判断
+
+            if(navigator.connection){ //判断网络状态、只有chrome 支持
+                this.onConnectionChange()
+            } else { // 别的浏览器直接显示 全网
+                this.setState({ network_status: 4})
+            } 
+        } else {
+            this.setState({ network_status: 0 })
+        }
+    }
+
+    render() {
+
+        let { network_status } = this.state;
+        
+        return (
+            <div className="network-wrapper">
+                <div className={`network-item one ${network_status>0 ? 'high-light' : ''}`}></div>
+                <div className={`network-item two ${network_status>1 ? 'high-light' : ''}`}></div>
+                <div className={`network-item three ${network_status>2 ? 'high-light' : ''}`}></div>
+                <div className={`network-item four ${network_status>3 ? 'high-light' : ''}`}></div>
+            </div>
+        ) 
+    }
+}
+// function NetworkStatus() {
+//     const get_network_status = () => {
+//         const onConnectionChange = () => {
+//             const { effectiveType } = navigator.connection;
+//             console.log(`有效网络连接类型: ${effectiveType}`);
+//         }
+         
+//         navigator.connection.addEventListener('change', onConnectionChange);
+//     }
+//     get_network_status();
+//     if(navigator.onLine){
+//         console.log("online")
+//     }
+//     window.addEventListener("offline", function(e) {console.log("offline")})
+
+//     window.addEventListener("online", function(e) {console.log("online");})
+//     return (
+//         <div className="network-wrapper">
+//             <div className="network-item one"></div>
+//             <div className="network-item two"></div>
+//             <div className="network-item three"></div>
+//             <div className="network-item four"></div>
+//         </div>
+//     )
+// }
 class Room extends Component {
     constructor(props) {
         super(props);
@@ -717,7 +819,7 @@ class Room extends Component {
             audio:true,
             video:false,
             headimg_url_suffix: '',
-            joined: false,
+            joined: true,
             loading: false,
 
             talker_is_full:false, //主播已满
@@ -1579,19 +1681,19 @@ class Room extends Component {
         })
 
         return (
-            <div className="info">
+            <div className="header-wrapper">
                 <div>
                     <img src={get_img_url_by_name('logo-text-room')}/>
                 </div>
-                <div style={{lineHeight:1}}>
-                    <div>
-                        <Tooltip title={'主持人: ' + (admin || 'sqx')} placement="bottom">
-                            <img src={get_img_url_by_name('admin-icon')} style={{marginTop:'-5px'}}/>
-                        </Tooltip>
-                        {/* <span>network</span> */}
+                <div className='info-wrapper'>
+                    <Tooltip title={'主持人: ' + (admin || 'admin')} placement="bottom">
+                        <img src={get_img_url_by_name('admin-icon')} />
+                    </Tooltip>
+                    <NetworkStatus />
+                    <div className="name-wrapper">
                         <span className="name">{roomName || '房间名称'}</span>
+                        <div className="time">{this._get_tick()}</div>
                     </div>
-                    <div className="time">{this._get_tick()}</div>
                 </div>
                 { my_role == 3 ? <ApplyAdmin my_username={my_username} /> : '' } {/* 只有主播可以申请主持人 */} 
                 <div onClick={() => this.leave()} className="leave-action">

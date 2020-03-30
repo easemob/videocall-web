@@ -197,36 +197,83 @@
         height: auto;
         line-height: 60px;
 
-        .info {
+        .header-wrapper {
             display: inline-flex;
             width: 100%;
             justify-content: space-between;
             align-items: center;
     
-            .name {
-                font-size:18px;
-                font-family:PingFangSC-Regular,PingFang SC;
-                font-weight:400;
-                color:rgba(255,255,255,1);
-                line-height:20px;
-            }
-            
-            .time {
-                float: right;
-                font-size: 12px;
-                margin-right: 1em;
-                padding: 2px 5px;
+            .info-wrapper {
+                display: flex;
+                align-items: center;
+                line-height: 1;
 
-                background:rgba(0,0,0,0.8);
-                border-radius:7px;
-                font-size:10px;
-                font-family:PingFangSC-Regular,PingFang SC;
-                font-weight:400;
-                color:rgba(255,255,255,1);
-                line-height:10px;
+                img{
+                    width: 34px;
+                    height: 34px;
+                }
 
-                min-width: 50px;
-                text-align: center;
+                .name-wrapper {
+                    position: relative;
+
+                    .name {
+                        font-size:18px;
+                        font-family:PingFangSC-Regular,PingFang SC;
+                        font-weight:400;
+                        color:rgba(255,255,255,1);
+                        line-height:20px;
+                    }
+
+                    .time {
+                        position: absolute;
+                        right: 50%;
+                        bottom: -20px;
+                        transform: translateX(50%);
+    
+                        padding: 2px 5px;
+        
+                        background:rgba(0,0,0,0.8);
+                        border-radius:7px;
+                        font-size:10px;
+                        font-family:PingFangSC-Regular,PingFang SC;
+                        font-weight:400;
+                        color:rgba(255,255,255,1);
+                        line-height:10px;
+        
+                        min-width: 50px;
+                        text-align: center;
+                    }
+                }
+                .network-wrapper {
+                    display: inline-block;
+                    margin: 0 16px 0 7px;
+                    height: 18px;
+
+                    .network-item {
+                        display: inline-block;
+                        width: 3px;
+                        background: #fff;
+                        margin-right: 3px;
+                    }
+
+                    .network-item.one {
+                        height: 25%;
+                    }
+                    .network-item.two {
+                        height: 50%;
+                    }
+                    .network-item.three {
+                        height: 75%;
+                    }
+                    .network-item.four {
+                        height: 100%;
+                    }
+                    .network-item.high-light {
+                        background: #3FEF66;
+                    }
+                }
+                
+                
             }
             .leave-action {
                 cursor: pointer;
