@@ -974,6 +974,7 @@ class Room extends Component {
                 3: "对方忙",
                 4: "网络原因",
                 5: "不支持",
+                6: "超时",
                 10: "其他设备登录",
                 11: "会议关闭",
                 12: "被踢出了会议"
@@ -986,7 +987,7 @@ class Room extends Component {
             if(reason == 4 && failed){
                 reason_text = get_failed_reason(failed);
             }
-            // message.warn(reason_text, 2, () => window.location.reload())
+            message.warn(reason_text, 0.5, () => window.location.reload())
         };
         emedia.mgr.onConfrAttrsUpdated = function(confr_attrs){ 
             console.log('onConfrAttrsUpdated', confr_attrs);
@@ -1155,8 +1156,10 @@ class Room extends Component {
         this.setState({ headimg_url_suffix })
     }
     _set_nickname = nickName => {
+        let { username } = this.state.user;
 
-        this.setState({ nickName })
+        
+        this.setState({ nickName: nickName || username })
     }
     leave() {
 
@@ -1183,6 +1186,7 @@ class Room extends Component {
     }
 
     _get_nickName_by_username(username) {
+
         if(!username){
             return
         }
@@ -1424,7 +1428,6 @@ class Room extends Component {
             return
         }
         
-        console.log('close audio inner own_stream', own_stream);
         if(!own_stream) {
             return
         }
@@ -1613,9 +1616,7 @@ class Room extends Component {
         let _this = this;
         for (const key in this.refs) {
             let el = this.refs[key];
-            console.log('_on_media_chanaged el',el);
             
-            // let stream_id = key.split('list-video-')[1];// 截取id list-video-***(stream_id)
             // 监听音视频的开关
             emedia.mgr.onMediaChanaged(el, function (constaints, stream) {
                 _this.set_stream_item_changed(constaints, stream.id)
