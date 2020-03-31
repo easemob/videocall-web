@@ -593,52 +593,78 @@ class SetNickName extends Component {
     }
 }
 
-// 主持人申请
+// 申请主持人 或者 放弃主持人操作
+function AdminChangeHandle(props) {
+    let {
+        my_username,
+        my_role,
+        stream_list,
+        confr
+    } = props;
 
-function ApplyAdmin (props) {
-    const apply_admin = () => {
-        let { my_username } = props;
-
-        if(!my_username) {
-            console.warn('ApplyAdmin username is required');
-            return
-        }
-
-        let options = {
-            key:my_username,
-            val:'request_tobe_admin'
-        }
+    // 主播角色
+    if(my_role == 3) {
+        const apply_admin = () => {
+    
+            if(!my_username) {
+                console.warn('ApplyAdmin username is required');
+                return
+            }
+    
+            let options = {
+                key:my_username,
+                val:'request_tobe_admin'
+            }
+            
+            emedia.mgr.setConferenceAttrs(options);
+            message.success('成为主持人申请已发出，请等待主持人同意')
         
-        emedia.mgr.setConferenceAttrs(options);
-        message.success('成为主持人申请已发出，请等待主持人同意')
-    
+        }
+        return(
+            <Button type="primary" onClick={apply_admin}>申请主持人</Button>
+        ) 
     }
-    return(
-        <Button type="primary" onClick={apply_admin}>申请主持人</Button>
-    )
-}
-// 放弃主持人
-function ApplyTalker (props) {
-    const apply_talker = async () => {
-        let { my_username, confr } = props;
 
-        if(!my_username) {
-            console.warn('ApplyAdmin username is required');
-            return
+    // 主持人角色
+    if(my_role == 7) {
+
+        let admin_number = 0;
+        stream_list.map(item => { //必须大于2个主持人，才可放弃主持人，否则会有问题
+            if(
+                item && 
+                item.member && 
+                item.member.role == 7
+            ) {
+                admin_number++
+            }
+        });
+
+        if( admin_number < 2) {
+            return ''
         }
 
-        let memName = 'easemob-demo#chatdemoui_' + my_username;
-        try {
-            await emedia.mgr.grantRole(confr, [memName], 3);
-            message.success('您已经变为了主播')
-        } catch (error) {
-            message.error('变更主播失败')
-        }
+        const apply_talker = async () => {
     
+            if(!my_username) {
+                console.warn('ApplyAdmin username is required');
+                return
+            }
+    
+            let memName = 'easemob-demo#chatdemoui_' + my_username;
+            try {
+                await emedia.mgr.grantRole(confr, [memName], 3);
+                message.success('您已经变为了主播')
+            } catch (error) {
+                message.error('变更主播失败')
+            }
+        
+        }
+        return(
+            <Button type="primary" onClick={apply_talker}>放弃主持人</Button>
+        )
     }
-    return(
-        <Button type="primary" onClick={apply_talker}>放弃主持人</Button>
-    )
+
+    return ''
 }
 // 会议属性 处理
 // 判断自己的角色 和 username
@@ -1147,11 +1173,13 @@ class Room extends Component {
             ) {
                 let { joinId } = _this.state.user_room;
                 user_room.role = role;
-                _this.setState({ user_room }, _this.admin_changed(joinId));//变为主持人，修改显示
+                let admin =  { memberId: joinId, role }
+                _this.setState({ user_room }, _this.admin_changed(admin));//变为主持人，修改显示
             }
         };
 
         emedia.mgr.onAdminChanged = function(admin) {
+            
             let { memberId } = admin;
             if(!memberId){
                 return
@@ -1356,15 +1384,15 @@ class Room extends Component {
         if(!admin) {
             return
         }
-        let { memberId } = admin;
+        let { memberId, role } = admin;
         let { stream_list } = this.state;
 
         stream_list.map(item => { //遍历所有 stream_list 将这个流的role 变为主持人
             if(item && item.member){
                 if(memberId == item.member.id) {
-                    item.member.role = admin.role;
+                    item.member.role = role;
                     let name = item.member.nickName || item.member.name //优先获取昵称
-                    let text = admin.role == 7 ? '成为了主持人' : '变成了主播';
+                    let text = role == 7 ? '成为了主持人' : '变成了主播';
                     message.success(name + text)
                 }
 
@@ -1699,10 +1727,8 @@ class Room extends Component {
                         <div className="time">{this._get_tick()}</div>
                     </div>
                 </div>
-                { 
-                    my_role == 3 ? <ApplyAdmin my_username={my_username} /> : 
-                    (my_role == 7 && stream_list.length > 1) ? 
-                    <ApplyTalker my_username={my_username} confr={confr} /> : '' } {/* 只有主播可以申请主持人 */} 
+
+                <AdminChangeHandle { ...{my_username, stream_list, my_role, confr}} />
                 <div onClick={() => this.leave()} className="leave-action">
                     <img src={get_img_url_by_name('leave-icon')} />
                     <span>离开房间</span>
