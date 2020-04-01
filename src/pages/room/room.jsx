@@ -1199,55 +1199,7 @@ class Room extends Component {
         };
 
         emedia.mgr.onRoleChanged = function (role) {
-
-            let { user_room } = _this.state;
-
-            // 被允许上麦
-            if(
-                user_room.role == 1 &&
-                role == 3
-            ) {
-                user_room.role = role;
-                let audio = true;//放开音频,否则无法推流
-                _this.setState({ user_room, audio },_this.publish);
-                message.success('你已经上麦成功,并且推流成功')
-                return
-            }
-
-            // 被允许下麦
-            if(
-                (user_room.role == 3 || user_room.role == 7) &&
-                role == 1
-            ) {
-                user_room.role = role;
-                _this.setState({ user_room });
-                message.success('你已经下麦了,并且停止推流')
-                return
-            }
-
-            // 变成主持人
-            if(
-                user_room.role == 3 &&
-                role == 7
-            ) {
-                let { joinId } = _this.state.user_room;
-                user_room.role = role;
-
-                let admin =  { memberId: joinId, role }
-                _this.setState({ user_room }, _this.admin_changed(admin));//变为主持人，修改显示
-                return
-            }
-
-            // 从主持人变为主播
-            if(
-                user_room.role == 7 &&
-                role == 3
-            ) {
-                user_room.role = role;
-
-                _this.setState({ user_room });
-                return
-            }
+            _this._on_role_changed(role)
         };
 
         emedia.mgr.onAdminChanged = function(admin) {
@@ -1259,7 +1211,69 @@ class Room extends Component {
             _this.admin_changed(admin)
         }
     }
+    _on_role_changed(role) {
+        if(!role) {
+            return
+        }
 
+        let { user_room } = this.state;
+        let old_role = user_room.role;
+        user_room.role = role;
+
+        let _this = this;
+
+        this.setState({ user_room }, () => {
+
+            // 从观众变为主播
+            if(
+                old_role == 1 &&
+                role == 3
+            ) {
+                _this.publish();
+                message.success('你已经上麦成功,并且推流成功')
+                return
+            }
+
+            // 被允许下麦
+            if(
+                (old_role == 3 || old_role == 7) &&
+                role == 1
+            ) {
+                message.success('你已经下麦了,并且停止推流')
+                return
+            }
+
+            // 变成主持人
+            if(
+                old_role == 3 &&
+                role == 7
+            ) {
+                message.success('你已经是主持人了')
+                return
+            }
+        })
+
+        const set_role_to_my_member = () => {// 变更流里面的角色
+            let { joinId } = _this.state.user_room;
+            let { stream_list } = _this.state;
+
+            stream_list.map(item => {
+                if(
+                    item &&
+                    item.member &&
+                    item.member.id == joinId
+                ) {
+                    item.member.role = role
+                }
+            });
+
+            _this.setState({ stream_list })
+        }
+
+        set_role_to_my_member();
+
+
+    }
     // 从 sessionStore 拿昵称
     _get_nickname_from_session() {
         let nickName = window.sessionStorage.getItem('easemob-nickName');
@@ -1305,8 +1319,14 @@ class Room extends Component {
         if(role == 1){//观众不推流
             return
         }
-        let { audio,video } = this.state //push 流取off(关) 的反值
-        emedia.mgr.publish({ audio, video });
+        
+        let _this = this;
+        this.setState({ //必须有一个开着的
+            audio: true 
+        },() => {
+            let { audio,video } = _this.state //push 流取off(关) 的反值
+            emedia.mgr.publish({ audio, video });
+        })
     }
 
     _get_nickName_by_username(username) {
