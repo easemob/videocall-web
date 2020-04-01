@@ -1406,9 +1406,6 @@ class Room extends Component {
             return
         }
 
-        if(role != 7){
-            message.success('下麦申请已发出，请等待主持人同意')
-        }
         let options = {
             key:username,
             val:'request_tobe_audience'
@@ -1421,7 +1418,6 @@ class Room extends Component {
             return
         }
 
-        const { confirm } = Modal;
 
         let member_name = 'easemob-demo#chatdemoui_' + username; // sdk 需要一个fk 格式的name
         let confr = this.state.user_room;
@@ -1432,23 +1428,9 @@ class Room extends Component {
             val:'request_tobe_audience'
         }
 
-        let { username:my_username } = this.state.user;
-
-        if( username == my_username) { //主持人下麦自己
-            await emedia.mgr.grantRole(confr, [member_name], 1);
-            emedia.mgr.deleteConferenceAttrs(options)
-
-        }else {
-            confirm({
-                title:`是否同意${this._get_nickName_by_username(username)}的下麦请求`,
-                async onOk() {
-                    await emedia.mgr.grantRole(confr, [member_name], 1);
-                    emedia.mgr.deleteConferenceAttrs(options)
-                },
-                cancelText:'取消',
-                okText:'同意'
-            });
-        }
+        await emedia.mgr.grantRole(confr, [member_name], 1);
+        emedia.mgr.deleteConferenceAttrs(options);
+        
     }
 
     admin_changed(admin) {
