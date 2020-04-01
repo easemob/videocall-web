@@ -862,7 +862,7 @@ function RoomSetting(props) {
                 <Input type="text" disabled value={password}/>
             </div>
             <div className="item-wrapper">
-                <div className="title">管理员</div>
+                <div className="title">主持人</div>
                 {
                     get_admins().map((item,index) => {
                         return <div key={index} className="text">{item}</div>
