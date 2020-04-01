@@ -1037,7 +1037,11 @@ class Room extends Component {
             if(reason == 4 && failed){
                 reason_text = get_failed_reason(failed);
             }
-            message.warn(reason_text, 0.5, () => window.location.reload())
+            if(reason == 0) { // 正常挂断不给提示
+                window.location.reload()
+            } else { // 非正常挂断给提示
+                message.warn(reason_text, 2, () => window.location.reload());
+            }
         };
         emedia.mgr.onConfrAttrsUpdated = function(confr_attrs){ 
             console.log('onConfrAttrsUpdated', confr_attrs);
@@ -1173,6 +1177,7 @@ class Room extends Component {
             ) {
                 let { joinId } = _this.state.user_room;
                 user_room.role = role;
+
                 let admin =  { memberId: joinId, role }
                 _this.setState({ user_room }, _this.admin_changed(admin));//变为主持人，修改显示
             }
