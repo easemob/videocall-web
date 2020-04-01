@@ -621,7 +621,7 @@ function AdminChangeHandle(props) {
         
         }
         return(
-            <Button type="primary" onClick={apply_admin}>申请主持人</Button>
+            <div className="admin-change-handle" onClick={apply_admin}>申请主持人</div>
         ) 
     }
 
@@ -660,7 +660,7 @@ function AdminChangeHandle(props) {
         
         }
         return(
-            <Button type="primary" onClick={apply_talker}>放弃主持人</Button>
+            <div className="admin-change-handle" onClick={apply_talker}>放弃主持人</div>
         )
     }
 
@@ -819,7 +819,61 @@ class NetworkStatus extends Component {
         ) 
     }
 }
+// 房间设置 modal
+function RoomSetting(props) {
+    let { 
+            room_setting_modal_show, 
+            roomName, 
+            password, 
+            stream_list,
 
+            confr,
+            user,
+            user_room
+        } = props;
+
+    
+    let { username: my_username } = user;
+    let { role: my_role } = user_room;
+    const get_admins = () => {
+        let admins = [];
+
+        stream_list.map(item => {
+            if(
+                item &&
+                item.member &&
+                item.member.role == 7
+            ) {
+                admins.push(item.member.nickName || item.member.name)
+            }
+        })
+        
+        return admins
+    }
+
+    return (
+        <div 
+            className={`room-setting${room_setting_modal_show ? " open":''}`}
+        >
+                <div className="title">房间名称</div>
+                <div className="text">{roomName}</div>
+            <div className="item-wrapper">
+                <div className="title">房间密码</div>
+                <Input type="text" disabled value={password}/>
+            </div>
+            <div className="item-wrapper">
+                <div className="title">管理员</div>
+                {
+                    get_admins().map((item,index) => {
+                        return <div key={index} className="text">{item}</div>
+                    })
+                }
+            </div>
+            <AdminChangeHandle { ...{my_username, stream_list, my_role, confr}}/>
+
+        </div>
+    )
+}
 class Room extends Component {
     constructor(props) {
         super(props);
@@ -852,7 +906,8 @@ class Room extends Component {
 
             shared_desktop:false,
 
-            set_nickname_modal_show: false
+            set_nickname_modal_show: false,
+            room_setting_modal_show: false
         };
 
         this.toggle_main = this.toggle_main.bind(this);
@@ -1180,6 +1235,18 @@ class Room extends Component {
 
                 let admin =  { memberId: joinId, role }
                 _this.setState({ user_room }, _this.admin_changed(admin));//变为主持人，修改显示
+                return
+            }
+
+            // 从主持人变为主播
+            if(
+                user_room.role == 7 &&
+                role == 3
+            ) {
+                user_room.role = role;
+
+                _this.setState({ user_room });
+                return
             }
         };
 
@@ -1733,7 +1800,6 @@ class Room extends Component {
                     </div>
                 </div>
 
-                <AdminChangeHandle { ...{my_username, stream_list, my_role, confr}} />
                 <div onClick={() => this.leave()} className="leave-action">
                     <img src={get_img_url_by_name('leave-icon')} />
                     <span>离开房间</span>
@@ -1877,9 +1943,23 @@ class Room extends Component {
                             
     }
 
+    // toggle 房间设置 modal
+    toggle_room_setting_modal() {
+        let { room_setting_modal_show } = this.state;
+
+        this.setState({
+            room_setting_modal_show: !room_setting_modal_show
+        })
+    }
     _get_footer_el() {
         let { role } = this.state.user_room
-        let { audio, video, shared_desktop} = this.state
+
+        let { 
+                audio,
+                video, 
+                shared_desktop,
+                room_setting_modal_show
+            } = this.state
         
         return (
             <div className="actions-wrap">
@@ -1897,7 +1977,7 @@ class Room extends Component {
                     }
                     {
                         <Tooltip title={ video ? '关闭视频' : '开启视频'}>
-                            <img style={{margin:'0 10px'}}
+                            <img
                                    src={video ? 
                                        get_img_url_by_name('video-is-open-icon') : 
                                        get_img_url_by_name('video-is-close-icon')} 
@@ -1935,11 +2015,23 @@ class Room extends Component {
                             /> 
                         </Tooltip>
                     }
+
+                        <Tooltip title='房间设置'>
+                            <img 
+                                src={ room_setting_modal_show ? 
+                                        get_img_url_by_name('room-setting-open-icon') : 
+                                        get_img_url_by_name('room-setting-close-icon')
+                                    } 
+                                onClick={() => this.toggle_room_setting_modal()}
+                            /> 
+                        </Tooltip>
                 </div>
                 <img 
                     src={get_img_url_by_name('expand-icon')} 
                     onClick={this.expand_talker_list} 
                     style={{visibility:this.state.talker_list_show ? 'hidden' : 'visible'}}/>
+
+                <RoomSetting {...this.state}/>
             </div>
         )
     }
