@@ -44,7 +44,19 @@ const Item = Form.Item
 const { Header, Content, Footer } = Layout;
 class ToAudienceList extends Component {
     state = {
-        checked_talkers: []//checked talkers name(also username)
+        checked_talkers: [],//checked talkers name(also username)
+        show:false
+    }
+    // 展示这个框的时候，传入一个回调，处理完了执行这个回调，用来执行谁上麦
+    show = (handle_apply_talker_callback) => {
+
+        this.handle_apply_talker_callback = handle_apply_talker_callback;
+
+        this.setState({ show: true})
+    }
+    hide = () => {
+       
+        this.setState({ show: false})
     }
     onChange = (checkedValues) => {
         this.setState({ checked_talkers: checkedValues})
@@ -53,9 +65,18 @@ class ToAudienceList extends Component {
         let confr = this.props.user_room;
         let { checked_talkers } = this.state
         emedia.mgr.grantRole(confr, checked_talkers, 1);
+        if(
+            this.handle_apply_talker_callback && 
+            typeof this.handle_apply_talker_callback == 'function'
+        ){
+            this.handle_apply_talker_callback()
+        }
+
+        this.hide()
     }
     render() {
-        let { stream_list, to_audience_list_show} = this.props;
+        let { stream_list } = this.props;
+        let { show } = this.state
 
         let base_url = 'https://download-sdk.oss-cn-beijing.aliyuncs.com/downloads/RtcDemo/headImage/';
 
@@ -63,7 +84,7 @@ class ToAudienceList extends Component {
             <Drawer 
                 placement="left"
                 closable={false}
-                visible={to_audience_list_show}
+                visible={show}
                 mask={false}
                 getContainer={false}
                 width="336px"
@@ -73,7 +94,7 @@ class ToAudienceList extends Component {
                <div className="title">
                     <Button 
                         style={{background:'transparent',color:'#fff'}}
-                        onClick={this.props.close_to_audience_list}
+                        onClick={this.hide}
                     >返回</Button>
 
                     <span style={{textAlign:'center'}}>主播人数已满<br/>可选择替换主播</span> 
@@ -295,7 +316,8 @@ const LeaveConfirmModal = {
     leave() {
         emedia.mgr.exitConference();
         this.visible = false;
-        this.render()
+        this.render();
+        window.location.reload()
     },
 
     end() {
@@ -304,7 +326,8 @@ const LeaveConfirmModal = {
         }
         this.visible = false;
         emedia.mgr.destroyConference(this.roleToken);
-        this.render()
+        this.render();
+        window.location.reload();
     },
 
     render() {
@@ -909,7 +932,6 @@ class Room extends Component {
             time:0,// 秒的单位
             stream_list: [null],//默认 main画面为空
             talker_list_show:false,
-            to_audience_list_show: false,
             audio:true,
             video:true,
             headimg_url_suffix: '',
@@ -952,7 +974,6 @@ class Room extends Component {
             token,
             config:{ 
                 nickName,
-                maxVideoCount:1,
                 ext: {
                     headImage: headimg_url_suffix //头像信息，用于别人接收
                 }
@@ -1106,11 +1127,12 @@ class Room extends Component {
             if(reason == 4 && failed){
                 reason_text = get_failed_reason(failed);
             }
-            if(reason == 0) { // 正常挂断不给提示
-                window.location.reload()
-            } else { // 非正常挂断给提示
+
+            console.log('onConferenceExit', reason, failed);
+            
+            if(reason !== 0) { // 正常挂断不给提示
                 message.warn(reason_text, 2, () => window.location.reload());
-            }
+            } 
         };
         emedia.mgr.onConfrAttrsUpdated = function(confr_attrs){ 
             console.log('onConfrAttrsUpdated', confr_attrs);
@@ -1340,6 +1362,7 @@ class Room extends Component {
     
             if(is_confirm){
                 emedia.mgr.exitConference();
+                window.location.reload();
             }
         }
 
@@ -1413,6 +1436,7 @@ class Room extends Component {
             title:`是否同意${this._get_nickName_by_username(username)}的上麦请求`,
             async onOk() {
 
+
                 try {
                     await emedia.mgr.grantRole(confr, [member_name], 3);
                 } catch (error) {
@@ -1422,7 +1446,9 @@ class Room extends Component {
                             cancelText:'取消',
                             okText:'确定',
                             onOk() {
-                                _this.setState({to_audience_list_show: true})
+                                _this.to_audience_list.show(() => {
+                                    emedia.mgr.grantRole(confr, [member_name], 3);
+                                })
                             }
                         })
                     }
@@ -2077,9 +2103,7 @@ class Room extends Component {
             talker_list_show:false
         })
     }
-    close_to_audience_list = () => {
-        this.setState({ to_audience_list_show: false })
-    }
+    
     startTime() {
         let _this = this;
         this.timeID = setInterval(
@@ -2261,7 +2285,7 @@ class Room extends Component {
                     </Footer>
                     {
                         role == 7 ?
-                        <ToAudienceList {...this.state} close_to_audience_list={this.close_to_audience_list}/> :
+                        <ToAudienceList {...this.state} ref={to_audience_list => this.to_audience_list = to_audience_list}/> :
                         <i></i>
                     }
 
