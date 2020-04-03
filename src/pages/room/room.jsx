@@ -838,13 +838,27 @@ function RoomSetting(props) {
     const get_admins = () => {
         let admins = [];
 
+        const get_nickname = member => {
+            
+            if(member.nickName && member.nickName.length < 30){
+                return member.nickName
+            }
+
+            let username = member.name.split('_')[1];
+
+            let before_username = username.slice(0,4); //优化成较短的显示
+            let after_username = username.slice(-4);
+
+            return before_username + '****' + after_username
+
+        }
         stream_list.map(item => {
             if(
                 item &&
                 item.member &&
                 item.member.role == 7
             ) {
-                admins.push(item.member.nickName || item.member.name)
+                admins.push(get_nickname(item.member))
             }
         })
         
@@ -938,7 +952,7 @@ class Room extends Component {
             token,
             config:{ 
                 nickName,
-                maxTalkerCount: 5,
+                maxVideoCount:1,
                 ext: {
                     headImage: headimg_url_suffix //头像信息，用于别人接收
                 }
@@ -1198,6 +1212,11 @@ class Room extends Component {
             })
         };
 
+        emedia.mgr.onMediaChanaged = () => {
+            console.log('emedia.mgr.onMediaChanaged');
+            
+            _this._stream_bind_video()
+        }
         emedia.mgr.onRoleChanged = function (role) {
             _this._on_role_changed(role)
         };
@@ -1685,7 +1704,7 @@ class Room extends Component {
         });
 
         // 当bind stream to video 就监听一下video
-        this._on_media_chanaged();
+        // this._on_media_chanaged();
     }
 
     //监听音视频变化
