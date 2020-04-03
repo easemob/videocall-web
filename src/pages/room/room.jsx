@@ -933,7 +933,7 @@ class Room extends Component {
             stream_list: [null],//默认 main画面为空
             talker_list_show:false,
             audio:true,
-            video:true,
+            video:false,
             headimg_url_suffix: '',
             joined: false,
             loading: false,
