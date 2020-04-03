@@ -911,7 +911,7 @@ class Room extends Component {
             talker_list_show:false,
             to_audience_list_show: false,
             audio:true,
-            video:false,
+            video:true,
             headimg_url_suffix: '',
             joined: false,
             loading: false,
@@ -980,7 +980,7 @@ class Room extends Component {
                 _this.get_confr_info();
             })
     
-            this.startTime()
+            // this.startTime()
             
         } catch (error) { 
             message.error(user_room.errorMessage);
@@ -1212,15 +1212,11 @@ class Room extends Component {
             })
         };
 
-        emedia.mgr.onMediaChanaged = () => {
-            console.log('emedia.mgr.onMediaChanaged');
-            
-            _this._stream_bind_video()
-        }
         emedia.mgr.onRoleChanged = function (role) {
             _this._on_role_changed(role)
         };
 
+        // 主持人变更回调
         emedia.mgr.onAdminChanged = function(admin) {
             
             let { memberId } = admin;
@@ -1229,7 +1225,22 @@ class Room extends Component {
             }
             _this.admin_changed(admin)
         }
+
+        // 视频流发布失败回调 -- 别人收不到 -- 自己能看到
+
+        emedia.mgr.onPubVideoFailed = async evt => {
+
+            if(evt.op == 107 && evt.endReason == 23) {
+                Modal.warn({
+                    title: '已达到最大视频数，请退出会议以音频重新进入',
+                    onOk() { window.location.reload() },
+                    okText:'确定'
+                });
+            }
+
+        }
     }
+
     _on_role_changed(role) {
         if(!role) {
             return
@@ -1704,7 +1715,7 @@ class Room extends Component {
         });
 
         // 当bind stream to video 就监听一下video
-        // this._on_media_chanaged();
+        this._on_media_chanaged();
     }
 
     //监听音视频变化
@@ -2253,6 +2264,7 @@ class Room extends Component {
                         <ToAudienceList {...this.state} close_to_audience_list={this.close_to_audience_list}/> :
                         <i></i>
                     }
+
                 </Layout>
             </div>
         )
@@ -2260,3 +2272,5 @@ class Room extends Component {
 }
 const WrapRoom = Form.create()(Room)
 export default WrapRoom
+
+
