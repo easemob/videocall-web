@@ -978,7 +978,7 @@ class Room extends Component {
             token,
             config:{ 
                 nickName,
-                maxTalkerCount:2,
+                maxTalkerCount:3,
                 maxVideoCount:1,
                 ext: {
                     headImage: headimg_url_suffix //头像信息，用于别人接收
@@ -1460,6 +1460,15 @@ class Room extends Component {
                     }
                 }
                 
+                // delete cattrs,处理完请求删除会议属性
+                let options = {
+                    key:username,
+                    val:'request_tobe_speaker'
+                }
+                emedia.mgr.deleteConferenceAttrs(options);
+            },
+
+            onCancel () {
                 // delete cattrs,处理完请求删除会议属性
                 let options = {
                     key:username,
