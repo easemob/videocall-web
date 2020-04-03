@@ -18,7 +18,8 @@ import {
     Avatar,
     Dropdown,
     Menu,
-    Switch
+    Switch,
+    Radio
 } from 'antd';
 import './room.less';
 
@@ -44,7 +45,7 @@ const Item = Form.Item
 const { Header, Content, Footer } = Layout;
 class ToAudienceList extends Component {
     state = {
-        checked_talkers: [],//checked talkers name(also username)
+        checked_talker: null,//checked talkers name(also username)
         show:false
     }
     // 展示这个框的时候，传入一个回调，处理完了执行这个回调，用来执行谁上麦
@@ -58,13 +59,15 @@ class ToAudienceList extends Component {
        
         this.setState({ show: false})
     }
-    onChange = (checkedValues) => {
-        this.setState({ checked_talkers: checkedValues})
+    onChange = e => {
+        this.setState({
+            checked_talker: e.target.value,
+        });
     }
     confirm = () => {
         let confr = this.props.user_room;
-        let { checked_talkers } = this.state
-        emedia.mgr.grantRole(confr, checked_talkers, 1);
+        let { checked_talker } = this.state
+        emedia.mgr.grantRole(confr, [checked_talker], 1);
         if(
             this.handle_apply_talker_callback && 
             typeof this.handle_apply_talker_callback == 'function'
@@ -76,7 +79,7 @@ class ToAudienceList extends Component {
     }
     render() {
         let { stream_list } = this.props;
-        let { show } = this.state
+        let { show, checked_talker } = this.state
 
         let base_url = 'https://download-sdk.oss-cn-beijing.aliyuncs.com/downloads/RtcDemo/headImage/';
 
@@ -102,8 +105,9 @@ class ToAudienceList extends Component {
                     <Button onClick={this.confirm}
                     >确定</Button>
                 </div> 
-               <Checkbox.Group 
+               <Radio.Group 
                     onChange={this.onChange}
+                    value={checked_talker}
                     name="to-audience"
                >
                    { stream_list.map(item => {
@@ -118,13 +122,13 @@ class ToAudienceList extends Component {
 
                                     <Avatar src={ base_url + headImage }/>
                                     <span className="name">{item.member.nickName || item.member.name}</span>
-                                    <Checkbox value={item.member.name} />
+                                    <Radio value={item.member.name} />
                                     
                                 </div>
                             )
                         }
                     })}
-               </Checkbox.Group>
+               </Radio.Group>
             </Drawer>
         )
     }
@@ -974,6 +978,8 @@ class Room extends Component {
             token,
             config:{ 
                 nickName,
+                maxTalkerCount:2,
+                maxVideoCount:1,
                 ext: {
                     headImage: headimg_url_suffix //头像信息，用于别人接收
                 }
