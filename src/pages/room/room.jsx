@@ -56,26 +56,31 @@ class ToAudienceList extends Component {
         this.setState({ show: true})
     }
     hide = () => {
-       
-        this.setState({ show: false})
+        this.setState({ show: false, checked_talker: null })
     }
     onChange = e => {
         this.setState({
             checked_talker: e.target.value,
         });
     }
-    confirm = () => {
+    confirm = async () => {
         let confr = this.props.user_room;
         let { checked_talker } = this.state
-        emedia.mgr.grantRole(confr, [checked_talker], 1);
-        if(
-            this.handle_apply_talker_callback && 
-            typeof this.handle_apply_talker_callback == 'function'
-        ){
-            this.handle_apply_talker_callback()
-        }
+        try {
+            await emedia.mgr.grantRole(confr, [checked_talker], 1);
+        
+            if(
+                this.handle_apply_talker_callback && 
+                typeof this.handle_apply_talker_callback == 'function'
+            ){
+                this.handle_apply_talker_callback()
+            }
 
-        this.hide()
+            this.hide()
+        } catch (error) {
+            message.error('选人下麦失败，请重试')
+        }
+        
     }
     render() {
         let { stream_list } = this.props;
@@ -92,6 +97,7 @@ class ToAudienceList extends Component {
                 getContainer={false}
                 width="336px"
                 className="to-audience-list"
+                destroyOnClose={true}
             >
 
                <div className="title">
@@ -123,7 +129,6 @@ class ToAudienceList extends Component {
                                     <Avatar src={ base_url + headImage }/>
                                     <span className="name">{item.member.nickName || item.member.name}</span>
                                     <Radio value={item.member.name} />
-                                    
                                 </div>
                             )
                         }
@@ -978,8 +983,8 @@ class Room extends Component {
             token,
             config:{ 
                 nickName,
-                maxTalkerCount:3,
-                maxVideoCount:1,
+                maxTalkerCount:4,
+                maxVideoCount:3,
                 ext: {
                     headImage: headimg_url_suffix //头像信息，用于别人接收
                 }
@@ -1007,7 +1012,7 @@ class Room extends Component {
                 _this.get_confr_info();
             })
     
-            // this.startTime()
+            this.startTime()
             
         } catch (error) { 
             message.error(user_room.errorMessage);
@@ -1491,7 +1496,6 @@ class Room extends Component {
             return
         }
         let { username } = this.state.user;
-        let { role } = this.state.user_room
 
         if(!username) {
             return
