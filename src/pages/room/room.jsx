@@ -127,7 +127,10 @@ class ToAudienceList extends Component {
                                 <div className="info-wrapper" key={item.member.name}>
 
                                     <Avatar src={ base_url + headImage }/>
-                                    <span className="name">{item.member.nickName || item.member.name}</span>
+                                    <span className="name">{
+                                        (item.member.nickName || item.member.name) + 
+                                        (item.member.role == 7 ? '(主持人)' : '')
+                                    }</span>
                                     <Radio value={item.member.name} />
                                 </div>
                             )
@@ -983,6 +986,8 @@ class Room extends Component {
             token,
             config:{ 
                 nickName,
+                maxTalkerCount:2,
+                maxVideoCount:2,
                 ext: {
                     headImage: headimg_url_suffix //头像信息，用于别人接收
                 }
