@@ -1848,10 +1848,8 @@ class Room extends Component {
     }
     _get_header_el() { 
 
-        let { roomName, stream_list, confr } = this.state;
+        let { roomName, stream_list } = this.state;
 
-        let { role:my_role } = this.state.user_room;
-        let { username:my_username } = this.state.user;
         let admin = ''; 
         stream_list.map(item => { //获取admin name
             
