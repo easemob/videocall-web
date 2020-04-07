@@ -945,7 +945,7 @@ class Room extends Component {
             stream_list: [null],//默认 main画面为空
             talker_list_show:false,
             audio:true,
-            video:false,
+            video:true,
             headimg_url_suffix: '',
             joined: false,
             loading: false,
@@ -986,6 +986,8 @@ class Room extends Component {
             token,
             config:{ 
                 nickName,
+                maxTalkerCount:2,
+                maxVideoCount:1,
                 ext: {
                     headImage: headimg_url_suffix //头像信息，用于别人接收
                 }
@@ -1269,9 +1271,16 @@ class Room extends Component {
             if(evt.op == 107 && evt.endReason == 23) {
                 Modal.warn({
                     title: '已达到最大视频数，请退出会议以音频重新进入',
-                    onOk() { window.location.reload() },
+                    // onOk() { window.location.reload() },
                     okText:'确定'
                 });
+
+                let { own_stream } = _this.state;
+                if(own_stream) { // 断开自己的流
+                    await emedia.mgr.unpublish(own_stream)
+                }
+
+                emedia.mgr.publish({ audio:true, video:false })
             }
 
         }
