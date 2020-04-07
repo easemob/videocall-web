@@ -986,8 +986,8 @@ class Room extends Component {
             token,
             config:{ 
                 nickName,
-                maxTalkerCount:2,
-                maxVideoCount:2,
+                maxTalkerCount:4,
+                maxVideoCount:3,
                 ext: {
                     headImage: headimg_url_suffix //头像信息，用于别人接收
                 }
