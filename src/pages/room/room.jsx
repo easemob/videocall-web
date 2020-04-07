@@ -997,7 +997,9 @@ class Room extends Component {
         try {
             const user_room = await emedia.mgr.joinRoom(params);
     
-            if(user_room.error == -200) { //主播已满
+            if(user_room.error == -200 && 
+                user_room.errorMessage.indexOf('talker count limit') > 0
+            ) { //主播已满 并且错误信息 是相对的，暂时先这样
                 this.setState({ talker_is_full: true, loading:false });
                 return
             }
