@@ -983,8 +983,6 @@ class Room extends Component {
             token,
             config:{ 
                 nickName,
-                maxTalkerCount:4,
-                maxVideoCount:3,
                 ext: {
                     headImage: headimg_url_suffix //头像信息，用于别人接收
                 }
@@ -1385,12 +1383,18 @@ class Room extends Component {
         }
         
         let _this = this;
-        this.setState({ //必须有一个开着的
-            audio: true 
-        },() => {
-            let { audio,video } = _this.state //push 流取off(关) 的反值
+
+        let { audio, video }  = this.state;
+        if( !audio && !video ) {
+            this.setState({ //必须有一个开着的
+                audio: true 
+            },() => {
+                let { audio,video } = _this.state //push 流取off(关) 的反值
+                emedia.mgr.publish({ audio, video });
+            })
+        } else {
             emedia.mgr.publish({ audio, video });
-        })
+        }
     }
 
     _get_nickName_by_username(username) {
