@@ -945,7 +945,7 @@ class Room extends Component {
             stream_list: [null],//默认 main画面为空
             talker_list_show:false,
             audio:true,
-            video:true,
+            video:false,
             headimg_url_suffix: '',
             joined: false,
             loading: false,
@@ -986,8 +986,6 @@ class Room extends Component {
             token,
             config:{ 
                 nickName,
-                maxTalkerCount:4,
-                maxVideoCount:3,
                 ext: {
                     headImage: headimg_url_suffix //头像信息，用于别人接收
                 }
