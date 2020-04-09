@@ -1267,11 +1267,17 @@ class Room extends Component {
         emedia.mgr.onPubVideoFailed = async evt => {
 
             if(evt.op == 107 && evt.endReason == 23) {
-                Modal.warn({
-                    title: '已达到最大视频数，请退出会议以音频重新进入',
-                    onOk() { window.location.reload() },
-                    okText:'确定'
-                });
+
+                message.warn('已达到最大视频数，只能开启音频')
+
+                let { own_stream } = _this.state;
+                if(own_stream) { // 断开自己的流
+                    await emedia.mgr.unpublish(own_stream)
+                }
+
+                emedia.mgr.publish({ audio:true, video:false });
+
+                _this.setState({ video:false })
             }
 
         }
