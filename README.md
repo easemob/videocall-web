@@ -22,3 +22,11 @@
 3. add config-overrides.js ---> antd按需加载、使用less、配置antd 主题
 
 4. 打包设置环境变量  dotenv-cli 包 + .env.test(测试环境变量)/.env.production(生产环境变量)
+
+
+
+`常见问题`
+1. npm start --->  TypeError [ERR_INVALID_ARG_TYPE]: The "path" argument must be of type string. Received type undefined
+
+    检查 react-script 是否 >= 3.4.0
+ 
