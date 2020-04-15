@@ -193,8 +193,11 @@ class MuteAction extends Component {
 class ManageTalker extends Component {
     // 静音某一人
     mute = () => {
-
-
+        let { id:confrId } = this.props.confr;
+        let { id:memberId } = this.props.member;
+        emedia.mgr.muteBymemberId(confrId, memberId);
+        // 以下将逐步替换掉，使用sdk 封装的接口
+        return
         let { name, nickName } = this.props.member;
             nickName = nickName || name; 
             name = name.split('_')[1]// delete appkey
@@ -212,7 +215,11 @@ class ManageTalker extends Component {
     }
     // 解除静音某人
     unmute = () => {
-
+        let { id:confrId } = this.props.confr;
+        let { id:memberId } = this.props.member;
+        emedia.mgr.unmuteBymemberId(confrId, memberId);
+        // 以下将逐步替换掉，使用sdk 封装的接口
+        return
         let { name, nickName } = this.props.member;
             nickName = nickName || name; 
             name = name.split('_')[1]// delete appkey
@@ -640,7 +647,10 @@ function AdminChangeHandle(props) {
     // 主播角色
     if(my_role == 3) {
         const apply_admin = () => {
-    
+            emedia.mgr.requestToAdmin(confr.id);
+            
+            // 以下将逐步替换掉，使用sdk 封装的接口
+            return
             if(!my_username) {
                 console.warn('ApplyAdmin username is required');
                 return
@@ -1015,7 +1025,7 @@ class Room extends Component {
                 _this.get_confr_info();
             })
     
-            this.startTime()
+            // this.startTime()
             
         } catch (error) { 
             message.error(user_room.errorMessage);
@@ -1396,6 +1406,9 @@ class Room extends Component {
         let _this = this;
 
         let { audio, video }  = this.state;
+        emedia.mgr.publish({ audio, video });
+        // 以下为 video audio 必须开一个 逐步替换 sdk已修改
+        return
         if( !audio && !video ) {
             this.setState({ //必须有一个开着的
                 audio: true 
@@ -1432,6 +1445,12 @@ class Room extends Component {
     }
     // 上麦申请
     apply_talker() {
+
+        let { confrId } = this.state.user_room;
+        emedia.mgr.requestToTalker(confrId)
+
+        // 以下逐步被替换
+        return
         let { username } = this.state.user;
 
         message.success('上麦申请已发出，请等待主持人同意')
