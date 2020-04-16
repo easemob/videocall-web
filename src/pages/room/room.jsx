@@ -1296,6 +1296,14 @@ class Room extends Component {
             }
 
         }
+
+        // 主持人 收到上麦申请回调
+        // applicat_memId 申请者 memId
+        // 只有管理员会收到这个回调
+        emedia.mgr.onRequestToTalker = function(applicat_memId) {
+            
+            _this.handle_apply_talker(applicat_memId)
+        }
     }
 
     _on_role_changed(role) {
@@ -1471,17 +1479,39 @@ class Room extends Component {
         
         emedia.mgr.setConferenceAttrs(options)
     }
-    handle_apply_talker(username) {
-        if(!username){
+    handle_apply_talker(memberId) {
+
+        if(!memberId){
             return
         }
-
-        let member_name = 'easemob-demo#chatdemoui_' + username; // sdk 需要一个fk 格式的username
         const { confirm } = Modal;
 
         let confr = this.state.user_room;
 
         let _this = this;
+        confirm({
+            title:`是否同意${memberId}的上麦请求`,
+            onOk: () => emedia.mgr.agreeRequestToTalker(confr.id, memberId),
+            onCancel: () => emedia.mgr.refuseRequestToTalker(confr.id, memberId),
+            cancelText:'拒绝',
+            okText:'同意'
+        });
+
+
+
+
+        // 以下逐步替换 使用 sdk
+        return
+        if(!username){
+            return
+        }
+
+        let member_name = 'easemob-demo#chatdemoui_' + username; // sdk 需要一个fk 格式的username
+        // const { confirm } = Modal;
+
+        // let confr = this.state.user_room;
+
+        // let _this = this;
         confirm({
             title:`是否同意${this._get_nickName_by_username(username)}的上麦请求`,
             async onOk() {
