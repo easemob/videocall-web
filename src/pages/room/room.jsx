@@ -148,6 +148,11 @@ class MuteAction extends Component {
     }
     mute_all_action = () => {
 
+        let { id:confrId } = this.props.confr;
+
+        emedia.mgr.muteAll(confrId)
+        // 以下为会议属性实现 将逐步替换
+        return
         let { username } = this.props.user;
 
         let options = {
