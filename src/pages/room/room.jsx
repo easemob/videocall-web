@@ -26,6 +26,7 @@ import './room.less';
 
 import emedia from 'easemob-emedia';
 import login from './login.js'
+import { appkey } from '../../config';
 
 // assets
 
@@ -148,11 +149,6 @@ class MuteAction extends Component {
     }
     mute_all_action = () => {
 
-        let { id:confrId } = this.props.confr;
-
-        emedia.mgr.muteAll(confrId)
-        // 以下为会议属性实现 将逐步替换
-        return
         let { username } = this.props.user;
 
         let options = {
@@ -198,11 +194,8 @@ class MuteAction extends Component {
 class ManageTalker extends Component {
     // 静音某一人
     mute = () => {
-        let { id:confrId } = this.props.confr;
-        let { id:memberId } = this.props.member;
-        emedia.mgr.muteBymemberId(confrId, memberId);
-        // 以下将逐步替换掉，使用sdk 封装的接口
-        return
+
+
         let { name, nickName } = this.props.member;
             nickName = nickName || name; 
             name = name.split('_')[1]// delete appkey
@@ -220,11 +213,7 @@ class ManageTalker extends Component {
     }
     // 解除静音某人
     unmute = () => {
-        let { id:confrId } = this.props.confr;
-        let { id:memberId } = this.props.member;
-        emedia.mgr.unmuteBymemberId(confrId, memberId);
-        // 以下将逐步替换掉，使用sdk 封装的接口
-        return
+
         let { name, nickName } = this.props.member;
             nickName = nickName || name; 
             name = name.split('_')[1]// delete appkey
@@ -652,10 +641,7 @@ function AdminChangeHandle(props) {
     // 主播角色
     if(my_role == 3) {
         const apply_admin = () => {
-            emedia.mgr.requestToAdmin(confr.id);
-            
-            // 以下将逐步替换掉，使用sdk 封装的接口
-            return
+    
             if(!my_username) {
                 console.warn('ApplyAdmin username is required');
                 return
@@ -700,7 +686,7 @@ function AdminChangeHandle(props) {
                 return
             }
     
-            let memName = 'easemob-demo#chatdemoui_' + my_username;
+            let memName = appkey + '_' + my_username;
             try {
                 await emedia.mgr.grantRole(confr, [memName], 3);
                 message.success('您已经变为了主播')
@@ -744,7 +730,7 @@ const handle_conference_attrs = (options, callback) => {
                 return
             }
 
-            let member_name = 'easemob-demo#chatdemoui_' + username; // sdk 需要一个fk 格式的username
+            let member_name = appkey + '_' + username; // sdk 需要一个fk 格式的username
 
             let nick_name = options._get_nickName_by_username(username);
             confirm({
@@ -988,17 +974,11 @@ class Room extends Component {
         } = this.state;
 
         let { role } = this.state.user_room;
-        let {
-            username,
-            token
-        } = this.state.user;
         
         let params = {
             roomName,
             password,
             role,
-            memName: 'easemob-demo#chatdemoui_' + username, // appkey + username 格式（后台必须）
-            token,
             config:{ 
                 nickName,
                 ext: {
@@ -1030,10 +1010,10 @@ class Room extends Component {
                 _this.get_confr_info();
             })
     
-            // this.startTime()
+            this.startTime()
             
         } catch (error) { 
-            message.error(user_room.errorMessage);
+            message.error(error);
             this.setState({ loading:false })
         }
     }
@@ -1078,7 +1058,7 @@ class Room extends Component {
         
         const user = await login();
         this.setState({ user })
-        this.init_emedia_callback();
+        this.init_emedia_callback(); //登录之后 初始化 emedia
 
         window.onbeforeunload=function(e){     
             var e = window.event||e;  
@@ -1095,9 +1075,16 @@ class Room extends Component {
     init_emedia_callback() {
         let _this = this;
         
+        let { username, token } = this.state.user;
+
         emedia.config({
-            restPrefix: process.env.REACT_APP_RTC_HOST
+            restPrefix: process.env.REACT_APP_RTC_HOST,
+            appkey
         });
+
+        let memName = appkey +'_'+ username;
+        emedia.mgr.setIdentity(memName, token); //设置memName 、token
+
         emedia.mgr.onStreamAdded = function (member, stream) {
             console.log('onStreamAdded >>>', member, stream);
 
@@ -1296,14 +1283,6 @@ class Room extends Component {
             }
 
         }
-
-        // 主持人 收到上麦申请回调
-        // applicat_memId 申请者 memId
-        // 只有管理员会收到这个回调
-        emedia.mgr.onRequestToTalker = function(applicat_memId) {
-            
-            _this.handle_apply_talker(applicat_memId)
-        }
     }
 
     _on_role_changed(role) {
@@ -1419,9 +1398,6 @@ class Room extends Component {
         let _this = this;
 
         let { audio, video }  = this.state;
-        emedia.mgr.publish({ audio, video });
-        // 以下为 video audio 必须开一个 逐步替换 sdk已修改
-        return
         if( !audio && !video ) {
             this.setState({ //必须有一个开着的
                 audio: true 
@@ -1441,7 +1417,7 @@ class Room extends Component {
         }
 
         
-        let member_name = 'easemob-demo#chatdemoui_' + username;
+        let member_name = appkey + '_' + username;
         let nickName = username;
         let { stream_list } = this.state;
         
@@ -1458,12 +1434,6 @@ class Room extends Component {
     }
     // 上麦申请
     apply_talker() {
-
-        let { confrId } = this.state.user_room;
-        emedia.mgr.requestToTalker(confrId)
-
-        // 以下逐步被替换
-        return
         let { username } = this.state.user;
 
         message.success('上麦申请已发出，请等待主持人同意')
@@ -1479,39 +1449,17 @@ class Room extends Component {
         
         emedia.mgr.setConferenceAttrs(options)
     }
-    handle_apply_talker(memberId) {
-
-        if(!memberId){
+    handle_apply_talker(username) {
+        if(!username){
             return
         }
+
+        let member_name = appkey + '_' + username; // sdk 需要一个fk 格式的username
         const { confirm } = Modal;
 
         let confr = this.state.user_room;
 
         let _this = this;
-        confirm({
-            title:`是否同意${memberId}的上麦请求`,
-            onOk: () => emedia.mgr.agreeRequestToTalker(confr.id, memberId),
-            onCancel: () => emedia.mgr.refuseRequestToTalker(confr.id, memberId),
-            cancelText:'拒绝',
-            okText:'同意'
-        });
-
-
-
-
-        // 以下逐步替换 使用 sdk
-        return
-        if(!username){
-            return
-        }
-
-        let member_name = 'easemob-demo#chatdemoui_' + username; // sdk 需要一个fk 格式的username
-        // const { confirm } = Modal;
-
-        // let confr = this.state.user_room;
-
-        // let _this = this;
         confirm({
             title:`是否同意${this._get_nickName_by_username(username)}的上麦请求`,
             async onOk() {
@@ -1583,7 +1531,7 @@ class Room extends Component {
         }
 
 
-        let member_name = 'easemob-demo#chatdemoui_' + username; // sdk 需要一个fk 格式的name
+        let member_name = appkey + '_' + username; // sdk 需要一个fk 格式的name
         let confr = this.state.user_room;
 
         // delete cattrs,处理完请求删除会议属性

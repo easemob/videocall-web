@@ -1,21 +1,22 @@
 import ajax from './ajax';
+import { appkey } from '../config';
+
 
 const BASE = process.env.REACT_APP_IM_HOST;
-// const BASE = ''
+
+let org_name = appkey.split('#')[0];
+let app_name = appkey.split('#')[1];
+
+let register_url = `${BASE}/${org_name}/${app_name}/users`;
+let login_url = `${BASE}/${org_name}/${app_name}/token`;
 
 export const req_register = params => ajax(
-    BASE + '/easemob-demo/chatdemoui/users', 
+    register_url, 
     params, 
     'POST'
 );
 export const req_login = params => ajax(
-    BASE + '/easemob-demo/chatdemoui/token', 
-    params, 
-    'POST'
-);
-
-export const req_create = params => ajax(
-    BASE + '/easemob-demo/chatdemoui/conferences/room', 
+    login_url, 
     params, 
     'POST'
 );
