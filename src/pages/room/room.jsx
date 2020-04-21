@@ -650,6 +650,10 @@ function AdminChangeHandle(props) {
     if(my_role == 3) {
         const apply_admin = () => {
     
+            message.success('主持人申请已发出，请等待主持人同意');
+            emedia.mgr.requestToAdmin(confr.id);
+            // 以下将逐步使用 sdk 替换
+            return
             if(!my_username) {
                 console.warn('ApplyAdmin username is required');
                 return
@@ -661,7 +665,6 @@ function AdminChangeHandle(props) {
             }
             
             emedia.mgr.setConferenceAttrs(options);
-            message.success('成为主持人申请已发出，请等待主持人同意')
         
         }
         return(
@@ -1295,9 +1298,65 @@ class Room extends Component {
         // 主持人 收到上麦申请回调
         // applicat_memId 申请者 memId
         // 只有管理员会收到这个回调
-        emedia.mgr.onRequestToTalker = function(applicat_memId) {
+        
+        emedia.mgr.onRequestToTalker = function(memberId, agreeCallback, refuseCallback) {
             
-            _this.handle_apply_talker(applicat_memId)
+            // _this.handle_apply_talker(applicat_memId, member_name, nick_name)
+
+            // let { memId: memberId, nickName:nick_name } = session;
+
+            if(!memberId){
+                return
+            }
+            const { confirm } = Modal;
+
+            // let _this = this;
+            // let confr = _this.state.user_room;
+
+            confirm({
+                title:`是否同意${memberId}的上麦请求`,
+                onOk: () => agreeCallback(memberId),
+                onCancel: () => refuseCallback(memberId),
+                cancelText:'拒绝',
+                okText:'同意'
+            });
+        }
+
+        // 观众收到 上麦申请的回复 result 0: 同意 1: 拒绝
+        emedia.mgr.onRequestToTalkerReply = function(result) {
+            if(result == 1){
+                message.error('管理员拒绝了你的上麦申请')
+            }
+        }
+        // 主播收到 申请主持人的回复 result 0: 同意 1: 拒绝
+        emedia.mgr.onRequestToAdminReply = function(result) {
+            if(result == 1){
+                message.error('管理员拒绝了你的主持人申请')
+            }
+        }
+
+        // 主持人申请
+        emedia.mgr.onRequestToAdmin = function(memberId, agreeCallback, refuseCallback) {
+            
+            // _this.handle_apply_talker(applicat_memId, member_name, nick_name)
+
+            // let { memId: memberId, nickName:nick_name } = session;
+
+            if(!memberId){
+                return
+            }
+            const { confirm } = Modal;
+
+            // let _this = this;
+            // let confr = _this.state.user_room;
+
+            confirm({
+                title:`是否同意${memberId}的主持人请求`,
+                onOk: () => agreeCallback(memberId),
+                onCancel: () => refuseCallback(memberId),
+                cancelText:'拒绝',
+                okText:'同意'
+            });
         }
     }
 
@@ -1455,13 +1514,13 @@ class Room extends Component {
     apply_talker() {
 
         let { confrId } = this.state.user_room;
+        message.success('上麦申请已发出，请等待主持人同意');
         emedia.mgr.requestToTalker(confrId)
 
         // 以下逐步被替换
         return
         let { username } = this.state.user;
 
-        message.success('上麦申请已发出，请等待主持人同意')
         
         if(!username) {
             return
@@ -1474,7 +1533,7 @@ class Room extends Component {
         
         emedia.mgr.setConferenceAttrs(options)
     }
-    handle_apply_talker(memberId) {
+    handle_apply_talker(memberId, member_name, nick_name) {
 
         if(!memberId){
             return
@@ -1485,8 +1544,8 @@ class Room extends Component {
 
         let _this = this;
         confirm({
-            title:`是否同意${memberId}的上麦请求`,
-            onOk: () => emedia.mgr.agreeRequestToTalker(confr.id, memberId),
+            title:`是否同意${nick_name || memberId}的上麦请求`,
+            onOk: () => emedia.mgr.agreeRequestToTalker(confr.id, member_name),
             onCancel: () => emedia.mgr.refuseRequestToTalker(confr.id, memberId),
             cancelText:'拒绝',
             okText:'同意'
@@ -1501,7 +1560,7 @@ class Room extends Component {
             return
         }
 
-        let member_name = 'easemob-demo#chatdemoui_' + username; // sdk 需要一个fk 格式的username
+        // let member_name = 'easemob-demo#chatdemoui_' + username; // sdk 需要一个fk 格式的username
         // const { confirm } = Modal;
 
         // let confr = this.state.user_room;
