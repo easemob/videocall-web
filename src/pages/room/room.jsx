@@ -221,7 +221,11 @@ class ManageTalker extends Component {
     }
     // 解除静音某人
     unmute = () => {
-
+        let { id:confrId } = this.props.confr;
+        let { id:memberId } = this.props.member;
+        emedia.mgr.unmuteBymemberId(confrId, memberId);
+        // 以下将逐步替换掉，使用sdk 封装的接口
+        return
         let { name, nickName } = this.props.member;
             nickName = nickName || name; 
             name = name.split('_')[1]// delete appkey
@@ -1180,7 +1184,7 @@ class Room extends Component {
                     item.op == 'ADD' &&
                     role == emedia.mgr.Role.ADMIN
                 ) { //处理上麦
-                    _this.handle_apply_talker(item.key);
+                    // _this.handle_apply_talker(item.key);
                     return
                 }
                 if(
@@ -1223,7 +1227,7 @@ class Room extends Component {
                     let val = JSON.parse(item.val);
                     if(val.uids){
                         if(val.uids.indexOf(my_username) > -1) {
-                            _this.close_audio()
+                            // _this.close_audio()
                         }
                     }
                 }
@@ -1335,7 +1339,7 @@ class Room extends Component {
             }
         }
 
-        // 主持人申请
+        // 收到主播的主持人申请
         emedia.mgr.onRequestToAdmin = function(memberId, agreeCallback, refuseCallback) {
             
             // _this.handle_apply_talker(applicat_memId, member_name, nick_name)
@@ -1357,6 +1361,16 @@ class Room extends Component {
                 cancelText:'拒绝',
                 okText:'同意'
             });
+        }
+
+        // 被管理员静音或取消静音的回调
+        emedia.mgr.onMuted = () => { 
+            message.warn('你被管理员禁言了'); 
+            _this.close_audio()
+        }
+        emedia.mgr.onUnmuted = () => { 
+            message.success('你被管理员取消了禁言');
+            _this.open_audio()
         }
     }
 
