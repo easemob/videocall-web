@@ -147,11 +147,12 @@ class MuteAction extends Component {
     state = {
         mute_all: false
     }
-    mute_all_action = () => {
+    mute_all_action = async () => {
 
         let { id:confrId } = this.props.confr;
 
-        emedia.mgr.muteAll(confrId)
+        await emedia.mgr.muteAll(confrId);
+        this.setState({ mute_all:true })
         // 以下为会议属性实现 将逐步替换
         return
         let { username } = this.props.user;
@@ -164,9 +165,15 @@ class MuteAction extends Component {
         emedia.mgr.setConferenceAttrs(options)
 
         message.success('已全体静音')
-        this.setState({ mute_all:true })
     }
-    unmute_all_action = () => {
+    unmute_all_action = async () => {
+
+        let { id:confrId } = this.props.confr;
+
+        await emedia.mgr.unmuteAll(confrId);
+        this.setState({ mute_all:false })
+        // 以下为会议属性实现 将逐步替换
+        return
         let { username } = this.props.user;
 
         let options = {
@@ -587,9 +594,6 @@ class Setting extends Component {
         )
     }
 }
-
-
-
 
 // 设置昵称 modal
 class SetNickName extends Component {
@@ -1240,7 +1244,7 @@ class Room extends Component {
                     let val = JSON.parse(item.val);
                     if(val.uids){
                         if(val.uids.indexOf(my_username) > -1) {
-                            _this.open_audio()
+                            // _this.open_audio()
                         }
                     }  
                 }
@@ -1363,13 +1367,23 @@ class Room extends Component {
             });
         }
 
-        // 被管理员静音或取消静音的回调
+        // 某人被管理员静音或取消静音的回调
         emedia.mgr.onMuted = () => { 
             message.warn('你被管理员禁言了'); 
             _this.close_audio()
         }
         emedia.mgr.onUnmuted = () => { 
             message.success('你被管理员取消了禁言');
+            _this.open_audio()
+        }
+
+        // 全体静音或取消全体静音
+        emedia.mgr.onMuteAll = () => { 
+            message.warn('管理员启用了全体禁言');
+            _this.close_audio()
+        }
+        emedia.mgr.onUnMuteAll = () => { 
+            message.success('管理员取消了全体禁言');
             _this.open_audio()
         }
     }
