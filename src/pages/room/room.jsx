@@ -352,12 +352,12 @@ const LeaveConfirmModal = {
         window.location.reload()
     },
 
-    end() {
+    async end() {
         if(!this.roleToken) {
             return
         }
         this.visible = false;
-        emedia.mgr.destroyConference(this.roleToken);
+        await emedia.mgr.destroyConference(this.roleToken);
         this.render();
         window.location.reload();
     },
@@ -1029,7 +1029,7 @@ class Room extends Component {
                 _this.get_confr_info();
             })
     
-            this.startTime()
+            // this.startTime()
             
         } catch (error) { 
             message.error(error);
@@ -2010,6 +2010,36 @@ class Room extends Component {
             }
         })
 
+        let _this = this;
+        const update_live_layout = () => {
+            let { id:confrId } = _this.state.confr;
+
+
+            let { stream_list } = _this.state;
+
+            let regions = [];
+            stream_list.map(item => {
+                if(item){
+                    let { id: stream_id } = item.stream;
+                    regions.push({
+                        "sid": stream_id,
+                        "x": 2,
+                        "y": 5,
+                        "w": 2,
+                        "h": 2,
+                        "z": 333,
+                        "style": "fill"
+                    })
+                }
+            })
+
+            emedia.mgr.updateLiveLayout(confrId, regions)
+        }
+
+        const delete_live = () => {
+            let { id:confrId } = _this.state.confr;
+            emedia.mgr.deleteLive(confrId)
+        }
         return (
             <div className="header-wrapper">
                 <div>
@@ -2025,7 +2055,8 @@ class Room extends Component {
                         <div className="time">{this._get_tick()}</div>
                     </div>
                 </div>
-
+                <Button onClick={update_live_layout}>更新Live布局</Button>
+                <Button onClick={delete_live}>取消Live</Button>
                 <div onClick={() => this.leave()} className="leave-action">
                     <img src={get_img_url_by_name('leave-icon')} />
                     <span>离开房间</span>
