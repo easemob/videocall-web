@@ -1002,7 +1002,10 @@ class Room extends Component {
                 nickName,
                 ext: {
                     headImage: headimg_url_suffix //头像信息，用于别人接收
-                }
+                },
+                rec: true, 
+                recMerge: true
+
             }
         }
 
@@ -1029,7 +1032,7 @@ class Room extends Component {
                 _this.get_confr_info();
             })
     
-            // this.startTime()
+            this.startTime()
             
         } catch (error) { 
             message.error(error);
@@ -2055,8 +2058,8 @@ class Room extends Component {
                         <div className="time">{this._get_tick()}</div>
                     </div>
                 </div>
-                <Button onClick={update_live_layout}>更新Live布局</Button>
-                <Button onClick={delete_live}>取消Live</Button>
+                {/* <Button onClick={update_live_layout}>更新Live布局</Button>
+                <Button onClick={delete_live}>取消Live</Button> */}
                 <div onClick={() => this.leave()} className="leave-action">
                     <img src={get_img_url_by_name('leave-icon')} />
                     <span>离开房间</span>
