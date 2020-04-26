@@ -1220,7 +1220,7 @@ class Room extends Component {
         // 全体静音或取消全体静音
         emedia.mgr.onMuteAll = () => { 
             message.warn('管理员启用了全体禁言');
-            _this.close_audio()
+            setTimeout(_this.close_audio, 500)  //如果禁言，加入会议就会触发，所以设置延时
         }
         emedia.mgr.onUnMuteAll = () => { 
             message.success('管理员取消了全体禁言');
