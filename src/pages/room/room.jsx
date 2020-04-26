@@ -209,43 +209,12 @@ class ManageTalker extends Component {
         let { id:confrId } = this.props.confr;
         let { id:memberId } = this.props.member;
         emedia.mgr.muteBymemberId(confrId, memberId);
-        // 以下将逐步替换掉，使用sdk 封装的接口
-        return
-        let { name, nickName } = this.props.member;
-            nickName = nickName || name; 
-            name = name.split('_')[1]// delete appkey
-
-        let { my_username } = this.props;
-
-        let options = {
-            key:my_username,
-            val: JSON.stringify( { action:"mute",uids:[name], timestamp: new Date().getTime() } ) 
-        }
-        
-        emedia.mgr.setConferenceAttrs(options);
-
-        message.success(`已设置${nickName}为静音`);
     }
     // 解除静音某人
     unmute = () => {
         let { id:confrId } = this.props.confr;
         let { id:memberId } = this.props.member;
         emedia.mgr.unmuteBymemberId(confrId, memberId);
-        // 以下将逐步替换掉，使用sdk 封装的接口
-        return
-        let { name, nickName } = this.props.member;
-            nickName = nickName || name; 
-            name = name.split('_')[1]// delete appkey
-
-        let { my_username } = this.props;
-        let options = {
-            key:my_username,
-            val: JSON.stringify( { action:"unmute",uids:[name], timestamp: new Date().getTime() } ) 
-        }
-        
-        emedia.mgr.setConferenceAttrs(options);
-
-        message.success(`已解除${nickName}的静音`);
     }
     // 更多的操作
     more_action = ( {key} ) => {
@@ -686,19 +655,6 @@ function AdminChangeHandle(props) {
     
             message.success('主持人申请已发出，请等待主持人同意');
             emedia.mgr.requestToAdmin(confr.id);
-            // 以下将逐步使用 sdk 替换
-            return
-            if(!my_username) {
-                console.warn('ApplyAdmin username is required');
-                return
-            }
-    
-            let options = {
-                key:my_username,
-                val:'request_tobe_admin'
-            }
-            
-            emedia.mgr.setConferenceAttrs(options);
         
         }
         return(
@@ -746,82 +702,6 @@ function AdminChangeHandle(props) {
     }
 
     return ''
-}
-// 会议属性 处理
-// 判断自己的角色 和 username
-// 非主持人 无 操作权限
-// 处理完 回调上去
-const handle_conference_attrs = (options, callback) => {
-
-
-    let {
-        confr_attrs,
-        my_username,
-        my_role,
-        confr
-    } = options;
-
-    if(my_role != emedia.Role.ADMIN) {
-        return
-    }
-    const { confirm } = Modal;
-    confr_attrs.map(item => {
-        if(
-            item.val == 'request_tobe_admin' && 
-            item.op == 'ADD'
-        ) { //处理上麦
-            let username = item.key;
-            if(!username) {
-                return
-            }
-
-            let member_name = appkey + '_' + username; // sdk 需要一个fk 格式的username
-
-            let nick_name = options._get_nickName_by_username(username);
-            confirm({
-                title:`是否同意${nick_name}成为主持人的请求`,
-                async onOk() {
-    
-                    try {
-                        await emedia.mgr.grantRole(confr, [member_name], 7);
-                        message.success(`已经将${nick_name}变为了主持人`)
-                    } catch (error) {
-                        
-                    }
-                    
-                    // delete confr_attrs,处理完请求删除会议属性
-                    let options = {
-                        key:username,
-                        val:'request_tobe_admin'
-                    }
-                    emedia.mgr.deleteConferenceAttrs(options);
-
-                    let result = {
-                        type:'request_tobe_admin',
-                        status:'agree'
-                    }
-
-                    callback && callback(result)//触发回调函数
-                },
-                onCancel() {
-                    let options = {
-                        key:username,
-                        val:'request_tobe_admin'
-                    }
-                    emedia.mgr.deleteConferenceAttrs(options);
-
-                    let result = {
-                        type:'request_tobe_admin',
-                        status:'refuse'
-                    }
-
-                    callback && callback(result)
-                },
-                cancelText:'拒绝',
-                okText:'同意'
-            });
-        }
-    })
 }
 
 // 网络状态
@@ -1224,25 +1104,10 @@ class Room extends Component {
         emedia.mgr.onConfrAttrsUpdated = function(confr_attrs){ 
             console.log('onConfrAttrsUpdated', confr_attrs);
             // 会议属性变更
-            // 上麦、下麦、申请成为主持人 遍历判断
-            // 
-
-            let { username:my_username } = _this.state.user //自己的name
             let { role } = _this.state.user_room;
-            let { confr }  = _this.state
 
             confr_attrs.map(item => {
-                if(item.key == my_username && role != emedia.mgr.Role.ADMIN ){
-                    return
-                }
-                if(
-                    item.val == 'request_tobe_speaker' && 
-                    item.op == 'ADD' &&
-                    role == emedia.mgr.Role.ADMIN
-                ) { //处理上麦
-                    // _this.handle_apply_talker(item.key);
-                    return
-                }
+                
                 if(
                     item.val == 'request_tobe_audience' && 
                     item.op == 'ADD' &&
@@ -1251,74 +1116,8 @@ class Room extends Component {
                     _this.handle_apply_audience(item.key);
                     return
                 }
-                // 全体静音 key value 变换 与上面的
-                if( item.key == 'muteall' ){
-                    let value = JSON.parse(item.val);
-                    let { setter, status } = value;
-
-                    if(my_username == setter ){ //自己设置的全体静音，不静音自己
-                        return
-                    }
-
-
-                    if(status == 1 ){//关闭麦克风
-                        setTimeout(() => { // 等到拿到 自己的流再操作
-                            _this.close_audio()
-                        },200)
-                    } else{
-                        _this.open_audio()
-                    }
-                    return
-                }
                 
-
-                
-
-                // 某些人员静音
-                if(
-                    item.val &&
-                    item.val.indexOf('"action"') > -1 &&
-                    item.val.indexOf('"mute"') > -1 
-                ) {
-                    let val = JSON.parse(item.val);
-                    if(val.uids){
-                        if(val.uids.indexOf(my_username) > -1) {
-                            // _this.close_audio()
-                        }
-                    }
-                }
-                // 某些人员解除静音
-                if(
-                    item.val &&
-                    item.val.indexOf('"action"') > -1 &&
-                    item.val.indexOf('"unmute"') > -1 
-                ) {
-                    let val = JSON.parse(item.val);
-                    if(val.uids){
-                        if(val.uids.indexOf(my_username) > -1) {
-                            // _this.open_audio()
-                        }
-                    }  
-                }
             });
-
-            // 处理管理员申请
-            // 返回处理类型 和 处理结果
-            let options = {
-                confr_attrs,
-                my_username,
-                my_role: role,
-                _get_nickName_by_username: _this._get_nickName_by_username.bind(_this),
-                confr
-            }
-            handle_conference_attrs(options, result => {
-                let { type, status } = result;
-                switch (type) {
-                    case 'request_tobe_admin':
-                        console.log('request_tobe_admin status', status);
-                        break;
-                }
-            })
         };
 
         emedia.mgr.onRoleChanged = function (role) {
@@ -1543,18 +1342,6 @@ class Room extends Component {
 
         let { audio, video }  = this.state;
         emedia.mgr.publish({ audio, video });
-        // 以下为 video audio 必须开一个 逐步替换 sdk已修改
-        return
-        if( !audio && !video ) {
-            this.setState({ //必须有一个开着的
-                audio: true 
-            },() => {
-                let { audio,video } = _this.state //push 流取off(关) 的反值
-                emedia.mgr.publish({ audio, video });
-            })
-        } else {
-            emedia.mgr.publish({ audio, video });
-        }
     }
 
     _get_nickName_by_username(username) {
@@ -1586,21 +1373,6 @@ class Room extends Component {
         message.success('上麦申请已发出，请等待主持人同意');
         emedia.mgr.requestToTalker(confrId)
 
-        // 以下逐步被替换
-        return
-        let { username } = this.state.user;
-
-        
-        if(!username) {
-            return
-        }
-
-        let options = {
-            key:username,
-            val:'request_tobe_speaker'
-        }
-        
-        emedia.mgr.setConferenceAttrs(options)
     }
     handle_apply_talker(memberId, member_name, nick_name) {
 
@@ -1619,64 +1391,6 @@ class Room extends Component {
             cancelText:'拒绝',
             okText:'同意'
         });
-
-
-
-
-        // 以下逐步替换 使用 sdk
-        return
-        if(!username){
-            return
-        }
-
-        // let member_name = 'easemob-demo#chatdemoui_' + username; // sdk 需要一个fk 格式的username
-        // const { confirm } = Modal;
-
-        // let confr = this.state.user_room;
-
-        // let _this = this;
-        confirm({
-            title:`是否同意${this._get_nickName_by_username(username)}的上麦请求`,
-            async onOk() {
-
-
-                try {
-                    await emedia.mgr.grantRole(confr, [member_name], 3);
-                } catch (error) {
-                    if(error.error == -523){
-                        confirm({
-                            title:'主播人数已满，请选人下麦',
-                            cancelText:'取消',
-                            okText:'确定',
-                            onOk() {
-                                _this.to_audience_list.show(() => {
-                                    emedia.mgr.grantRole(confr, [member_name], 3);
-                                })
-                            }
-                        })
-                    }
-                }
-                
-                // delete cattrs,处理完请求删除会议属性
-                let options = {
-                    key:username,
-                    val:'request_tobe_speaker'
-                }
-                emedia.mgr.deleteConferenceAttrs(options);
-            },
-
-            onCancel () {
-                // delete cattrs,处理完请求删除会议属性
-                let options = {
-                    key:username,
-                    val:'request_tobe_speaker'
-                }
-                emedia.mgr.deleteConferenceAttrs(options);
-            },
-            cancelText:'取消',
-            okText:'同意'
-        });
-
 
     }
     // 下麦申请
@@ -2146,9 +1860,6 @@ class Room extends Component {
                 { role == 7 ? <MuteAction {...this.state}/> : ''}
             </Drawer>
         )
-
-
-       
 
     }
 
