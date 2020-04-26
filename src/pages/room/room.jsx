@@ -484,7 +484,9 @@ class Setting extends Component {
         video: false,
         audio: true,
         visible: false,
-        headimg_url_suffix: ''
+        headimg_url_suffix: '',
+        cdn:'rtmp://rtc-turn4-hsb.easemob.com:10006/live/sqx', //rtmp://rtc-turn4-hsb.easemob.com:10006/live/sqx
+        push_cdn: false
     }
 
     componentDidMount() {
@@ -518,13 +520,15 @@ class Setting extends Component {
             headimg_url_suffix,
             nickName,
             video,
-            audio
+            audio,
+            cdn,
+            push_cdn
         } = this.state;
 
         let _this = this;
         
         // 回调上去
-        _this.props._get_setting_values({headimg_url_suffix, nickName,  video, audio})
+        _this.props._get_setting_values({headimg_url_suffix, nickName, video, audio, cdn, push_cdn})
         _this.setState({ visible: false })
         window.sessionStorage.setItem('easemob-nickName', nickName); //保存 nickName
         window.sessionStorage.setItem('easemob-headimg_url_suffix', headimg_url_suffix); //保存 头像 url
@@ -558,8 +562,29 @@ class Setting extends Component {
     get_headimg_url = () => {
         this.head_images.show()
     }
+    // cdn 地址
+    cdn_change = e => {
+        const { value } = e.target;
+        this.setState({
+            cdn:value
+        })
+    }
+    // 是否开启 CDN 切换
+    toggle_push_cdn = checked => {
+        this.setState({
+            push_cdn:checked
+        })
+    }
     render() {
-        let { visible, headimg_url_suffix, audio, video, nickName } = this.state;
+        let { 
+            visible, 
+            headimg_url_suffix, 
+            audio, 
+            video, 
+            nickName,
+            cdn,
+            push_cdn
+         } = this.state;
 
         let base_url = 'https://download-sdk.oss-cn-beijing.aliyuncs.com/downloads/RtcDemo/headImage/';
 
@@ -586,10 +611,11 @@ class Setting extends Component {
                         <Input placeholder="请输入昵称" value={nickName} onChange={this.nick_name_change} />
                         <Checkbox checked={video} onChange={this.video_change}>打开摄像头</Checkbox>
                         <Checkbox checked={audio} onChange={this.audio_change}>打开麦克风</Checkbox>
+                        <Input placeholder="推流CDN地址" value={cdn} onChange={this.cdn_change} disabled={!push_cdn} />
+                        <span>是否推流 CDN</span> <Switch onChange={this.toggle_push_cdn}></Switch>
                         <div className="action">
                             <Button type="primary" onClick={this.handleSubmit}>保存并返回</Button>
                         </div>
-                
             </Modal>
         )
     }
@@ -975,7 +1001,10 @@ class Room extends Component {
             shared_desktop:false,
 
             set_nickname_modal_show: false,
-            room_setting_modal_show: false
+            room_setting_modal_show: false,
+
+            cdn:'', //推流 cdn url
+            push_cdn: false //是否开启推流 cdn 
         };
 
         this.toggle_main = this.toggle_main.bind(this);
@@ -989,7 +1018,9 @@ class Room extends Component {
             roomName,
             password,
             nickName,
-            headimg_url_suffix
+            headimg_url_suffix,
+            push_cdn,
+            cdn
         } = this.state;
 
         let { role } = this.state.user_room;
@@ -1007,6 +1038,24 @@ class Room extends Component {
                 recMerge: true
 
             }
+        }
+
+        // 如果设置推流 添加 cdn 地址
+        if(push_cdn && cdn) {
+
+            let liveCfg = {
+                cdn,
+                layoutStyle : 'GRID',
+                canvas :{ 
+                    bgclr : 0,
+                    bps : 800000,
+                    codec : "H264",
+                    w : 640,
+                    h : 480,
+                    fps : 20,
+                }
+            }
+            params.config.liveCfg = liveCfg
         }
 
         try {
@@ -1307,25 +1356,20 @@ class Room extends Component {
         }
 
         // 主持人 收到上麦申请回调
-        // applicat_memId 申请者 memId
+        // applicat 申请者信息 {memberId, nickName}
         // 只有管理员会收到这个回调
         
-        emedia.mgr.onRequestToTalker = function(memberId, agreeCallback, refuseCallback) {
+        emedia.mgr.onRequestToTalker = function(applicat, agreeCallback, refuseCallback) {
             
-            // _this.handle_apply_talker(applicat_memId, member_name, nick_name)
-
-            // let { memId: memberId, nickName:nick_name } = session;
+            let { memberId, nickName } = applicat;
 
             if(!memberId){
                 return
             }
             const { confirm } = Modal;
 
-            // let _this = this;
-            // let confr = _this.state.user_room;
-
             confirm({
-                title:`是否同意${memberId}的上麦请求`,
+                title:`是否同意${nickName || memberId}的上麦请求`,
                 onOk: () => agreeCallback(memberId),
                 onCancel: () => refuseCallback(memberId),
                 cancelText:'拒绝',
@@ -1346,23 +1390,17 @@ class Room extends Component {
             }
         }
 
-        // 收到主播的主持人申请
-        emedia.mgr.onRequestToAdmin = function(memberId, agreeCallback, refuseCallback) {
+        // 收到主播的主持人申请, applicat 申请者信息 {memberId, nickName}
+        emedia.mgr.onRequestToAdmin = function(applicat, agreeCallback, refuseCallback) {
             
-            // _this.handle_apply_talker(applicat_memId, member_name, nick_name)
-
-            // let { memId: memberId, nickName:nick_name } = session;
+            let { memberId, nickName } = applicat; 
 
             if(!memberId){
                 return
             }
             const { confirm } = Modal;
-
-            // let _this = this;
-            // let confr = _this.state.user_room;
-
             confirm({
-                title:`是否同意${memberId}的主持人请求`,
+                title:`是否同意${nickName || memberId}的主持人请求`,
                 onOk: () => agreeCallback(memberId),
                 onCancel: () => refuseCallback(memberId),
                 cancelText:'拒绝',
