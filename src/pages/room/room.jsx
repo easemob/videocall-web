@@ -454,7 +454,7 @@ class Setting extends Component {
         audio: true,
         visible: false,
         headimg_url_suffix: '',
-        cdn:'rtmp://rtc-turn4-hsb.easemob.com:10006/live/sqx', //rtmp://rtc-turn4-hsb.easemob.com:10006/live/sqx
+        cdn:'rtmp://livepush.easemob.com/meeting/sqx?auth_key=1588063712-0-0-c62756534239f5f5523a65fc4d22ba1c', 
         push_cdn: false
     }
 
@@ -920,7 +920,7 @@ class Room extends Component {
             }
         }
 
-        // 如果设置推流 添加 cdn 地址
+        // 如果设置推流 添加 cdn配置
         if(push_cdn && cdn) {
 
             let liveCfg = {
@@ -928,11 +928,8 @@ class Room extends Component {
                 layoutStyle : 'GRID',
                 canvas :{ 
                     bgclr : 0,
-                    bps : 800000,
-                    codec : "H264",
                     w : 640,
-                    h : 480,
-                    fps : 20,
+                    h : 480
                 }
             }
             params.config.liveCfg = liveCfg
@@ -1030,7 +1027,8 @@ class Room extends Component {
 
         emedia.config({
             restPrefix: process.env.REACT_APP_RTC_HOST,
-            appkey
+            appkey,
+            useDeployMore:true
         });
 
         let memName = appkey +'_'+ username;
@@ -1313,7 +1311,6 @@ class Room extends Component {
     _set_nickname = nickName => {
         let { username } = this.state.user;
 
-        
         this.setState({ nickName: nickName || username })
     }
     leave() {
@@ -1338,9 +1335,15 @@ class Room extends Component {
             return
         }
         
-        let _this = this;
-
         let { audio, video }  = this.state;
+        // video = { // 设置 video 分辨率
+        //     width: {
+        //         exact: 1280
+        //     },
+        //     height: {
+        //         exact: 720
+        //     }
+        // }
         emedia.mgr.publish({ audio, video });
     }
 
