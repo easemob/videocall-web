@@ -118,10 +118,11 @@ class ToAudienceList extends Component {
                     name="to-audience"
                >
                    { stream_list.map(item => {
-                        if( // 自己不显示
+                        if( // 自己不显示 并且共享桌面的 不重复显示
                             item &&
                             item.member &&
-                            !item.member.is_me
+                            !item.member.is_me &&
+                            item.stream.type != emedia.StreamType.DESKTOP
                         ) {
                             let { headImage } = item.member.ext;
                             return (
@@ -153,36 +154,12 @@ class MuteAction extends Component {
 
         await emedia.mgr.muteAll(confrId);
         this.setState({ mute_all:true })
-        // 以下为会议属性实现 将逐步替换
-        return
-        let { username } = this.props.user;
-
-        let options = {
-            key:'muteall',
-            val:JSON.stringify({status: 1, setter:username, timestamp: new Date().getTime() })
-        }
-        
-        emedia.mgr.setConferenceAttrs(options)
-
-        message.success('已全体静音')
     }
     unmute_all_action = async () => {
 
         let { id:confrId } = this.props.confr;
 
         await emedia.mgr.unmuteAll(confrId);
-        this.setState({ mute_all:false })
-        // 以下为会议属性实现 将逐步替换
-        return
-        let { username } = this.props.user;
-
-        let options = {
-            key:'muteall',
-            val:JSON.stringify({status: 0, setter:username, timestamp: new Date().getTime() })
-        }
-        
-        emedia.mgr.setConferenceAttrs(options)
-        message.success('已解除全体静音')
         this.setState({ mute_all:false })
     }
     render() {
@@ -817,7 +794,8 @@ function RoomSetting(props) {
             if(
                 item &&
                 item.member &&
-                item.member.role == 7
+                item.member.role == 7 &&
+                item.stream.type != emedia.StreamType.DESKTOP
             ) {
                 admins.push(get_nickname(item.member))
             }
@@ -915,8 +893,9 @@ class Room extends Component {
                     headImage: headimg_url_suffix //头像信息，用于别人接收
                 },
                 rec: true, 
-                recMerge: true
+                recMerge: true,
 
+                maxTalkerCount:1
             }
         }
 
@@ -1028,7 +1007,7 @@ class Room extends Component {
         emedia.config({
             restPrefix: process.env.REACT_APP_RTC_HOST,
             appkey,
-            useDeployMore:true
+            // useDeployMore:true //开启多集群部署
         });
 
         let memName = appkey +'_'+ username;
@@ -1133,7 +1112,6 @@ class Room extends Component {
         }
 
         // 视频流发布失败回调 -- 别人收不到 -- 自己能看到
-
         emedia.mgr.onPubVideoFailed = async evt => {
 
             if(evt.op == 107 && evt.endReason == 23) {
@@ -1167,7 +1145,7 @@ class Room extends Component {
 
             confirm({
                 title:`是否同意${nickName || memberId}的上麦请求`,
-                onOk: () => agreeCallback(memberId),
+                onOk: () => agreeCallback(memberId,() => { _this.to_audience_list.show() }),
                 onCancel: () => refuseCallback(memberId),
                 cancelText:'拒绝',
                 okText:'同意'
