@@ -923,7 +923,7 @@ class Room extends Component {
                 return
             }
             if(user_room.error){
-                message.error(user_room.errorMessage);
+                message.error(user_room.message);
                 this.setState({ loading:false })
                 return
             }
