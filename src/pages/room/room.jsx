@@ -431,7 +431,7 @@ class Setting extends Component {
         audio: true,
         visible: false,
         headimg_url_suffix: '',
-        cdn:'rtmp://livepush.easemob.com/meeting/sqx?auth_key=1588063712-0-0-c62756534239f5f5523a65fc4d22ba1c', 
+        cdn:'', 
         push_cdn: false
     }
 
@@ -647,7 +647,8 @@ function AdminChangeHandle(props) {
             if(
                 item && 
                 item.member && 
-                item.member.role == 7
+                item.member.role == 7 &&
+                item.stream.type != emedia.StreamType.DESKTOP
             ) {
                 admin_number++
             }
@@ -893,9 +894,7 @@ class Room extends Component {
                     headImage: headimg_url_suffix //头像信息，用于别人接收
                 },
                 rec: true, 
-                recMerge: true,
-
-                maxTalkerCount:1
+                recMerge: true
             }
         }
 
@@ -1136,20 +1135,9 @@ class Room extends Component {
         
         emedia.mgr.onRequestToTalker = function(applicat, agreeCallback, refuseCallback) {
             
-            let { memberId, nickName } = applicat;
+            _this.handle_apply_talker(applicat, agreeCallback, refuseCallback)
 
-            if(!memberId){
-                return
-            }
-            const { confirm } = Modal;
-
-            confirm({
-                title:`是否同意${nickName || memberId}的上麦请求`,
-                onOk: () => agreeCallback(memberId,() => { _this.to_audience_list.show() }),
-                onCancel: () => refuseCallback(memberId),
-                cancelText:'拒绝',
-                okText:'同意'
-            });
+            
         }
 
         // 观众收到 上麦申请的回复 result 0: 同意 1: 拒绝
@@ -1355,23 +1343,37 @@ class Room extends Component {
         emedia.mgr.requestToTalker(confrId)
 
     }
-    handle_apply_talker(memberId, member_name, nick_name) {
+    handle_apply_talker(applicat, agreeCallback, refuseCallback) {
+
+        
+        let { memberId, nickName } = applicat; //申请者信息
 
         if(!memberId){
             return
         }
         const { confirm } = Modal;
 
-        let confr = this.state.user_room;
-
-        let _this = this;
         confirm({
-            title:`是否同意${nick_name || memberId}的上麦请求`,
-            onOk: () => emedia.mgr.agreeRequestToTalker(confr.id, member_name),
-            onCancel: () => emedia.mgr.refuseRequestToTalker(confr.id, memberId),
+            title:`是否同意${nickName || memberId}的上麦请求`,
+            onOk: () => agreeCallback(memberId, to_audience_modal),
+            onCancel: () => refuseCallback(memberId),
             cancelText:'拒绝',
             okText:'同意'
         });
+
+        let _this = this;
+        const to_audience_modal = () => { //选人下麦提示框
+
+            confirm({
+                title:'主播人数已满，请选人下麦',
+                cancelText:'取消',
+                okText:'确定',
+                onOk() {
+                    _this.to_audience_list.show(() => agreeCallback(memberId)) // 再回调一下同意上麦
+                },
+                onCancel: () => refuseCallback(memberId)
+            })
+        }
 
     }
     // 下麦申请
