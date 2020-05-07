@@ -40,6 +40,36 @@ const get_img_url_by_name = (name) => {
     return __webpack_require__(id);
 }
 
+// 获取优化后的 nickName 
+const get_nickname = member => {
+            
+    const get_spliced_name = name => {
+        let before_username = name.slice(0,4); //优化成较短的显示
+        let after_username = name.slice(-4);
+    
+        return before_username + '****' + after_username
+    }
+
+    let nick_name = undefined;
+
+    if(
+        !member.nickName ||
+        member.nickName.split('_')[1]
+    ) { // 没有 nickName 或者 nickName 是username 裁剪 username
+        let name = member.name.split('_')[1];
+        nick_name = get_spliced_name(name);
+        return nick_name
+    }
+
+    if(member.nickName.length < 15){
+        nick_name = member.nickName;
+        return nick_name;
+    }
+
+    nick_name = get_spliced_name(member.nickName) //过长的裁剪
+    return nick_name
+
+}
 
 const Item = Form.Item 
 
@@ -777,20 +807,7 @@ function RoomSetting(props) {
     const get_admins = () => {
         let admins = [];
 
-        const get_nickname = member => {
-            
-            if(member.nickName && member.nickName.length < 30){
-                return member.nickName
-            }
-
-            let username = member.name.split('_')[1];
-
-            let before_username = username.slice(0,4); //优化成较短的显示
-            let after_username = username.slice(-4);
-
-            return before_username + '****' + after_username
-
-        }
+       
         stream_list.map(item => {
             if(
                 item &&
@@ -1311,29 +1328,6 @@ class Room extends Component {
         //     }
         // }
         emedia.mgr.publish({ audio, video });
-    }
-
-    _get_nickName_by_username(username) {
-
-        if(!username){
-            return
-        }
-
-        
-        let member_name = appkey + '_' + username;
-        let nickName = username;
-        let { stream_list } = this.state;
-        
-        stream_list.map(item => {
-            if(
-                item &&
-                item.member &&
-                item.member.name == member_name
-            ){
-                nickName = item.member.nickName || username
-            }
-        })
-        return nickName
     }
     // 上麦申请
     apply_talker() {
@@ -1881,7 +1875,7 @@ class Room extends Component {
         let { username:my_username } = this.state.user;//拿到我自己的username
         let { confr } = this.state
         
-        let nickName = member.nickName || member.name.split('_')[1];
+        let nickName = get_nickname(member);
 
 
         return (
@@ -1913,18 +1907,6 @@ class Room extends Component {
                         
                     </div>
                 </div>
-
-                {/* <Popconfirm
-                    title="是否禁言该用户?"
-                    placement="topLeft"
-                    // onConfirm={confirm}
-                    // onCancel={cancel}
-                    okText="禁言"
-                    cancelText="取消"
-                    getPopupContainer = {() => document.querySelector('.ant-drawer-body')}
-                >
-                    <span className="no-speak-action">禁言</span>
-                </Popconfirm> */}
                 
                 <video ref={`list-video-${id}`} autoPlay></video>
                 {/* 不是主持人并且不是主持人自己 不加载 */}
