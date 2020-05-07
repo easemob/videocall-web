@@ -9,12 +9,9 @@ import {
     Form,
     Input,
     Checkbox,
-    Row,
     message,
     Tooltip,
     Drawer,
-    Popconfirm,
-    List,
     Avatar,
     Dropdown,
     Menu,
@@ -160,8 +157,7 @@ class ToAudienceList extends Component {
 
                                     <Avatar src={ base_url + headImage }/>
                                     <span className="name">{
-                                        (item.member.nickName || item.member.name) + 
-                                        (item.member.role == 7 ? '(主持人)' : '')
+                                        get_nickname(item.member) + (item.member.role == 7 ? '(主持人)' : '')
                                     }</span>
                                     <Radio value={item.member.name} />
                                 </div>
@@ -462,7 +458,9 @@ class Setting extends Component {
         visible: false,
         headimg_url_suffix: '',
         cdn:'', 
-        push_cdn: false
+        push_cdn: false,
+        rec:false,
+        recMerge:false
     }
 
     componentDidMount() {
@@ -498,13 +496,18 @@ class Setting extends Component {
             video,
             audio,
             cdn,
-            push_cdn
+            push_cdn,
+            rec,
+            recMerge
         } = this.state;
 
         let _this = this;
         
         // 回调上去
-        _this.props._get_setting_values({headimg_url_suffix, nickName, video, audio, cdn, push_cdn})
+        _this.props._get_setting_values({
+            headimg_url_suffix, nickName, video, audio, cdn, push_cdn,
+            rec,recMerge
+        })
         _this.setState({ visible: false })
         window.sessionStorage.setItem('easemob-nickName', nickName); //保存 nickName
         window.sessionStorage.setItem('easemob-headimg_url_suffix', headimg_url_suffix); //保存 头像 url
@@ -534,6 +537,16 @@ class Setting extends Component {
             audio:e.target.checked
         })
     }
+    rec_change = e => {
+        this.setState({
+            rec:e.target.checked
+        })
+    }
+    recMerge_change = e => {
+        this.setState({
+            recMerge:e.target.checked
+        })
+    }
     // 更换头像
     get_headimg_url = () => {
         this.head_images.show()
@@ -559,7 +572,9 @@ class Setting extends Component {
             video, 
             nickName,
             cdn,
-            push_cdn
+            push_cdn,
+            rec,
+            recMerge
          } = this.state;
 
         let base_url = 'https://download-sdk.oss-cn-beijing.aliyuncs.com/downloads/RtcDemo/headImage/';
@@ -587,6 +602,8 @@ class Setting extends Component {
                         <Input placeholder="请输入昵称" value={nickName} onChange={this.nick_name_change} />
                         <Checkbox checked={video} onChange={this.video_change}>打开摄像头</Checkbox>
                         <Checkbox checked={audio} onChange={this.audio_change}>打开麦克风</Checkbox>
+                        <Checkbox checked={rec} onChange={this.rec_change}>开启录制</Checkbox>
+                        <Checkbox checked={recMerge} onChange={this.recMerge_change}>开启录制合并</Checkbox>
                         <Input placeholder="推流CDN地址" value={cdn} onChange={this.cdn_change} disabled={!push_cdn} />
                         <span>是否推流 CDN</span> <Switch onChange={this.toggle_push_cdn}></Switch>
                         <div className="action">
@@ -896,7 +913,9 @@ class Room extends Component {
             nickName,
             headimg_url_suffix,
             push_cdn,
-            cdn
+            cdn,
+            rec, 
+            recMerge
         } = this.state;
 
         let { role } = this.state.user_room;
@@ -910,8 +929,8 @@ class Room extends Component {
                 ext: {
                     headImage: headimg_url_suffix //头像信息，用于别人接收
                 },
-                rec: true, 
-                recMerge: true
+                rec, 
+                recMerge
             }
         }
 
@@ -953,7 +972,7 @@ class Room extends Component {
                 _this.get_confr_info();
             })
     
-            this.startTime()
+            // this.startTime()
             
         } catch (error) { 
             message.error(error);
@@ -1464,7 +1483,8 @@ class Room extends Component {
             return
         }
         
-        let { video } = this.state
+        let { video } = this.state;
+    
         if(video){
             await emedia.mgr.pauseVideo(own_stream);
             video = !video
@@ -1704,6 +1724,11 @@ class Room extends Component {
             
             // 监听音视频的开关
             emedia.mgr.onMediaChanaged(el, function (constaints, stream) {
+                if(stream._located) { //自己的流, 发生了变化
+                    console.log('emedia.mgr.onMediaChanaged', constaints, stream);
+                    
+                    _this.own_stream = stream
+                }
                 _this.set_stream_item_changed(constaints, stream.id)
             });
 
