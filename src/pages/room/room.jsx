@@ -930,7 +930,10 @@ class Room extends Component {
                     headImage: headimg_url_suffix //头像信息，用于别人接收
                 },
                 rec, 
-                recMerge
+                recMerge,
+
+                maxTalkerCount:4,//会议最大主播人数
+                maxVideoCount:3 //会议最大视频数
             }
         }
 
