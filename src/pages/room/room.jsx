@@ -457,7 +457,6 @@ class Setting extends Component {
         audio: true,
         visible: false,
         headimg_url_suffix: '',
-        cdn:'', 
         push_cdn: false,
         rec:false,
         recMerge:false
@@ -940,11 +939,24 @@ class Room extends Component {
         // 如果设置推流 添加 cdn配置
         if(push_cdn && cdn) {
 
+            // let liveCfg = {
+            //     cdn,
+            //     layoutStyle : 'GRID'
+            // }
+            // let liveCfg = {
+            //     cdn,
+            //     layoutStyle : 'CUSTOM',
+            //     canvas :{ 
+            //         bgclr : 980000,
+            //         w : 640,
+            //         h : 480
+            //     }
+            // }
             let liveCfg = {
                 cdn,
                 layoutStyle : 'GRID',
                 canvas :{ 
-                    bgclr : 0,
+                    bgclr : 980000,
                     w : 640,
                     h : 480
                 }
@@ -1781,15 +1793,26 @@ class Room extends Component {
             stream_list.map(item => {
                 if(item){
                     let { id: stream_id } = item.stream;
-                    regions.push({
-                        "sid": stream_id,
-                        "x": 2,
-                        "y": 5,
-                        "w": 2,
-                        "h": 2,
-                        "z": 333,
-                        "style": "fill"
-                    })
+                    if(item.member.role == 7) { //主持人
+                        regions.push({
+                            "sid": stream_id,
+                            "x": 320,
+                            "y": 240,
+                            "z": 1,
+                            "w": 260,
+                            "h": 220,
+                            "style": "fill"
+                        })
+                    } else {
+                        // regions.push({
+                        //     "sid": stream_id,
+                        //     "x": 0,
+                        //     "y": 0,
+                        //     "w": 320,
+                        //     "h": 240,
+                        //     "style": "fill"
+                        // })
+                    }
                 }
             })
 
@@ -1800,6 +1823,9 @@ class Room extends Component {
             let { id:confrId } = _this.state.confr;
             emedia.mgr.deleteLive(confrId)
         }
+
+        let { role:my_role } = this.state.user_room;
+        let { push_cdn } = this.state;
         return (
             <div className="header-wrapper">
                 <div>
@@ -1815,8 +1841,12 @@ class Room extends Component {
                         <div className="time">{this._get_tick()}</div>
                     </div>
                 </div>
-                {/* <Button onClick={update_live_layout}>更新Live布局</Button>
-                <Button onClick={delete_live}>取消Live</Button> */}
+                {
+                    (push_cdn && my_role == 7) ? <div>
+                        <Button onClick={update_live_layout}>更新Live布局</Button>
+                        <Button onClick={delete_live}>取消Live</Button>
+                    </div> : ''
+                }
                 <div onClick={() => this.leave()} className="leave-action">
                     <img src={get_img_url_by_name('leave-icon')} />
                     <span>离开房间</span>
