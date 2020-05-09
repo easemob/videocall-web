@@ -896,7 +896,17 @@ class Room extends Component {
             room_setting_modal_show: false,
 
             cdn:'', //推流 cdn url
-            push_cdn: false //是否开启推流 cdn 
+            push_cdn: false, //是否开启推流 cdn 
+
+            liveCfg : { // 推流CDN的画布 配置、创建推流 CDN 时使用
+                cdn:'',
+                layoutStyle : 'GRID',
+                canvas :{ 
+                    bgclr : 980000,
+                    w : 640,
+                    h : 480
+                }
+            }
         };
 
         this.toggle_main = this.toggle_main.bind(this);
@@ -952,15 +962,8 @@ class Room extends Component {
             //         h : 480
             //     }
             // }
-            let liveCfg = {
-                cdn,
-                layoutStyle : 'GRID',
-                canvas :{ 
-                    bgclr : 980000,
-                    w : 640,
-                    h : 480
-                }
-            }
+            let { liveCfg } = this.state;
+            liveCfg.cdn = cdn;
             params.config.liveCfg = liveCfg
         }
 
@@ -1602,7 +1605,15 @@ class Room extends Component {
             stream_list.push({stream,member});
         }
 
-        this.setState({ stream_list:stream_list },this._stream_bind_video)
+        let _this = this;
+        this.setState({ stream_list:stream_list },() => {
+            _this._stream_bind_video();//绑定标签
+
+            let { push_cdn, user_room } = _this.state;
+            if(push_cdn && user_room.isCreator){ //只有创建者 并且开启推流 可更新布局
+                _this._update_live_layout()
+            }
+        })
     } 
     _on_stream_removed(stream) {
         if(!stream){
@@ -1621,7 +1632,15 @@ class Room extends Component {
             }
         });
 
-        this.setState({ stream_list },this._stream_bind_video)
+        let _this = this;
+        this.setState({ stream_list },() => {
+            _this._stream_bind_video()//绑定标签
+
+            let { push_cdn, user_room } = _this.state;
+            if(push_cdn && user_room.isCreator){ //只有创建者 并且开启推流 可更新布局
+                _this._update_live_layout()
+            }
+        })
     }
     
     _stream_bind_video() {
@@ -1731,6 +1750,105 @@ class Room extends Component {
 
 
     }
+
+    // 推流 CDN 更新布局 九宫格布局
+    _update_live_layout() {
+
+            let { stream_list } = this.state;
+
+
+
+
+            let _this = this;
+
+            // 根据流的数据 计算应该排几行几列
+            const get_layout_info = () => {
+
+                let streamcounts = 0; //获取 stream 的个数
+                let { stream_list } = _this.state;
+                stream_list.map(item => { // 过滤到空项
+                    if(item) {
+                        streamcounts++ 
+                    }
+                })
+
+
+                // 九宫格设计
+                // 根据个数开方求列
+                // 根据个数除以 列数求行数
+                // 都是向上取整
+    
+                let col_num = Math.ceil( Math.sqrt(streamcounts) );// 获取列数
+                let row_num = Math.ceil( streamcounts/col_num );// 获取行数
+    
+                // 计算每个流占据的尺寸
+                let { liveCfg } = _this.state;
+                let { w: canvas_width, h: canvas_height } = liveCfg; //获取画布的尺寸
+    
+                let cell_width = canvas_width/col_num;
+                let cell_height = canvas_height/row_num;
+
+                let layout_info = {
+                    col_num,
+                    row_num,
+                    cell_width,
+                    cell_height,
+                }
+                return layout_info
+
+            }
+
+            // 根据在画布中 是第几个流 拿到position
+            const get_position_in_canvas = (index, layout_info) => {
+                let position = {
+                    x:0,
+                    y:0
+                }
+
+
+                // 计算在 第几行第几列
+                let {
+                    col_num,
+                    row_num,
+                    cell_width,
+                    cell_height,
+                } = layout_info;
+
+                let position_row = Math.ceil(index/col_num);
+                let position_col = index%col_num;
+
+                // 根据第几行第几列计算 x、y
+                position.x = cell_width * (position_col - 1);
+                position.y = cell_height * (position_row - 1);
+
+
+                return position
+            }
+
+
+            let regions = [];
+            let index = 0;//在画布中的第几个流
+            stream_list.map(item => {
+                if(item){
+                    index ++;
+                    let position = get_position_in_canvas(index, layout_info);
+
+                    let { id: stream_id } = item.stream;
+                    regions.push({
+                        "sid": stream_id,
+                        "x": ???,
+                        "y": ???,
+                        "z": 1,
+                        "w": cell_width,
+                        "h": cell_height,
+                        "style": "fill"
+                    })
+                }
+            })
+
+            let { id:confrId } = this.state.confr;
+            emedia.mgr.updateLiveLayout(confrId, regions)
+    }
     _get_header_el() { 
 
         let { roomName, stream_list } = this.state;
@@ -1750,39 +1868,7 @@ class Room extends Component {
 
         let _this = this;
         const update_live_layout = () => {
-            let { id:confrId } = _this.state.confr;
-
-
-            let { stream_list } = _this.state;
-
-            let regions = [];
-            stream_list.map(item => {
-                if(item){
-                    let { id: stream_id } = item.stream;
-                    if(item.member.role == 7) { //主持人
-                        regions.push({
-                            "sid": stream_id,
-                            "x": 320,
-                            "y": 240,
-                            "z": 1,
-                            "w": 260,
-                            "h": 220,
-                            "style": "fill"
-                        })
-                    } else {
-                        // regions.push({
-                        //     "sid": stream_id,
-                        //     "x": 0,
-                        //     "y": 0,
-                        //     "w": 320,
-                        //     "h": 240,
-                        //     "style": "fill"
-                        // })
-                    }
-                }
-            })
-
-            emedia.mgr.updateLiveLayout(confrId, regions)
+            
         }
 
         const delete_live = () => {
@@ -1807,12 +1893,12 @@ class Room extends Component {
                         <div className="time">{this._get_tick()}</div>
                     </div>
                 </div>
-                {
+                {/* {
                     (push_cdn && my_role == 7) ? <div>
                         <Button onClick={update_live_layout}>更新Live布局</Button>
                         <Button onClick={delete_live}>取消Live</Button>
                     </div> : ''
-                }
+                } */}
                 <div onClick={() => this.leave()} className="leave-action">
                     <img src={get_img_url_by_name('leave-icon')} />
                     <span>离开房间</span>
