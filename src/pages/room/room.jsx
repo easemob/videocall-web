@@ -1131,20 +1131,7 @@ class Room extends Component {
         emedia.mgr.onConfrAttrsUpdated = function(confr_attrs){ 
             console.log('onConfrAttrsUpdated', confr_attrs);
             // 会议属性变更
-            let { role } = _this.state.user_room;
-
-            confr_attrs.map(item => {
-                
-                if(
-                    item.val == 'request_tobe_audience' && 
-                    item.op == 'ADD' &&
-                    role == emedia.mgr.Role.ADMIN
-                ) { //处理下麦
-                    _this.handle_apply_audience(item.key);
-                    return
-                }
-                
-            });
+            
         };
 
         emedia.mgr.onRoleChanged = function (role) {
@@ -1412,38 +1399,17 @@ class Room extends Component {
             message.warn('当前您是唯一主播，不允许下麦');
             return
         }
-        let { username } = this.state.user;
+        let { username:my_username } = this.state.user;
+        let { confrId } = this.state.user_room;
 
-        if(!username) {
+        if(!my_username) {
             return
         }
+        let memName = appkey + '_' + my_username;
+        emedia.mgr.degradeRole(confrId, [memName], emedia.mgr.Role.AUDIENCE);
 
-        let options = {
-            key:username,
-            val:'request_tobe_audience'
-        }
-        emedia.mgr.setConferenceAttrs(options)
     }
     
-    async handle_apply_audience(username) {
-        if(!username){
-            return
-        }
-
-
-        let member_name = appkey + '_' + username; // sdk 需要一个fk 格式的name
-        let confr = this.state.user_room;
-
-        // delete cattrs,处理完请求删除会议属性
-        let options = {
-            key:username,
-            val:'request_tobe_audience'
-        }
-
-        await emedia.mgr.grantRole(confr, [member_name], 1);
-        emedia.mgr.deleteConferenceAttrs(options);
-        
-    }
 
     admin_changed(admin) {
 
