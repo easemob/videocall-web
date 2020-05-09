@@ -941,8 +941,8 @@ class Room extends Component {
                 rec, 
                 recMerge,
 
-                // maxTalkerCount:2,//会议最大主播人数
-                // maxVideoCount:1 //会议最大视频数
+                maxTalkerCount:2,//会议最大主播人数
+                maxVideoCount:1 //会议最大视频数
             }
         }
 
@@ -970,9 +970,7 @@ class Room extends Component {
         try {
             const user_room = await emedia.mgr.joinRoom(params);
     
-            if(user_room.error == -200 && 
-                user_room.errorMessage.indexOf('talker count limit') > 0
-            ) { //主播已满 并且错误信息 是相对的，暂时先这样
+            if(user_room.error == -523 ) { //主播已满 
                 this.setState({ talker_is_full: true, loading:false });
                 return
             }
@@ -990,7 +988,7 @@ class Room extends Component {
                 _this.get_confr_info();
             })
     
-            // this.startTime()
+            this.startTime()
             
         } catch (error) { 
             message.error(error);
@@ -1725,9 +1723,9 @@ class Room extends Component {
             // 监听音视频的开关
             emedia.mgr.onMediaChanaged(el, function (constaints, stream) {
                 if(stream._located) { //自己的流, 发生了变化
-                    console.log('emedia.mgr.onMediaChanaged', constaints, stream);
-                    
-                    _this.own_stream = stream
+                    _this.setState({
+                        own_stream : stream
+                    })
                 }
                 _this.set_stream_item_changed(constaints, stream.id)
             });
