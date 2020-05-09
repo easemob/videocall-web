@@ -1756,9 +1756,6 @@ class Room extends Component {
 
             let { stream_list } = this.state;
 
-
-
-
             let _this = this;
 
             // 根据流的数据 计算应该排几行几列
@@ -1783,10 +1780,10 @@ class Room extends Component {
     
                 // 计算每个流占据的尺寸
                 let { liveCfg } = _this.state;
-                let { w: canvas_width, h: canvas_height } = liveCfg; //获取画布的尺寸
-    
-                let cell_width = canvas_width/col_num;
-                let cell_height = canvas_height/row_num;
+                let { w: canvas_width, h: canvas_height } = liveCfg.canvas; //获取画布的尺寸
+                
+                let cell_width = parseInt(canvas_width/col_num);
+                let cell_height = parseInt(canvas_height/row_num);
 
                 let layout_info = {
                     col_num,
@@ -1817,6 +1814,9 @@ class Room extends Component {
                 let position_row = Math.ceil(index/col_num);
                 let position_col = index%col_num;
 
+                if(position_col == 0) {
+                    position_col += col_num
+                }
                 // 根据第几行第几列计算 x、y
                 position.x = cell_width * (position_col - 1);
                 position.y = cell_height * (position_row - 1);
@@ -1825,6 +1825,8 @@ class Room extends Component {
                 return position
             }
 
+
+            let layout_info = get_layout_info();
 
             let regions = [];
             let index = 0;//在画布中的第几个流
@@ -1836,11 +1838,11 @@ class Room extends Component {
                     let { id: stream_id } = item.stream;
                     regions.push({
                         "sid": stream_id,
-                        "x": ???,
-                        "y": ???,
+                        "x": position.x,
+                        "y": position.y,
                         "z": 1,
-                        "w": cell_width,
-                        "h": cell_height,
+                        "w": layout_info.cell_width,
+                        "h": layout_info.cell_height,
                         "style": "fill"
                     })
                 }
@@ -1866,18 +1868,6 @@ class Room extends Component {
             }
         })
 
-        let _this = this;
-        const update_live_layout = () => {
-            
-        }
-
-        const delete_live = () => {
-            let { id:confrId } = _this.state.confr;
-            emedia.mgr.deleteLive(confrId)
-        }
-
-        let { role:my_role } = this.state.user_room;
-        let { push_cdn } = this.state;
         return (
             <div className="header-wrapper">
                 <div>
@@ -1893,12 +1883,6 @@ class Room extends Component {
                         <div className="time">{this._get_tick()}</div>
                     </div>
                 </div>
-                {/* {
-                    (push_cdn && my_role == 7) ? <div>
-                        <Button onClick={update_live_layout}>更新Live布局</Button>
-                        <Button onClick={delete_live}>取消Live</Button>
-                    </div> : ''
-                } */}
                 <div onClick={() => this.leave()} className="leave-action">
                     <img src={get_img_url_by_name('leave-icon')} />
                     <span>离开房间</span>
