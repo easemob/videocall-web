@@ -906,7 +906,9 @@ class Room extends Component {
                     w : 640,
                     h : 480
                 }
-            }
+            },
+
+            cdn_zorder:1 //更新CDN布局，递增 1，配合服务端
         };
 
         this.toggle_main = this.toggle_main.bind(this);
@@ -1609,7 +1611,10 @@ class Room extends Component {
 
             let { push_cdn, user_room } = _this.state;
             if(push_cdn && user_room.isCreator){ //只有创建者 并且开启推流 可更新布局
-                _this._update_live_layout()
+
+                _this.setState(state => ({ // 每次更新布局 cdn_zorder 递增1
+                    cdn_zorder: state.cdn_zorder + 1
+                }), _this._update_live_layout)
             }
         })
     } 
@@ -1636,7 +1641,10 @@ class Room extends Component {
 
             let { push_cdn, user_room } = _this.state;
             if(push_cdn && user_room.isCreator){ //只有创建者 并且开启推流 可更新布局
-                _this._update_live_layout()
+
+                _this.setState(state => ({ // 每次更新布局 cdn_zorder 递增1
+                    cdn_zorder: state.cdn_zorder + 1
+                }), _this._update_live_layout)
             }
         })
     }
@@ -1744,9 +1752,6 @@ class Room extends Component {
                 
             });
         } 
-
-
-
     }
 
     // 推流 CDN 更新布局 九宫格布局
@@ -1828,6 +1833,8 @@ class Room extends Component {
 
             let regions = [];
             let index = 0;//在画布中的第几个流
+            let { cdn_zorder } = this.state;
+
             stream_list.map(item => {
                 if(item){
                     index ++;
@@ -1838,7 +1845,7 @@ class Room extends Component {
                         "sid": stream_id,
                         "x": position.x,
                         "y": position.y,
-                        "z": 1,
+                        "z": cdn_zorder,
                         "w": layout_info.cell_width,
                         "h": layout_info.cell_height,
                         "style": "fill"
