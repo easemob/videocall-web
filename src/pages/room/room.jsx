@@ -1395,7 +1395,7 @@ class Room extends Component {
 
     }
     // 下麦申请
-    apply_audience() {
+    async apply_audience() {
 
         let { stream_list } = this.state;
         if(stream_list.length == 1){
@@ -1409,11 +1409,25 @@ class Room extends Component {
             return
         }
         let memName = appkey + '_' + my_username;
-        emedia.mgr.degradeRole(confrId, [memName], emedia.mgr.Role.AUDIENCE);
+
+        try {
+            await emedia.mgr.degradeRole(confrId, [memName], emedia.mgr.Role.AUDIENCE);
+            this.reset_state()
+        } catch (error) {
+            
+        }
+
 
     }
     
-
+    reset_state() { // 重置 state、比如下麦成功后
+        this.setState({
+            audio:false,
+            video:false,
+            shared_desktop:false,
+            room_setting_modal_show: false
+        })
+    }
     admin_changed(admin) {
 
         if(!admin) {
