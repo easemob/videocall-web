@@ -1,4 +1,4 @@
-import React, {Component} from 'react' 
+import React, {Component, PureComponent} from 'react' 
 import ReactDOM from 'react-dom'
 
 import { 
@@ -861,6 +861,52 @@ function RoomSetting(props) {
         </div>
     )
 }
+
+// 选择共享桌面流组件
+class ChooseDesktopMedia extends PureComponent {
+
+    state = {
+        visible:false,
+        sources:[],
+        accessApproved: null
+    }
+
+    show (sources, accessApproved) {
+        this.setState({ 
+            sources,
+            accessApproved,
+            visible: true 
+        })
+    }
+
+    hide() {
+        this.setState({ visible: false })
+    }
+    render(){
+        let { visible, sources } = this.state;
+
+        console.log('ChooseDesktopMedia sources', sources);
+        
+        return (
+            <Modal
+                title="Basic Modal"
+                visible={visible}
+                // onOk={this.handleOk}
+                // onCancel={this.handleCancel}
+                >
+                    {
+                        sources.map((item, index) => {
+                            return <img key={index} src={item.hxThumbDataURL} />
+                        })
+                    }
+                    <div>
+
+                    </div>
+            </Modal>
+        )
+    }
+}
+
 class Room extends Component {
     constructor(props) {
         super(props);
@@ -943,8 +989,8 @@ class Room extends Component {
                 rec, 
                 recMerge,
 
-                // maxTalkerCount:4,//会议最大主播人数
-                // maxVideoCount:3 //会议最大视频数
+                maxTalkerCount:2,//会议最大主播人数
+                maxVideoCount:1 //会议最大视频数
             }
         }
 
@@ -1230,6 +1276,20 @@ class Room extends Component {
         emedia.mgr.onUnMuteAll = () => { 
             message.success('管理员取消了全体禁言');
             _this.open_audio()
+        }
+
+
+        // electorn 兼容
+        if(emedia.isElectron) {
+            emedia.chooseElectronDesktopMedia = function(sources, accessApproved){
+                // var firstSources = sources[0];
+                // accessApproved(firstSources);
+                console.log('emedia.chooseElectronDesktopMedia this', _this);
+                
+                if(_this.choose_desktop_media) {
+                    _this.choose_desktop_media.show(sources, accessApproved);
+                }
+            }
         }
     }
 
@@ -2183,6 +2243,7 @@ class Room extends Component {
             talker_is_full: false
         })
     }
+
     render() {
 
         const { getFieldDecorator } = this.props.form;
@@ -2316,6 +2377,14 @@ class Room extends Component {
                         role == 7 ?
                         <ToAudienceList {...this.state} ref={to_audience_list => this.to_audience_list = to_audience_list}/> :
                         <i></i>
+                    }
+
+                    {/* electorn 选择屏幕的插件 */}
+                    {
+                        emedia.isElectron ? 
+                        <ChooseDesktopMedia  
+                            ref={choose_desktop_media => this.choose_desktop_media = choose_desktop_media } />
+                        : ''
                     }
 
                 </Layout>
