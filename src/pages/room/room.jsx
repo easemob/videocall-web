@@ -1744,11 +1744,6 @@ class Room extends Component {
             
             // 监听音视频的开关
             emedia.mgr.onMediaChanaged(el, function (constaints, stream) {
-                if(stream._located) { //自己的流, 发生了变化
-                    _this.setState({
-                        own_stream : stream
-                    })
-                }
                 _this.set_stream_item_changed(constaints, stream.id)
             });
 
@@ -2237,7 +2232,6 @@ class Room extends Component {
                         })(
                             <Input
                             prefix={<Icon type="lock" style={{ color: 'rgba(0,0,0,.25)' }} />}
-                            type="password"
                             placeholder="房间密码"
                             autoComplete="off"
                             />
