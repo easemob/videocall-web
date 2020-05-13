@@ -4001,7 +4001,7 @@ duplexify@^3.4.2, duplexify@^3.6.0:
     readable-stream "^2.0.0"
     stream-shift "^1.0.0"
 
-easemob-emedia@3.1.0:
+easemob-emedia@^3.1.0:
   version "3.1.0"
   resolved "https://registry.npm.taobao.org/easemob-emedia/download/easemob-emedia-3.1.0.tgz#e1b12064b65c2739b103b33875f556f1545b122e"
   integrity sha1-4bEgZLZcJzmxA7M4dfVW8VRbEi4=
