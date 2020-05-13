@@ -2032,13 +2032,21 @@ class Room extends Component {
         let main_stream = this.state.stream_list[0];
 
         if(main_stream) {
-            let { is_speak } = main_stream.stream
+            let { is_speak, type } = main_stream.stream; //is_speak 是否在说话
+            let { is_me } = main_stream.member;
+
+            let is_own_media_stream = is_me && type != emedia.StreamType.DESKTOP //是否是自己的人像流
+
             return (
                 <div className="main-video-wrapper">
                     { is_speak ? 
                         <img src={get_img_url_by_name('is-speak-icon')} className='is-speak-icon'/> : ''
                     }
-                    <video ref={`list-video-${main_stream.stream.id}`} autoPlay></video>
+                    <video 
+                        style={ is_own_media_stream ? { transform: 'rotateY(180deg)' } : {}}
+                        ref={`list-video-${main_stream.stream.id}`} 
+                        autoPlay
+                    ></video>
                 </div>
             )
         }
