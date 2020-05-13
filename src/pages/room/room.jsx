@@ -871,16 +871,26 @@ class ChooseDesktopMedia extends PureComponent {
         accessApproved: null
     }
 
-    show (sources, accessApproved) {
+    show (sources, accessApproved, accessDenied) {
+
         this.setState({ 
             sources,
             accessApproved,
+            accessDenied,
             visible: true 
         })
     }
 
     hide() {
-        this.setState({ visible: false })
+        this.setState({ visible: false });
+        
+        let { accessDenied } = this.state
+        if(
+            accessDenied &&
+            typeof accessDenied == 'function'
+        ) {
+            accessDenied()
+        }
     }
     render(){
         let { visible, sources } = this.state;
@@ -889,11 +899,19 @@ class ChooseDesktopMedia extends PureComponent {
         
         return (
             <Modal
-                title="Basic Modal"
+                title="共享屏幕"
                 visible={visible}
+                destroyOnClose={true}
+                mask={false}
+                okText='分享'
+                cancelText='取消'
+                closable={false}
                 // onOk={this.handleOk}
-                // onCancel={this.handleCancel}
+                onCancel={() => this.hide()}
+                wrapClassName='electorn-choose-desktop-media'
                 >
+                    <div>Electorn 想要共享您屏幕上的内容。请选择你希望共享哪些内容</div>
+
                     {
                         sources.map((item, index) => {
                             return <img key={index} src={item.hxThumbDataURL} />
@@ -1281,13 +1299,15 @@ class Room extends Component {
 
         // electorn 兼容
         if(emedia.isElectron) {
-            emedia.chooseElectronDesktopMedia = function(sources, accessApproved){
+            emedia.chooseElectronDesktopMedia = function(sources, accessApproved, accessDenied){
+                 alert('emedia.chooseElectronDesktopMedia')
+
                 // var firstSources = sources[0];
                 // accessApproved(firstSources);
                 console.log('emedia.chooseElectronDesktopMedia this', _this);
                 
                 if(_this.choose_desktop_media) {
-                    _this.choose_desktop_media.show(sources, accessApproved);
+                    _this.choose_desktop_media.show(sources, accessApproved, accessDenied);
                 }
             }
         }
