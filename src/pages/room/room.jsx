@@ -867,9 +867,10 @@ function RoomSetting(props) {
 class ChooseDesktopMedia extends PureComponent {
 
     state = {
-        visible:true,
+        visible:false,
         sources:[],
-        accessApproved: null
+        accessApproved: null,
+        choosed_stream: null
     }
 
     show (sources, accessApproved, accessDenied) {
@@ -883,7 +884,10 @@ class ChooseDesktopMedia extends PureComponent {
     }
 
     hide() {
-        this.setState({ visible: false });
+        this.setState({ 
+            visible: false,
+            choosed_stream: null 
+        });
         
         let { accessDenied } = this.state
         if(
@@ -893,10 +897,43 @@ class ChooseDesktopMedia extends PureComponent {
             accessDenied()
         }
     }
-    render(){
-        let { visible, sources } = this.state;
 
-        console.log('ChooseDesktopMedia sources', sources);
+    // 选中某个桌面流
+    choose(stream) {
+        if(!stream) {
+            return
+        }
+
+
+        this.setState({
+            choosed_stream: stream
+        })
+    }
+
+    //分享
+    share() {
+        let { accessApproved, choosed_stream } = this.state;
+
+        if(
+            !accessApproved ||
+            !choosed_stream
+        ) {
+            return
+        }
+        
+        if(typeof accessApproved != 'function'){
+            return
+        }
+
+        accessApproved(choosed_stream)
+
+        this.setState({
+             visible: false,
+             choosed_stream: null
+        })
+    }
+    render(){
+        let { visible, sources, choosed_stream } = this.state;
 
         let screen_list = [];
         let window_list = [];
@@ -911,6 +948,7 @@ class ChooseDesktopMedia extends PureComponent {
             }
         })
         const { TabPane } = Tabs;
+
         return (
             <Modal
                 title="共享屏幕"
@@ -921,35 +959,40 @@ class ChooseDesktopMedia extends PureComponent {
                 okText='分享'
                 cancelText='取消'
                 closable={false}
-                // onOk={this.handleOk}
+                onOk={() => this.share()}
+                okButtonProps={{ disabled: !choosed_stream }}
                 onCancel={() => this.hide()}
                 wrapClassName='electorn-choose-desktop-media'
                 getContainer={false}
                 width={600}
+                style={{ top: 20 }}
             >
                     <div>Electorn 想要共享您屏幕上的内容。请选择你希望共享哪些内容</div>
 
-                    {/* {
-                        sources.map((item, index) => {
-                            return <img key={index} src={item.hxThumbDataURL} />
-                        })
-                    } */}
-
-
-                    {/* appIcon: null
-                    display_id: "592117890"
-                    hxThumbDataURL: "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAJYA"
-                    id: "screen:592117890"
-                    name: "Screen 2" */}
                     <Tabs defaultActiveKey="1">
                         <TabPane tab="您的整个屏幕" key="1">
                             <div className="tab-content">
 
                                 {
                                     screen_list.map((item, index) => {
+
+                                        let choosed_style = {};
+
+                                        if(choosed_stream){ //判断是否选中的
+                                            if(choosed_stream.id == item.id) {
+                                                choosed_style = {
+                                                    borderColor: 'rgba(146, 210, 241, 0.7)'
+                                                }
+                                            }
+                                        }
                                         return (
-                                            <div className="img-wrapper">
-                                                <img key={index} src={item.hxThumbDataURL} />
+                                            <div 
+                                                className="img-wrapper" 
+                                                onClick={() => this.choose(item)}
+                                                style={choosed_style}
+                                                key={index}
+                                            >
+                                                <img src={item.hxThumbDataURL} />
                                                 <div className='name'> {item.name} </div>
                                             </div>
                                         )
@@ -961,9 +1004,26 @@ class ChooseDesktopMedia extends PureComponent {
                         <div className="tab-content">
                             {
                                 window_list.map((item, index) => {
-                                    return (
-                                        <div className="img-wrapper">
-                                            <img key={index} src={item.hxThumbDataURL} />
+                                    
+                                        let choosed_style = {};
+
+
+                                        if(choosed_stream){ //判断是否选中的
+                                            if(choosed_stream.id == item.id) {
+                                                choosed_style = {
+                                                    borderColor: 'rgba(146, 210, 241, 0.7)'
+                                                }
+                                            }
+                                        }
+                                        
+                                        return (
+                                            <div 
+                                                className="img-wrapper" 
+                                                onClick={() => this.choose(item)}
+                                                style={choosed_style}
+                                                key={index}
+                                            >
+                                            <img src={item.hxThumbDataURL} />
                                             <div className='name'> {item.name} </div>
                                         </div>
                                     )
@@ -1062,8 +1122,8 @@ class Room extends Component {
                 rec, 
                 recMerge,
 
-                maxTalkerCount:2,//会议最大主播人数
-                maxVideoCount:1 //会议最大视频数
+                // maxTalkerCount:2,//会议最大主播人数
+                // maxVideoCount:1 //会议最大视频数
             }
         }
 
@@ -1296,8 +1356,6 @@ class Room extends Component {
         emedia.mgr.onRequestToTalker = function(applicat, agreeCallback, refuseCallback) {
             
             _this.handle_apply_talker(applicat, agreeCallback, refuseCallback)
-
-            
         }
 
         // 观众收到 上麦申请的回复 result 0: 同意 1: 拒绝
@@ -1352,12 +1410,9 @@ class Room extends Component {
         }
 
 
-        // electorn 兼容
+        // electorn 兼容 
         if(emedia.isElectron) {
             emedia.chooseElectronDesktopMedia = function(sources, accessApproved, accessDenied){
-                // var firstSources = sources[0];
-                // accessApproved(firstSources);
-                console.log('emedia.chooseElectronDesktopMedia this', _this);
                 
                 if(_this.choose_desktop_media) {
                     _this.choose_desktop_media.show(sources, accessApproved, accessDenied);
