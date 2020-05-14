@@ -904,7 +904,10 @@ class Room extends Component {
                 canvas :{ 
                     bgclr : 0x980000,
                     w : 640,
-                    h : 480
+                    h : 480,
+                    fps: 20, //输出帧率
+                    bps: 1200000,  //输出码率
+                    codec: "H264" //视频编码，现在必须是H264
                 }
             },
 
