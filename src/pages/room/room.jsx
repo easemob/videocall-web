@@ -924,7 +924,9 @@ class ChooseDesktopMedia extends PureComponent {
                 // onOk={this.handleOk}
                 onCancel={() => this.hide()}
                 wrapClassName='electorn-choose-desktop-media'
-                >
+                getContainer={false}
+                width={600}
+            >
                     <div>Electorn 想要共享您屏幕上的内容。请选择你希望共享哪些内容</div>
 
                     {/* {
@@ -941,18 +943,33 @@ class ChooseDesktopMedia extends PureComponent {
                     name: "Screen 2" */}
                     <Tabs defaultActiveKey="1">
                         <TabPane tab="您的整个屏幕" key="1">
-                            {
-                                screen_list.map((item, index) => {
-                                    return <img key={index} src={item.hxThumbDataURL} />
-                                })
-                            }
+                            <div className="tab-content">
+
+                                {
+                                    screen_list.map((item, index) => {
+                                        return (
+                                            <div className="img-wrapper">
+                                                <img key={index} src={item.hxThumbDataURL} />
+                                                <div className='name'> {item.name} </div>
+                                            </div>
+                                        )
+                                    })
+                                }
+                            </div>
                         </TabPane>
                         <TabPane tab="应用窗口" key="2">
+                        <div className="tab-content">
                             {
                                 window_list.map((item, index) => {
-                                    return <img key={index} src={item.hxThumbDataURL} />
+                                    return (
+                                        <div className="img-wrapper">
+                                            <img key={index} src={item.hxThumbDataURL} />
+                                            <div className='name'> {item.name} </div>
+                                        </div>
+                                    )
                                 })
                             }
+                        </div>
                         </TabPane>
                     </Tabs>
             </Modal>
