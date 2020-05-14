@@ -16,7 +16,8 @@ import {
     Dropdown,
     Menu,
     Switch,
-    Radio
+    Radio,
+    Tabs
 } from 'antd';
 import './room.less';
 
@@ -866,7 +867,7 @@ function RoomSetting(props) {
 class ChooseDesktopMedia extends PureComponent {
 
     state = {
-        visible:false,
+        visible:true,
         sources:[],
         accessApproved: null
     }
@@ -896,13 +897,27 @@ class ChooseDesktopMedia extends PureComponent {
         let { visible, sources } = this.state;
 
         console.log('ChooseDesktopMedia sources', sources);
-        
+
+        let screen_list = [];
+        let window_list = [];
+
+        sources.map(item => { // 区分 整个屏幕和应用窗口
+            if(item){
+                if(/window/.test(item.id)) {
+                    window_list.push(item)
+                } else if(/screen/.test(item.id)) {
+                    screen_list.push(item)
+                }
+            }
+        })
+        const { TabPane } = Tabs;
         return (
             <Modal
                 title="共享屏幕"
                 visible={visible}
                 destroyOnClose={true}
                 mask={false}
+                maskClosable={false}
                 okText='分享'
                 cancelText='取消'
                 closable={false}
@@ -912,14 +927,34 @@ class ChooseDesktopMedia extends PureComponent {
                 >
                     <div>Electorn 想要共享您屏幕上的内容。请选择你希望共享哪些内容</div>
 
-                    {
+                    {/* {
                         sources.map((item, index) => {
                             return <img key={index} src={item.hxThumbDataURL} />
                         })
-                    }
-                    <div>
+                    } */}
 
-                    </div>
+
+                    {/* appIcon: null
+                    display_id: "592117890"
+                    hxThumbDataURL: "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAJYA"
+                    id: "screen:592117890"
+                    name: "Screen 2" */}
+                    <Tabs defaultActiveKey="1">
+                        <TabPane tab="您的整个屏幕" key="1">
+                            {
+                                screen_list.map((item, index) => {
+                                    return <img key={index} src={item.hxThumbDataURL} />
+                                })
+                            }
+                        </TabPane>
+                        <TabPane tab="应用窗口" key="2">
+                            {
+                                window_list.map((item, index) => {
+                                    return <img key={index} src={item.hxThumbDataURL} />
+                                })
+                            }
+                        </TabPane>
+                    </Tabs>
             </Modal>
         )
     }
@@ -968,7 +1003,10 @@ class Room extends Component {
                 canvas :{ 
                     bgclr : 0x980000,
                     w : 640,
-                    h : 480
+                    h : 480,
+                    fps: 20, //输出帧率
+                    bps: 1200000,  //输出码率
+                    codec: "H264" //视频编码，现在必须是H264
                 }
             },
 
@@ -1300,8 +1338,6 @@ class Room extends Component {
         // electorn 兼容
         if(emedia.isElectron) {
             emedia.chooseElectronDesktopMedia = function(sources, accessApproved, accessDenied){
-                 alert('emedia.chooseElectronDesktopMedia')
-
                 // var firstSources = sources[0];
                 // accessApproved(firstSources);
                 console.log('emedia.chooseElectronDesktopMedia this', _this);
