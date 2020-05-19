@@ -22,6 +22,7 @@ import './room.less';
 
 
 import emedia from 'easemob-emedia';
+import whiteBoards from './whiteboardsSdk';
 import login from './login.js'
 import { appkey } from '../../config';
 
@@ -1046,6 +1047,7 @@ class Room extends Component {
         const user = await login();
         this.setState({ user })
         this.init_emedia_callback(); //登录之后 初始化 emedia
+        this.init_white_board(); //初始化 white_board
 
         window.onbeforeunload=function(e){     
             var e = window.event||e;  
@@ -1240,6 +1242,14 @@ class Room extends Component {
         }
     }
 
+    // 初始化白板
+    init_white_board() {
+        this.white_board = new whiteBoards({
+			restApi: process.env.REACT_APP_RTC_HOST,
+            appKey: appkey
+            
+		});
+    }
     _on_role_changed(role) {
         if(!role) {
             return
@@ -2168,13 +2178,32 @@ class Room extends Component {
         return <iframe name="white-board" src={ white_board_url }></iframe>
     }
     create_white_board() {
-        message.success('创建白板成功');
+        let { roomName, password } = this.state;
+        let { username, token } = this.state.user;
 
-        
+        let _this = this;
+        let params = {
+            roomName,
+            password:"123456",
+            userName:username,
+            token,
 
-        this.setState({
-            has_white_board: true
-        })
+            suc: (res) => {
+                let white_board_url =  res.whiteBoardUrl; //为白板房间地址
+                _this.setState({
+                    white_board_url,
+                    has_white_board: true
+                })
+                message.success('加入白板成功');
+
+            },
+            error: (error) => {
+                message.error(error)
+            },
+        }
+
+        this.white_board.join(params)
+
     }
 
     toggle_white_board() {
