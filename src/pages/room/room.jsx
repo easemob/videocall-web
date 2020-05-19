@@ -911,7 +911,11 @@ class Room extends Component {
                 }
             },
 
-            cdn_zorder:1 //更新CDN布局，递增 1，配合服务端
+            cdn_zorder:1, //更新CDN布局，递增 1，配合服务端
+
+            has_white_board: false, //是否已经存在白板
+            white_board_show: false, // 是否展开白板
+            white_board_url: '' // 白板加载的外部链接
         };
 
         this.toggle_main = this.toggle_main.bind(this);
@@ -993,7 +997,7 @@ class Room extends Component {
                 _this.get_confr_info();
             })
     
-            this.startTime()
+            // this.startTime()
             
         } catch (error) { 
             message.error(error);
@@ -1907,6 +1911,7 @@ class Room extends Component {
             </div>
         )
     }
+    // 视频列表
     _get_drawer_component() {
         let _this = this;
         let { stream_list } = this.state;
@@ -1940,8 +1945,10 @@ class Room extends Component {
                 width="336px"
             >
                 <img src={get_img_url_by_name('expand-icon')} className='expand-icon' onClick={this.collapse_talker_list}/>
+                { this.get_white_board_toggle_el() } 
                 { stream_list.map((item, index) => {
-                    if(index != 0 && item){
+
+                    if(index != 0 && item){ // 不渲染主画面
                         return _this._get_video_item(item,index);
                     }
                 }) }
@@ -2118,6 +2125,10 @@ class Room extends Component {
                                 onClick={() => this.toggle_room_setting_modal()}
                             /> 
                         </Tooltip>
+
+                        <Tooltip title='发起白板'>
+                            <Icon style={{fontSize:'22px',color:'#fff'}} type="dashboard" onClick={() => this.create_white_board()}/>
+                        </Tooltip>
                 </div>
                 <img 
                     src={get_img_url_by_name('expand-icon')} 
@@ -2128,6 +2139,52 @@ class Room extends Component {
             </div>
         )
     }
+
+    // 白板相关的方法
+    // 获取白板 元素框
+    get_white_board_toggle_el() {
+
+        let { has_white_board } = this.state;
+
+        if(has_white_board){
+            return <div 
+                        className="white-board-toggle"
+                        onClick={() => this.toggle_white_board()}>白板缩略图</div>
+        }
+
+        return ''
+    }
+
+    // 获取白板的操作界面
+    get_white_board_action_el() {
+        let { has_white_board, white_board_show, white_board_url } = this.state; //白板相关
+
+        if(
+            !has_white_board || !white_board_show
+        ) {
+            return ''
+        }
+
+        return <iframe name="white-board" src={ white_board_url }></iframe>
+    }
+    create_white_board() {
+        message.success('创建白板成功');
+
+        
+
+        this.setState({
+            has_white_board: true
+        })
+    }
+
+    toggle_white_board() {
+        let { white_board_show } = this.state
+        this.setState({
+            white_board_show: !white_board_show
+        })
+    }
+
+
     expand_talker_list = () => {
         this.setState({
             talker_list_show:true
@@ -2197,6 +2254,7 @@ class Room extends Component {
         let { role } = this.state.user_room;
 
         let { audio, video, nickName, headimg_url_suffix } = this.state;
+
         return (
             <div style={{width:'100%', height:'100%'}}>
                 {/* join compoent */}
@@ -2309,7 +2367,9 @@ class Room extends Component {
                     <Header>
                         {this._get_header_el()}
                     </Header>
-                    
+
+                    {/* 白板的iframe  */}
+                    { this.get_white_board_action_el() }
                     <Content>
                         {this._get_main_el()}
                     </Content>
