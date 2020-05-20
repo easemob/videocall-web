@@ -914,9 +914,11 @@ class Room extends Component {
 
             cdn_zorder:1, //更新CDN布局，递增 1，配合服务端
 
-            has_white_board: false, //是否已经存在白板
+            // has_white_board: false, //是否已经存在白板
             white_board_show: false, // 是否展开白板
-            white_board_url: '' // 白板加载的外部链接
+            white_board_url: '', // 白板加载的外部链接
+            white_board_is_created: false, // 白板是否创建
+            am_i_white_board_creator: false, // 我是否是白板创建者
         };
 
         this.toggle_main = this.toggle_main.bind(this);
@@ -1143,7 +1145,7 @@ class Room extends Component {
         emedia.mgr.onConfrAttrsUpdated = function(confr_attrs){ 
             console.log('onConfrAttrsUpdated', confr_attrs);
             // 会议属性变更
-            
+            _this.confrAttrsUpdated(confr_attrs)
         };
 
         emedia.mgr.onRoleChanged = function (role) {
@@ -1313,6 +1315,53 @@ class Room extends Component {
 
 
     }
+    // 会议属性变更
+    confrAttrsUpdated(confr_attrs) {
+        // confr_attrs ---  Array 
+
+        // 白板相关
+        let white_board_attr = confr_attrs.filter(item => item.key == 'whiteBoard');
+        
+        if(white_board_attr.length > 0) {
+            let { op, val } = white_board_attr[0];
+            val = JSON.parse(val)
+
+            // 如果是自己创建的白板，忽略会议属性
+            let { username } = this.state.user;
+
+
+            console.log('white_board_attr creator',val.creator );
+            console.log('white_board_attr username',username );
+            
+            if( val.creator == username ) {
+                return
+            }
+
+            if( op == 'DELETE') {
+                message.success('白板管理员销毁了白板');
+                this.setState({
+                    white_board_is_created: false
+                })
+                return
+            }
+
+            // 如果不是 删除白板的会议属性，都是加入
+            message.success('有人创建了白板');
+
+            let { roomName, roomPswd:password } = val;
+            let { username:userName, token } = this.state.user;
+
+            let join_white_board_params = {
+                roomName,
+                password,
+                userName,
+                token
+            }
+
+            this.setState({ join_white_board_params }, this.join_white_board);
+        }
+    }
+
     // 从 sessionStore 拿昵称
     _get_nickname_from_session() {
         let nickName = window.sessionStorage.getItem('easemob-nickName');
@@ -2068,7 +2117,8 @@ class Room extends Component {
                 audio,
                 video, 
                 shared_desktop,
-                room_setting_modal_show
+                room_setting_modal_show,
+                white_board_is_created
             } = this.state
         
         return (
@@ -2136,9 +2186,12 @@ class Room extends Component {
                             /> 
                         </Tooltip>
 
+                    {
+                        white_board_is_created ? '' :
                         <Tooltip title='发起白板'>
                             <Icon style={{fontSize:'22px',color:'#fff'}} type="dashboard" onClick={() => this.create_white_board()}/>
                         </Tooltip>
+                    }
                 </div>
                 <img 
                     src={get_img_url_by_name('expand-icon')} 
@@ -2154,9 +2207,9 @@ class Room extends Component {
     // 获取白板 元素框
     get_white_board_toggle_el() {
 
-        let { has_white_board } = this.state;
+        let { white_board_is_created } = this.state;
 
-        if(has_white_board){
+        if(white_board_is_created){
             return <div 
                         className="white-board-toggle"
                         onClick={() => this.toggle_white_board()}>白板缩略图</div>
@@ -2167,9 +2220,9 @@ class Room extends Component {
 
     // 获取白板的操作界面
     get_white_board_action_el() {
-        let { has_white_board, white_board_show, white_board_url } = this.state; //白板相关
+        let { white_board_is_created, white_board_show, white_board_url } = this.state; //白板相关
 
-        if(!has_white_board) {
+        if(!white_board_is_created) {
             return ''
         }
 
@@ -2181,7 +2234,22 @@ class Room extends Component {
     }
     // 白板创建成功 在会议中进行广播
     emit_white_board_is_created() {
+
+        let { username:creator } = this.state.user;
+
+        let { roomName, password:roomPswd } = this.state;
+
+        let options = {
+            key:'whiteBoard',
+            val:JSON.stringify({
+                creator, 
+                roomName,
+                roomPswd,
+                timestamp: new Date().getTime() 
+            })
+        }
         
+        emedia.mgr.setConferenceAttrs(options)
     }
     
     create_white_board() {
@@ -2199,7 +2267,8 @@ class Room extends Component {
                 let white_board_url =  res.whiteBoardUrl; //为白板房间地址
                 _this.setState({
                     white_board_url,
-                    has_white_board: true
+                    white_board_is_created: true,
+                    am_i_white_board_creator: true
                 })
                 message.success('创建白板成功');
                 _this.emit_white_board_is_created()
@@ -2211,6 +2280,34 @@ class Room extends Component {
         }
 
         this.white_board.join(params)
+
+    }
+
+    // 加入白板
+    join_white_board() {
+        let { join_white_board_params } = this.state;
+
+        if(!join_white_board_params) {
+            return
+        }
+
+        
+        this.white_board.join({
+            ...join_white_board_params,
+            suc: function(res){
+                let white_board_url =  res.whiteBoardUrl; //为白板房间地址
+                _this.setState({
+                    white_board_url,
+                    white_board_is_created: true
+                })
+                message.success('加入白板成功')
+
+            },
+            error: function(err){
+                console.log("加入白板失败", err);
+
+            }
+        })
 
     }
 
