@@ -1245,7 +1245,7 @@ class Room extends Component {
     // 初始化白板
     init_white_board() {
         this.white_board = new whiteBoards({
-			restApi: process.env.REACT_APP_RTC_HOST,
+			restApi: process.env.REACT_APP_WHITE_BOARD_HOST,
             appKey: appkey
             
 		});
@@ -2169,23 +2169,25 @@ class Room extends Component {
     get_white_board_action_el() {
         let { has_white_board, white_board_show, white_board_url } = this.state; //白板相关
 
-        if(
-            !has_white_board || !white_board_show
-        ) {
+        if(!has_white_board) {
             return ''
         }
 
-        return <iframe name="white-board" src={ white_board_url }></iframe>
+        return <iframe 
+                name="white-board" 
+                src={ white_board_url } 
+                style={{display: white_board_show ? 'block' : 'none'}}>
+            </iframe>
     }
     create_white_board() {
         let { roomName, password } = this.state;
-        let { username, token } = this.state.user;
+        let { username:userName, token } = this.state.user;
 
         let _this = this;
         let params = {
             roomName,
-            password:"123456",
-            userName:username,
+            password,
+            userName,
             token,
 
             suc: (res) => {
