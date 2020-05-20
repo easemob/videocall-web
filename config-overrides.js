@@ -2,8 +2,11 @@ const {
   override, 
   fixBabelImports, 
   addLessLoader,
-  disableEsLint
+  disableEsLint,
+  addWebpackAlias
 } = require('customize-cra');
+
+const path = require("path");
 
 module.exports = override(
   // 针对antd实现按需打包: 根据import来打包(使用babel-plugin-import)
@@ -20,5 +23,10 @@ module.exports = override(
   }),
 
   // 忽略严格模式
-  disableEsLint()
+  disableEsLint(),
+
+  // 定义src 相对路径 为 '@'
+  addWebpackAlias({
+    ["@"]: path.resolve(__dirname, "src")
+  }),
 )

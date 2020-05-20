@@ -2179,6 +2179,11 @@ class Room extends Component {
                 style={{display: white_board_show ? 'block' : 'none'}}>
             </iframe>
     }
+    // 白板创建成功 在会议中进行广播
+    emit_white_board_is_created() {
+        
+    }
+    
     create_white_board() {
         let { roomName, password } = this.state;
         let { username:userName, token } = this.state.user;
@@ -2196,7 +2201,8 @@ class Room extends Component {
                     white_board_url,
                     has_white_board: true
                 })
-                message.success('加入白板成功');
+                message.success('创建白板成功');
+                _this.emit_white_board_is_created()
 
             },
             error: (error) => {
