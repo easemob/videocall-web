@@ -494,7 +494,7 @@ whiteBoards.prototype.destroy= function(options){
 
         this.getHttpDNS({suc: sucFun, error: errFun})
     }else{
-        _joinByRoomId.call(this)
+        _destroy.call(this)
     }
 
     function _destroy(){

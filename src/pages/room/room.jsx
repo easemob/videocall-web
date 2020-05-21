@@ -914,7 +914,7 @@ class Room extends Component {
 
             cdn_zorder:1, //更新CDN布局，递增 1，配合服务端
 
-            // has_white_board: false, //是否已经存在白板
+            has_white_board_iframe: false, //是否已经存在白板iframe
             white_board_show: false, // 是否展开白板
             white_board_url: '', // 白板加载的外部链接
             white_board_is_created: false, // 白板是否创建
@@ -1324,24 +1324,22 @@ class Room extends Component {
         
         if(white_board_attr.length > 0) {
             let { op, val } = white_board_attr[0];
+
+            if( op == 'DEL') {
+                message.success('白板管理员销毁了白板');
+                this.setState({
+                    white_board_is_created: false,
+                    white_board_show: false
+                })
+                return
+            }
+
+
             val = JSON.parse(val)
 
             // 如果是自己创建的白板，忽略会议属性
             let { username } = this.state.user;
-
-
-            console.log('white_board_attr creator',val.creator );
-            console.log('white_board_attr username',username );
-            
             if( val.creator == username ) {
-                return
-            }
-
-            if( op == 'DELETE') {
-                message.success('白板管理员销毁了白板');
-                this.setState({
-                    white_board_is_created: false
-                })
                 return
             }
 
@@ -2217,19 +2215,44 @@ class Room extends Component {
 
         return ''
     }
+    // 获取退出白板的操作按钮
+    get_destroy_white_board_btn() {
+
+
+        let { am_i_white_board_creator, white_board_is_created } = this.state;
+
+        if(am_i_white_board_creator && white_board_is_created) {
+            return <Button 
+                        type="danger" 
+                        className='destroy-white-board-action'
+                        onClick={() => this.destroy_white_board()}
+                    >退出白板</Button>
+        }
+
+        return ''
+    }
 
     // 获取白板的操作界面
     get_white_board_action_el() {
-        let { white_board_is_created, white_board_show, white_board_url } = this.state; //白板相关
+        let { 
+            white_board_is_created, 
+            white_board_show, 
+            white_board_url,
+            has_white_board_iframe
+        } = this.state; //白板相关
 
-        if(!white_board_is_created) {
+        if(
+            !white_board_is_created
+            || !has_white_board_iframe
+        ) {
             return ''
         }
 
         return <iframe 
                 name="white-board" 
                 src={ white_board_url } 
-                style={{display: white_board_show ? 'block' : 'none'}}>
+                style={{display: white_board_show ? 'block' : 'none'}}
+               >
             </iframe>
     }
     // 白板创建成功 在会议中进行广播
@@ -2250,6 +2273,13 @@ class Room extends Component {
         }
         
         emedia.mgr.setConferenceAttrs(options)
+    }
+    // 白板销毁成功 在会议中进行广播
+    emit_white_board_is_destroyed() {
+        
+        emedia.mgr.deleteConferenceAttrs({
+            key:'whiteBoard'
+        })
     }
     
     create_white_board() {
@@ -2273,6 +2303,9 @@ class Room extends Component {
                 message.success('创建白板成功');
                 _this.emit_white_board_is_created()
 
+                this.setState({
+                    white_board_info: res
+                })
             },
             error: (error) => {
                 message.error(error)
@@ -2311,8 +2344,51 @@ class Room extends Component {
 
     }
 
+    // 销毁白板
+    destroy_white_board() {
+
+        let { white_board_info } = this.state;
+
+        if(!white_board_info) {
+            return
+        }
+
+        const { confirm } = Modal;
+        confirm({
+            title: '退出后将结束白板互动',
+            okText: '确认',
+            cancelText: '取消',
+            onOk: confirm_destroy
+        });
+
+
+        let _this = this;
+        function confirm_destroy(){ // 销毁白板 API
+            let { roomId } = white_board_info;
+            let { username: userName, token } = _this.state.user;
+            _this.white_board.destroy({
+                roomId,
+                userName,
+                token,
+                suc: function(){
+                    message.success('已经退出了白板');
+                    _this.setState({ white_board_is_created: false });// 默认不显示
+                    _this.emit_white_board_is_destroyed()
+                },
+                error: function(err){
+                    message.error('退出白板失败');
+                }
+            });
+        }
+    }
+
     toggle_white_board() {
-        let { white_board_show } = this.state
+        let { white_board_show, has_white_board_iframe } = this.state
+        if(!has_white_board_iframe) { // 第一次展开白板， 设置已经有 iframe 的属性，直接加载iframe 会显示不全
+            this.setState({
+                has_white_board_iframe: true 
+            })
+        }
         this.setState({
             white_board_show: !white_board_show
         })
@@ -2341,7 +2417,7 @@ class Room extends Component {
             1000
         )
     }
-    _get_tick() {
+    _get_tick() { // 会议时间
         let { time } = this.state
 
         function get_second(second){
@@ -2504,6 +2580,7 @@ class Room extends Component {
 
                     {/* 白板的iframe  */}
                     { this.get_white_board_action_el() }
+                    { this.get_destroy_white_board_btn() }
                     <Content>
                         {this._get_main_el()}
                     </Content>
