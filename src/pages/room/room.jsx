@@ -2173,7 +2173,7 @@ class Room extends Component {
             return ''
         }
 
-        let { id, aoff, is_speak } = stream;
+        let { id, aoff, is_speak, type } = stream;
         let { role, is_me } = member;
         let { role:my_role } = this.state.user_room;//拿到我自己的角色
         let { username:my_username } = this.state.user;//拿到我自己的username
@@ -2213,8 +2213,11 @@ class Room extends Component {
                 </div>
                 
                 <video ref={`list-video-${id}`} autoPlay></video>
-                {/* 不是主持人并且不是主持人自己 不加载 */}
-                { (my_role == 7 && !is_me) ? <ManageTalker { ...{stream, member, my_username, confr} } /> : '' } 
+                {/* 不是主持人 并且不是主持人自己 并且流不是共享桌面 才加载 */}
+                { 
+                    (my_role == 7 && !is_me && type != emedia.StreamType.DESKTOP) ? 
+                        <ManageTalker { ...{stream, member, my_username, confr} } /> : '' 
+                } 
             </div>
         )
 
