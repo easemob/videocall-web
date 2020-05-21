@@ -2291,7 +2291,7 @@ class Room extends Component {
             return
         }
 
-        
+        let _this = this;
         this.white_board.join({
             ...join_white_board_params,
             suc: function(res){
