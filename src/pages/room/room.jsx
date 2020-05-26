@@ -1123,7 +1123,7 @@ class Room extends Component {
                 recMerge,
 
                 // maxTalkerCount:2,//会议最大主播人数
-                // maxVideoCount:1 //会议最大视频数
+                maxVideoCount:1 //会议最大视频数
             }
         }
 
