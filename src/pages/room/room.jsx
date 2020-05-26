@@ -1160,16 +1160,18 @@ class Room extends Component {
                 this.setState({ loading:false })
                 return
             }
-            let _this = this;
+
+            this.startTime();
+            
             this.setState({ 
                 joined: true,
                 user_room
-            },() => {
-                _this.publish();
-                _this.get_confr_info();
-            })
+            },this.get_confr_info)
     
-            this.startTime()
+            if(user_room.role == emedia.mgr.Role.AUDIENCE){ // 观众不推流
+                return
+            }
+            this.publish();
             
         } catch (error) { 
             message.error(error);
@@ -1342,9 +1344,9 @@ class Room extends Component {
                     await emedia.mgr.unpublish(own_stream)
                 }
 
-                emedia.mgr.publish({ audio:true, video:false });
-
-                _this.setState({ video:false })
+                _this.setState({ 
+                    audio:true, video:false 
+                }, _this.publish)
             }
 
         }
@@ -1439,7 +1441,9 @@ class Room extends Component {
                 old_role == 1 &&
                 role == 3
             ) {
-                _this.publish();
+                _this.setState({
+                    audio:true
+                },_this.publish)
                 message.success('你已经上麦成功,并且推流成功')
                 return
             }
@@ -1525,11 +1529,6 @@ class Room extends Component {
 
     }
     publish() {
-        let { role } = this.state.user_room
-        if(role == 1){//观众不推流
-            return
-        }
-        
         let { audio, video }  = this.state;
         // video = { // 设置 video 分辨率
         //     width: {
