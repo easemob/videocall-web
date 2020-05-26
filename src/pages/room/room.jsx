@@ -1122,7 +1122,7 @@ class Room extends Component {
                 rec, 
                 recMerge,
 
-                // maxTalkerCount:2,//会议最大主播人数
+                maxTalkerCount:2,//会议最大主播人数
                 maxVideoCount:1, //会议最大视频数
                 maxPubDesktopCount:1 //会议最大共享桌面数
             }
@@ -1348,7 +1348,8 @@ class Room extends Component {
         }
         // 共享桌面最大数发布 回调
         emedia.mgr.onPubDesktopTooMuch = () => {
-            message.error('共享桌面数已经达到最大');
+            message.warn('共享桌面数已经达到最大');
+            _this.stop_share_desktop()
         }
 
         // 主持人 收到上麦申请回调
