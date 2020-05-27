@@ -1123,7 +1123,8 @@ class Room extends Component {
                 recMerge,
 
                 maxTalkerCount:2,//会议最大主播人数
-                maxVideoCount:1 //会议最大视频数
+                maxVideoCount:1, //会议最大视频数
+                // maxPubDesktopCount:1 //会议最大共享桌面数
             }
         }
 
@@ -1332,23 +1333,23 @@ class Room extends Component {
             _this.admin_changed(admin)
         }
 
-        // 视频流发布失败回调 -- 别人收不到 -- 自己能看到
-        emedia.mgr.onPubVideoFailed = async evt => {
+        // 视频流达到最大数失败回调
+        emedia.mgr.onPubVideoTooMuch = async () => {
+            message.warn('已达到最大视频数，只能开启音频')
 
-            if(evt.op == 107 && evt.endReason == 23) {
-
-                message.warn('已达到最大视频数，只能开启音频')
-
-                let { own_stream } = _this.state;
-                if(own_stream) { // 断开自己的流
-                    await emedia.mgr.unpublish(own_stream)
-                }
-
-                _this.setState({ 
-                    audio:true, video:false 
-                }, _this.publish)
+            let { own_stream } = _this.state;
+            if(own_stream) { // 断开自己的流
+                await emedia.mgr.unpublish(own_stream)
             }
 
+            _this.setState({ 
+                audio:true, video:false 
+            }, _this.publish)
+        }
+        // 共享桌面最大数发布 回调
+        emedia.mgr.onPubDesktopTooMuch = () => {
+            message.warn('共享桌面数已经达到最大');
+            _this.stop_share_desktop()
         }
 
         // 主持人 收到上麦申请回调
