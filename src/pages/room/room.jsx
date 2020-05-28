@@ -2372,7 +2372,10 @@ class Room extends Component {
                 token,
                 suc: function(){
                     message.success('已经退出了白板');
-                    _this.setState({ white_board_is_created: false });// 默认不显示
+                    _this.setState({ 
+                        white_board_is_created: false,
+                        am_i_white_board_creator: false
+                    });// 默认不显示
                     _this.emit_white_board_is_destroyed()
                 },
                 error: function(err){
