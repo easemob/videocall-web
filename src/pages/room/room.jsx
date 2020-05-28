@@ -2248,6 +2248,13 @@ class Room extends Component {
             return ''
         }
 
+        // 如果是 https 协议，将返回的路径 协议名替换为 https 否则 iframe报错（不同协议）
+        // 返回的是 http 协议
+        if(location.protocol == 'https:') {
+            white_board_url = white_board_url.replace(/http/g,'https')
+        }
+
+        
         return <iframe 
                 name="white-board" 
                 src={ white_board_url } 
@@ -2295,6 +2302,7 @@ class Room extends Component {
 
             suc: (res) => {
                 let white_board_url =  res.whiteBoardUrl; //为白板房间地址
+                
                 _this.setState({
                     white_board_url,
                     white_board_is_created: true,
