@@ -2115,8 +2115,7 @@ class Room extends Component {
                 audio,
                 video, 
                 shared_desktop,
-                room_setting_modal_show,
-                white_board_is_created
+                room_setting_modal_show
             } = this.state
         
         return (
@@ -2174,22 +2173,19 @@ class Room extends Component {
                         </Tooltip>
                     }
 
-                        <Tooltip title='房间设置'>
-                            <img 
-                                src={ room_setting_modal_show ? 
-                                        get_img_url_by_name('room-setting-open-icon') : 
-                                        get_img_url_by_name('room-setting-close-icon')
-                                    } 
-                                onClick={() => this.toggle_room_setting_modal()}
-                            /> 
-                        </Tooltip>
+                    { this.get_white_board_action_btn() }
 
-                    {
-                        white_board_is_created ? '' :
-                        <Tooltip title='发起白板'>
-                            <Icon style={{fontSize:'22px',color:'#fff'}} type="dashboard" onClick={() => this.create_white_board()}/>
-                        </Tooltip>
-                    }
+                    <Tooltip title='房间设置'>
+                        <img 
+                            src={ room_setting_modal_show ? 
+                                    get_img_url_by_name('room-setting-open-icon') : 
+                                    get_img_url_by_name('room-setting-close-icon')
+                                } 
+                            onClick={() => this.toggle_room_setting_modal()}
+                        /> 
+                    </Tooltip>
+
+                    
                 </div>
                 <img 
                     src={get_img_url_by_name('expand-icon')} 
@@ -2215,9 +2211,20 @@ class Room extends Component {
 
         return ''
     }
+    // 获取发起白板的操作按钮
+    get_white_board_action_btn() {
+
+        let { white_board_is_created, am_i_white_board_creator } = this.state;
+
+        if(white_board_is_created) {
+            return ''
+        }
+        return <Tooltip title='发起白板'>
+                    <Icon style={{fontSize:'22px',color:'#fff'}} type="dashboard" onClick={() => this.create_white_board()}/>
+                </Tooltip>
+    }
     // 获取退出白板的操作按钮
     get_destroy_white_board_btn() {
-
 
         let { am_i_white_board_creator, white_board_is_created } = this.state;
 
@@ -2233,7 +2240,7 @@ class Room extends Component {
     }
 
     // 获取白板的操作界面
-    get_white_board_action_el() {
+    get_white_board_content_el() {
         let { 
             white_board_is_created, 
             white_board_show, 
@@ -2590,7 +2597,7 @@ class Room extends Component {
                     </Header>
 
                     {/* 白板的iframe  */}
-                    { this.get_white_board_action_el() }
+                    { this.get_white_board_content_el() }
                     { this.get_destroy_white_board_btn() }
                     <Content>
                         {this._get_main_el()}
