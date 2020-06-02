@@ -2498,7 +2498,8 @@ class Room extends Component {
                         /> 
                             
                         <img src={get_img_url_by_name('logo')} />
-                        <div style={{margin:'17px 0 45px'}}>欢迎使用环信多人会议</div>
+                        <div style={{marginTop:'17px'}}>欢迎使用环信多人会议</div>
+                        <div className='version-text'>Version:{process.env.REACT_APP_VERSION}</div>
                         <Item>
                             {getFieldDecorator('roomName', {
                                 initialValue: process.env.REACT_APP_ROOMNAME,
@@ -2552,7 +2553,6 @@ class Room extends Component {
                             </Button>
                         </div>
 
-                        
                     </Form>
                 
                     {/* 主播人数已满提醒框 */}
