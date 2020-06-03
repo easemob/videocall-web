@@ -24,7 +24,7 @@ import './room.less';
 import emedia from 'easemob-emedia';
 import whiteBoards from './whiteboardsSdk';
 import login from './login.js'
-import { appkey } from '../../config';
+import { appkey, version } from '../../config';
 
 // assets
 
@@ -2499,7 +2499,7 @@ class Room extends Component {
                             
                         <img src={get_img_url_by_name('logo')} />
                         <div style={{marginTop:'17px'}}>欢迎使用环信多人会议</div>
-                        <div className='version-text'>Version:{process.env.REACT_APP_VERSION}</div>
+                        <div className='version-text'>Version:{version}</div>
                         <Item>
                             {getFieldDecorator('roomName', {
                                 initialValue: process.env.REACT_APP_ROOMNAME,
