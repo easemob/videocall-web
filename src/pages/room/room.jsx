@@ -862,6 +862,50 @@ function RoomSetting(props) {
         </div>
     )
 }
+
+// toast 框组件
+function toast(config) {
+
+    const div = document.createElement('div');
+    document.body.appendChild(div);
+
+    
+    function destroy() {
+        const unmountResult = ReactDOM.unmountComponentAtNode(div);
+        if (unmountResult && div.parentNode) {
+          div.parentNode.removeChild(div);
+        }
+        
+    }
+
+    function onOk_handle() {
+        let { onOk } = config
+        if(
+            !onOk ||
+            typeof onOk != 'function'
+        ) {
+            return
+        }
+
+        onOk();
+
+        destroy();
+    }
+    ReactDOM.render(
+        <div className="toast" >
+            <div className="title">
+                <span>提示</span>
+                <img src={get_img_url_by_name('close-handle-icon')} onClick={() => destroy()}/>
+            </div>
+            <div className="text"> 退出后将结束互动白板 </div>
+            <div className="handle">
+                {/*  */}
+                <span className="leave" onClick={() => onOk_handle()}>继续退出</span><br />
+                <span className="end" onClick={() => destroy()}>取消</span>
+            </div>
+        </div>, div)
+}
+
 class Room extends Component {
     constructor(props) {
         super(props);
@@ -914,6 +958,7 @@ class Room extends Component {
 
             cdn_zorder:1, //更新CDN布局，递增 1，配合服务端
 
+            use_white_board:true, //是否启用白板
             has_white_board_iframe: false, //是否已经存在白板iframe
             white_board_show: false, // 是否展开白板
             white_board_url: '', // 白板加载的外部链接
@@ -1645,6 +1690,8 @@ class Room extends Component {
     }
 
     stop_share_desktop() {
+        console.log('stop_share_desktop');
+        
         let { stream_list } = this.state;
 
         stream_list.map((item) => {
@@ -2157,6 +2204,8 @@ class Room extends Component {
                         </Tooltip>
 
                     }
+                    { this.get_white_board_action_btn() }
+
                     {
                         shared_desktop ? 
                         <Tooltip title='停止共享桌面'>
@@ -2173,7 +2222,6 @@ class Room extends Component {
                         </Tooltip>
                     }
 
-                    { this.get_white_board_action_btn() }
 
                     <Tooltip title='房间设置'>
                         <img 
@@ -2214,47 +2262,56 @@ class Room extends Component {
     // 获取发起白板的操作按钮
     get_white_board_action_btn() {
 
-        let { white_board_is_created, am_i_white_board_creator } = this.state;
+        let { 
+            use_white_board,
+            white_board_is_created, 
+            am_i_white_board_creator,
+        } = this.state;
 
-        if(white_board_is_created) {
+        if(!use_white_board) { // 不启用白板
             return ''
         }
-        return <Tooltip title='发起白板'>
-                    <Icon style={{fontSize:'22px',color:'#fff'}} type="dashboard" onClick={() => this.create_white_board()}/>
+
+        // 白板没有创建，都能发起白板
+        if(!white_board_is_created) {
+            return <Tooltip title='发起白板'>
+                        <img 
+                            src={get_img_url_by_name('join-white-board-icon')} 
+                            onClick={() => this.create_white_board()}
+                        />
                 </Tooltip>
-    }
-    // 获取退出白板的操作按钮
-    get_destroy_white_board_btn() {
-
-        let { am_i_white_board_creator, white_board_is_created } = this.state;
-
-        if(am_i_white_board_creator && white_board_is_created) {
-            return <Button 
-                        type="danger" 
-                        className='destroy-white-board-action'
-                        onClick={() => this.destroy_white_board()}
-                    >退出白板</Button>
         }
 
-        return ''
+        // 白板被创建了，不是创建者，没有销毁权限
+        if(!am_i_white_board_creator) {
+            return ''
+        }
+
+        return <Tooltip title='退出白板'>
+                    <img 
+                        src={get_img_url_by_name('destory-white-board-icon')} 
+                        onClick={() => this.destroy_white_board()}
+                    />
+                </Tooltip>
+        
     }
+    
 
     // 获取白板的操作界面
     get_white_board_content_el() {
         let { 
             white_board_is_created, 
             white_board_show, 
-            white_board_url,
-            has_white_board_iframe
+            white_board_url
         } = this.state; //白板相关
 
-        if(
-            !white_board_is_created
-            || !has_white_board_iframe
-        ) {
+        if( !white_board_is_created ) {
             return ''
         }
 
+        if(!white_board_show) {
+            return ''
+        }
         // 如果是 https 协议，将返回的路径 协议名替换为 https 否则 iframe报错（不同协议）
         // 返回的是 http 协议
         if(location.protocol == 'https:') {
@@ -2265,7 +2322,6 @@ class Room extends Component {
         return <iframe 
                 name="white-board" 
                 src={ white_board_url } 
-                style={{display: white_board_show ? 'block' : 'none'}}
                >
             </iframe>
     }
@@ -2368,14 +2424,9 @@ class Room extends Component {
             return
         }
 
-        const { confirm } = Modal;
-        confirm({
-            title: '退出后将结束白板互动',
-            okText: '确认',
-            cancelText: '取消',
+        toast({
             onOk: confirm_destroy
         });
-
 
         let _this = this;
         function confirm_destroy(){ // 销毁白板 API
@@ -2401,12 +2452,8 @@ class Room extends Component {
     }
 
     toggle_white_board() {
-        let { white_board_show, has_white_board_iframe } = this.state
-        if(!has_white_board_iframe) { // 第一次展开白板， 设置已经有 iframe 的属性，直接加载iframe 会显示不全
-            this.setState({
-                has_white_board_iframe: true 
-            })
-        }
+        let { white_board_show } = this.state
+       
         this.setState({
             white_board_show: !white_board_show
         })
@@ -2598,7 +2645,6 @@ class Room extends Component {
 
                     {/* 白板的iframe  */}
                     { this.get_white_board_content_el() }
-                    { this.get_destroy_white_board_btn() }
                     <Content>
                         {this._get_main_el()}
                     </Content>
