@@ -1,4 +1,4 @@
-import React, {Component} from 'react' 
+import React, {Component, PureComponent} from 'react' 
 import ReactDOM from 'react-dom'
 
 import { 
@@ -16,7 +16,8 @@ import {
     Dropdown,
     Menu,
     Switch,
-    Radio
+    Radio,
+    Tabs
 } from 'antd';
 import './room.less';
 
@@ -905,6 +906,179 @@ function toast(config) {
             </div>
         </div>, div)
 }
+// 选择共享桌面流组件
+class ChooseDesktopMedia extends PureComponent {
+
+    state = {
+        visible:false,
+        sources:[],
+        accessApproved: null,
+        choosed_stream: null
+    }
+
+    show (sources, accessApproved, accessDenied) {
+
+        this.setState({ 
+            sources,
+            accessApproved,
+            accessDenied,
+            visible: true 
+        })
+    }
+
+    hide() {
+        this.setState({ 
+            visible: false,
+            choosed_stream: null 
+        });
+        
+        let { accessDenied } = this.state
+        if(
+            accessDenied &&
+            typeof accessDenied == 'function'
+        ) {
+            accessDenied()
+        }
+    }
+
+    // 选中某个桌面流
+    choose(stream) {
+        if(!stream) {
+            return
+        }
+
+
+        this.setState({
+            choosed_stream: stream
+        })
+    }
+
+    //分享
+    share() {
+        let { accessApproved, choosed_stream } = this.state;
+
+        if(
+            !accessApproved ||
+            !choosed_stream
+        ) {
+            return
+        }
+        
+        if(typeof accessApproved != 'function'){
+            return
+        }
+
+        accessApproved(choosed_stream)
+
+        this.setState({
+             visible: false,
+             choosed_stream: null
+        })
+    }
+    render(){
+        let { visible, sources, choosed_stream } = this.state;
+
+        let screen_list = [];
+        let window_list = [];
+
+        sources.map(item => { // 区分 整个屏幕和应用窗口
+            if(item){
+                if(/window/.test(item.id)) {
+                    window_list.push(item)
+                } else if(/screen/.test(item.id)) {
+                    screen_list.push(item)
+                }
+            }
+        })
+        const { TabPane } = Tabs;
+
+        return (
+            <Modal
+                title="共享屏幕"
+                visible={visible}
+                destroyOnClose={true}
+                mask={false}
+                maskClosable={false}
+                okText='分享'
+                cancelText='取消'
+                closable={false}
+                onOk={() => this.share()}
+                okButtonProps={{ disabled: !choosed_stream }}
+                onCancel={() => this.hide()}
+                wrapClassName='electorn-choose-desktop-media'
+                getContainer={false}
+                width={600}
+                style={{ top: 20 }}
+            >
+                    <div>Electorn 想要共享您屏幕上的内容。请选择你希望共享哪些内容</div>
+
+                    <Tabs defaultActiveKey="1">
+                        <TabPane tab="您的整个屏幕" key="1">
+                            <div className="tab-content">
+
+                                {
+                                    screen_list.map((item, index) => {
+
+                                        let choosed_style = {};
+
+                                        if(choosed_stream){ //判断是否选中的
+                                            if(choosed_stream.id == item.id) {
+                                                choosed_style = {
+                                                    borderColor: 'rgba(146, 210, 241, 0.7)'
+                                                }
+                                            }
+                                        }
+                                        return (
+                                            <div 
+                                                className="img-wrapper" 
+                                                onClick={() => this.choose(item)}
+                                                style={choosed_style}
+                                                key={index}
+                                            >
+                                                <img src={item.hxThumbDataURL} />
+                                                <div className='name'> {item.name} </div>
+                                            </div>
+                                        )
+                                    })
+                                }
+                            </div>
+                        </TabPane>
+                        <TabPane tab="应用窗口" key="2">
+                        <div className="tab-content">
+                            {
+                                window_list.map((item, index) => {
+                                    
+                                        let choosed_style = {};
+
+
+                                        if(choosed_stream){ //判断是否选中的
+                                            if(choosed_stream.id == item.id) {
+                                                choosed_style = {
+                                                    borderColor: 'rgba(146, 210, 241, 0.7)'
+                                                }
+                                            }
+                                        }
+                                        
+                                        return (
+                                            <div 
+                                                className="img-wrapper" 
+                                                onClick={() => this.choose(item)}
+                                                style={choosed_style}
+                                                key={index}
+                                            >
+                                            <img src={item.hxThumbDataURL} />
+                                            <div className='name'> {item.name} </div>
+                                        </div>
+                                    )
+                                })
+                            }
+                        </div>
+                        </TabPane>
+                    </Tabs>
+            </Modal>
+        )
+    }
+}
 
 class Room extends Component {
     constructor(props) {
@@ -998,8 +1172,9 @@ class Room extends Component {
                 rec, 
                 recMerge,
 
-                // maxTalkerCount:4,//会议最大主播人数
-                // maxVideoCount:3 //会议最大视频数
+                // maxTalkerCount:2,//会议最大主播人数
+                // maxVideoCount:1, //会议最大视频数
+                // maxPubDesktopCount:1 //会议最大共享桌面数
             }
         }
 
@@ -1036,16 +1211,18 @@ class Room extends Component {
                 this.setState({ loading:false })
                 return
             }
-            let _this = this;
+
+            this.startTime();
+            
             this.setState({ 
                 joined: true,
                 user_room
-            },() => {
-                _this.publish();
-                _this.get_confr_info();
-            })
+            },this.get_confr_info)
     
-            // this.startTime()
+            if(user_room.role == emedia.mgr.Role.AUDIENCE){ // 观众不推流
+                return
+            }
+            this.publish();
             
         } catch (error) { 
             message.error(error);
@@ -1207,23 +1384,23 @@ class Room extends Component {
             _this.admin_changed(admin)
         }
 
-        // 视频流发布失败回调 -- 别人收不到 -- 自己能看到
-        emedia.mgr.onPubVideoFailed = async evt => {
+        // 视频流达到最大数失败回调
+        emedia.mgr.onPubVideoTooMuch = async () => {
+            message.warn('已达到最大视频数，只能开启音频')
 
-            if(evt.op == 107 && evt.endReason == 23) {
-
-                message.warn('已达到最大视频数，只能开启音频')
-
-                let { own_stream } = _this.state;
-                if(own_stream) { // 断开自己的流
-                    await emedia.mgr.unpublish(own_stream)
-                }
-
-                emedia.mgr.publish({ audio:true, video:false });
-
-                _this.setState({ video:false })
+            let { own_stream } = _this.state;
+            if(own_stream) { // 断开自己的流
+                await emedia.mgr.unpublish(own_stream)
             }
 
+            _this.setState({ 
+                audio:true, video:false 
+            }, _this.publish)
+        }
+        // 共享桌面最大数发布 回调
+        emedia.mgr.onPubDesktopTooMuch = () => {
+            message.warn('共享桌面数已经达到最大');
+            _this.stop_share_desktop()
         }
 
         // 主持人 收到上麦申请回调
@@ -1233,8 +1410,6 @@ class Room extends Component {
         emedia.mgr.onRequestToTalker = function(applicat, agreeCallback, refuseCallback) {
             
             _this.handle_apply_talker(applicat, agreeCallback, refuseCallback)
-
-            
         }
 
         // 观众收到 上麦申请的回复 result 0: 同意 1: 拒绝
@@ -1287,6 +1462,17 @@ class Room extends Component {
             message.success('管理员取消了全体禁言');
             _this.open_audio()
         }
+
+
+        // electorn 兼容 
+        if(emedia.isElectron) {
+            emedia.chooseElectronDesktopMedia = function(sources, accessApproved, accessDenied){
+                
+                if(_this.choose_desktop_media) {
+                    _this.choose_desktop_media.show(sources, accessApproved, accessDenied);
+                }
+            }
+        }
     }
 
     // 初始化白板
@@ -1315,7 +1501,9 @@ class Room extends Component {
                 old_role == 1 &&
                 role == 3
             ) {
-                _this.publish();
+                _this.setState({
+                    audio:true
+                },_this.publish)
                 message.success('你已经上麦成功,并且推流成功')
                 return
             }
@@ -1446,11 +1634,6 @@ class Room extends Component {
 
     }
     publish() {
-        let { role } = this.state.user_room
-        if(role == 1){//观众不推流
-            return
-        }
-        
         let { audio, video }  = this.state;
         // video = { // 设置 video 分辨率
         //     width: {
@@ -2099,7 +2282,7 @@ class Room extends Component {
             return ''
         }
 
-        let { id, aoff, is_speak } = stream;
+        let { id, aoff, is_speak, type } = stream;
         let { role, is_me } = member;
         let { role:my_role } = this.state.user_room;//拿到我自己的角色
         let { username:my_username } = this.state.user;//拿到我自己的username
@@ -2139,8 +2322,11 @@ class Room extends Component {
                 </div>
                 
                 <video ref={`list-video-${id}`} autoPlay></video>
-                {/* 不是主持人并且不是主持人自己 不加载 */}
-                { (my_role == 7 && !is_me) ? <ManageTalker { ...{stream, member, my_username, confr} } /> : '' } 
+                {/* 不是主持人 并且不是主持人自己 并且流不是共享桌面 才加载 */}
+                { 
+                    (my_role == 7 && !is_me && type != emedia.StreamType.DESKTOP) ? 
+                        <ManageTalker { ...{stream, member, my_username, confr} } /> : '' 
+                } 
             </div>
         )
 
@@ -2521,6 +2707,7 @@ class Room extends Component {
             talker_is_full: false
         })
     }
+
     render() {
 
         const { getFieldDecorator } = this.props.form;
@@ -2656,6 +2843,14 @@ class Room extends Component {
                         role == 7 ?
                         <ToAudienceList {...this.state} ref={to_audience_list => this.to_audience_list = to_audience_list}/> :
                         <i></i>
+                    }
+
+                    {/* electorn 选择屏幕的插件 */}
+                    {
+                        emedia.isElectron ? 
+                        <ChooseDesktopMedia  
+                            ref={choose_desktop_media => this.choose_desktop_media = choose_desktop_media } />
+                        : ''
                     }
 
                 </Layout>
