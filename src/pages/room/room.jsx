@@ -1138,6 +1138,9 @@ class Room extends Component {
             white_board_url: '', // 白板加载的外部链接
             white_board_is_created: false, // 白板是否创建
             am_i_white_board_creator: false, // 我是否是白板创建者
+
+
+            footer_el_show: true //是否显示底部
         };
 
         this.toggle_main = this.toggle_main.bind(this);
@@ -1562,7 +1565,8 @@ class Room extends Component {
                 message.success('白板管理员销毁了白板');
                 this.setState({
                     white_board_is_created: false,
-                    white_board_show: false
+                    white_board_show: false,
+                    footer_el_show:true
                 })
                 return
             }
@@ -2341,6 +2345,41 @@ class Room extends Component {
             room_setting_modal_show: !room_setting_modal_show
         })
     }
+
+    // 底部栏的操作
+    hide_footer_el() {
+        this.setState({
+            footer_el_show: false
+        })
+    }
+    show_footer_el() {
+        this.setState({
+            footer_el_show: true
+        })
+    }
+    _get_control_footer_visibility_btn() {
+
+        let {
+            white_board_is_created,
+            white_board_show,
+            footer_el_show
+        } = this.state
+
+        if(!white_board_is_created) {
+            return ''
+        }
+
+        if(!white_board_show) {
+            return ''
+        }
+
+        if(footer_el_show) {
+            return <Icon type="down" onClick={() => this.hide_footer_el()}/>
+        }
+
+        return <Icon type="up" onClick={() => this.show_footer_el()} style={{top:0}}/> 
+
+    }
     _get_footer_el() {
         let { role } = this.state.user_room
 
@@ -2348,12 +2387,12 @@ class Room extends Component {
                 audio,
                 video, 
                 shared_desktop,
-                room_setting_modal_show
+                room_setting_modal_show,
+                footer_el_show
             } = this.state
         
         return (
-            <div className="actions-wrap">
-
+            <div className="actions-wrap"style={{display:footer_el_show ? 'flex' : 'none'}} >
                 <img src={get_img_url_by_name('apply-icon')} style={{visibility:'hidden'}}/>
                 <div className="actions">
                     {
@@ -2634,7 +2673,8 @@ class Room extends Component {
                     message.success('已经退出了白板');
                     _this.setState({ 
                         white_board_is_created: false,
-                        am_i_white_board_creator: false
+                        am_i_white_board_creator: false,
+                        footer_el_show:true
                     });// 默认不显示
                     _this.emit_white_board_is_destroyed()
                 },
@@ -2845,6 +2885,7 @@ class Room extends Component {
                     </Content>
                     {this._get_drawer_component()}
                     <Footer>
+                        {this._get_control_footer_visibility_btn()}
                         {this._get_footer_el()}
                     </Footer>
                     {

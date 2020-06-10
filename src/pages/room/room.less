@@ -577,6 +577,8 @@
 
                 }
             }
+
+            
         }
 
         // 房间设置框
@@ -641,6 +643,24 @@
             display: block;
 
             animation: roomSettingOpen .5s;
+        }
+
+        // 显示或者隐藏 footer-el 向下按钮
+        .anticon-down, .anticon-up {
+            position: absolute;
+            left: 50%;
+            transform: translateX(-50%);
+            top: -22px;
+            width: 2em;
+            font-size: 20px;
+
+            color: #fff;
+            background-color: rgba(0, 0, 0, 0.8);
+            border-radius: 5px;
+
+            cursor: pointer;
+
+
         }
     }
     
@@ -760,7 +780,7 @@
     // 白板操作界面
     iframe[name="white-board"] {
         position: absolute;
-        bottom: 80px;
+        top: 0;
         left: 0;
 
         width: 100%;
