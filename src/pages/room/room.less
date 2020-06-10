@@ -213,6 +213,7 @@
         top: 0;
         height: auto;
         line-height: 60px;
+        background:linear-gradient(180deg,rgba(0,0,0,0.8) 0%,rgba(0,0,0,0) 100%);
 
         .header-wrapper {
             display: inline-flex;
@@ -476,6 +477,17 @@
                 font-size: 20px;
                 line-height: 200px;
                 text-align: center;
+                cursor: pointer;
+
+                position: relative;
+                .head {
+                    width: 100%;
+                    height: 24px;
+                    position: absolute;
+                    top: 0;
+                    background: linear-gradient(180deg,rgba(0,0,0,1) 0%,rgba(0,0,0,0) 100%);
+                }
+
             }
             
         };
@@ -748,12 +760,11 @@
     // 白板操作界面
     iframe[name="white-board"] {
         position: absolute;
-        top: 50%;
-        left: 50%;
+        bottom: 80px;
+        left: 0;
 
-        width: 80%;
-        height: 80%;
-        transform: translate(-50%,-50%);
+        width: 100%;
+        height: 100%;
         z-index: 2;
 
         border: none;

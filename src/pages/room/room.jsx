@@ -2435,12 +2435,20 @@ class Room extends Component {
     // 获取白板 元素框
     get_white_board_toggle_el() {
 
-        let { white_board_is_created } = this.state;
+        let { white_board_is_created, white_board_show } = this.state;
 
         if(white_board_is_created){
-            return <div 
-                        className="white-board-toggle"
-                        onClick={() => this.toggle_white_board()}>白板缩略图</div>
+            return <Tooltip title={white_board_show ? '隐藏白板': '展开白板'} placement="left">
+
+                        <div 
+                            className="white-board-toggle"
+                            onClick={() => this.toggle_white_board()}
+                        >
+                            <div className='head'></div>
+                            <img src={get_img_url_by_name('toggle-white-board-icon')} />
+                        </div>
+                    </Tooltip>
+            
         }
 
         return ''
