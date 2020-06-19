@@ -2504,6 +2504,11 @@ class Room extends Component {
         if(!use_white_board) { // 不启用白板
             return ''
         }
+        
+        let { role } = this.state.user_room;
+        if( role == emedia.mgr.Role.AUDIENCE) { // 观众不能启用 
+            return ''
+        }
 
         // 白板没有创建，都能发起白板
         if(!white_board_is_created) {
