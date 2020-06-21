@@ -333,7 +333,6 @@ const LeaveConfirmModal = {
         this.visible = false;
         await emedia.mgr.destroyConference(this.roleToken);
         this.render();
-        window.location.reload();
     },
 
     render() {
@@ -1364,6 +1363,15 @@ class Room extends Component {
             console.log('onConferenceExit', reason, failed);
             
             if(reason !== 0) { // 正常挂断不给提示
+
+                let { am_i_white_board_creator } = _this.state;
+
+                if(
+                    am_i_white_board_creator &&
+                    reason == 11
+                ){ // 会议结束、 销毁白板,
+                    _this.destroy_white_board();
+                }
                 message.warn(reason_text, 2, () => window.location.reload());
             } 
         };
@@ -2528,7 +2536,7 @@ class Room extends Component {
         return <Tooltip title='退出白板'>
                     <img 
                         src={get_img_url_by_name('destory-white-board-icon')} 
-                        onClick={() => this.destroy_white_board()}
+                        onClick={() => this.confirm_destory_white_board()}
                     />
                 </Tooltip>
         
@@ -2653,6 +2661,12 @@ class Room extends Component {
 
     }
 
+    // confirm destory_white_board
+    confirm_destory_white_board() {
+        toast({
+            onOk: this.destroy_white_board.bind(this)
+        });
+    }
     // 销毁白板
     destroy_white_board() {
 
@@ -2662,32 +2676,28 @@ class Room extends Component {
             return
         }
 
-        toast({
-            onOk: confirm_destroy
-        });
+        let { roomId } = white_board_info;
+        let { username: userName, token } = this.state.user;
 
         let _this = this;
-        function confirm_destroy(){ // 销毁白板 API
-            let { roomId } = white_board_info;
-            let { username: userName, token } = _this.state.user;
-            _this.white_board.destroy({
-                roomId,
-                userName,
-                token,
-                suc: function(){
-                    message.success('已经退出了白板');
-                    _this.setState({ 
-                        white_board_is_created: false,
-                        am_i_white_board_creator: false,
-                        footer_el_show:true
-                    });// 默认不显示
-                    _this.emit_white_board_is_destroyed()
-                },
-                error: function(err){
-                    message.error('退出白板失败');
-                }
-            });
-        }
+        this.white_board.destroy({
+            roomId,
+            userName,
+            token,
+            suc: function(){
+                message.success('已经退出了白板');
+                _this.setState({ 
+                    white_board_is_created: false,
+                    am_i_white_board_creator: false,
+                    footer_el_show:true
+                });// 默认不显示
+                _this.emit_white_board_is_destroyed()
+            },
+            error: function(err){
+                message.error('退出白板失败');
+            }
+        });
+        
     }
 
     toggle_white_board() {
