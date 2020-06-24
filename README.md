@@ -31,6 +31,8 @@
 
 3. npm run build:prod 会使用 .env.production 文件内的环境变量 生成生产环境的包
 
+`支持electorn load(web url)`
+1. 已经实现 兼容electorn 的共享桌面
 
 `常见问题`
 1. npm start --->  TypeError [ERR_INVALID_ARG_TYPE]: The "path" argument must be of type string. Received type undefined
