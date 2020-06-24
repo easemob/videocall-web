@@ -34,6 +34,7 @@
 `支持electorn load(web url)`
 1. 已经实现 兼容electorn 的共享桌面
 2. electorn 使用教程 http://www.electronjs.org/
+
 `常见问题`
 1. npm start --->  TypeError [ERR_INVALID_ARG_TYPE]: The "path" argument must be of type string. Received type undefined
 
