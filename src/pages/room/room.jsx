@@ -1865,10 +1865,16 @@ class Room extends Component {
     };
     
     async share_desktop() {
+
+
+
+        let { confrId } = this.state.user_room;
+
         try {
             let _this = this; 
 
             var options = {
+                confrId,
                 stopSharedCallback: () => _this.stop_share_desktop()
             }
             await emedia.mgr.shareDesktopWithAudio(options);
