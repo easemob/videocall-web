@@ -2169,7 +2169,8 @@ class Room extends Component {
             })
 
             let { id:confrId } = this.state.confr;
-            emedia.mgr.updateLiveLayout(confrId, regions)
+            let { liveCfgs } = emedia.config
+            emedia.mgr.updateLiveLayout(confrId, liveCfgs[0].id, regions)
     }
     _get_header_el() { 
 
@@ -2203,6 +2204,7 @@ class Room extends Component {
                         <div className="time">{this._get_tick()}</div>
                     </div>
                 </div>
+
                 <div onClick={() => this.leave()} className="leave-action">
                     <img src={get_img_url_by_name('leave-icon')} />
                     <span>离开房间</span>
