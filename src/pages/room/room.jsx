@@ -1174,7 +1174,7 @@ class Room extends Component {
                 rec, 
                 recMerge,
 
-                // maxTalkerCount:2,//会议最大主播人数
+                // maxTalkerCount:1,//会议最大主播人数
                 // maxVideoCount:1, //会议最大视频数
                 // maxPubDesktopCount:1 //会议最大共享桌面数
             }
@@ -1204,16 +1204,6 @@ class Room extends Component {
         try {
             const user_room = await emedia.mgr.joinRoom(params);
     
-            if(user_room.error == -523 ) { //主播已满 
-                this.setState({ talker_is_full: true, loading:false });
-                return
-            }
-            if(user_room.error){
-                message.error(user_room.message);
-                this.setState({ loading:false })
-                return
-            }
-
             this.startTime();
             
             this.setState({ 
@@ -1227,8 +1217,14 @@ class Room extends Component {
             this.publish();
             
         } catch (error) { 
-            message.error(error);
-            this.setState({ loading:false })
+            
+            if(/cause: -523|cause:-523/.test(error.errorMessage)){ // 主播已满
+                this.setState({ talker_is_full: true, loading:false });
+                return
+            }
+            message.error(error.errorMessage || error.message) // errorMessage: 接口错误， message：js 语法错误 
+            this.setState({ loading:false });
+
         }
     }
     join_handle(role){
