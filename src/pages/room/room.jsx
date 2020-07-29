@@ -2564,7 +2564,7 @@ class Room extends Component {
         // 如果是 https 协议，将返回的路径 协议名替换为 https 否则 iframe报错（不同协议）
         // 返回的是 http 协议
         if(location.protocol == 'https:') {
-            white_board_url = white_board_url.replace(/http/g,'https')
+            white_board_url = white_board_url.replace(/http:\/\//g,'https://')
         }
 
         
