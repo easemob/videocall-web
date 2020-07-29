@@ -4001,10 +4001,10 @@ duplexify@^3.4.2, duplexify@^3.6.0:
     readable-stream "^2.0.0"
     stream-shift "^1.0.0"
 
-easemob-emedia@3.1.5-beta:
-  version "3.1.5-beta"
-  resolved "https://registry.npm.taobao.org/easemob-emedia/download/easemob-emedia-3.1.5-beta.tgz#7e3b6a81147adb8380121867a6ab98e266836510"
-  integrity sha1-fjtqgRR624OAEhhnpquY4maDZRA=
+easemob-emedia@3.2.1-beta2:
+  version "3.2.1-beta2"
+  resolved "https://registry.npmjs.org/easemob-emedia/-/easemob-emedia-3.2.1-beta2.tgz#0e681071dc22e107eb404f954566f1beba053caa"
+  integrity sha512-CK1xQAxBV0akdhk16f3ekbvZ0v3G0w9qTCLu4mtSFuvfyEa8zGof8YP9jr+fyanpC0oLInZwWOHaEHGcDJCHGw==
 
 ecc-jsbn@~0.1.1:
   version "0.1.2"
