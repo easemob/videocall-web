@@ -323,7 +323,6 @@ const LeaveConfirmModal = {
         emedia.mgr.exitConference();
         this.visible = false;
         this.render();
-        window.location.reload()
     },
 
     async end() {
@@ -1368,8 +1367,8 @@ class Room extends Component {
                 ){ // 会议结束、 销毁白板,
                     _this.destroy_white_board();
                 }
-                message.warn(reason_text, 2, () => window.location.reload());
             } 
+            message.warn(reason_text, 2, () => window.location.reload());
         };
         emedia.mgr.onConfrAttrsUpdated = function(confr_attrs){ 
             console.log('onConfrAttrsUpdated', confr_attrs);
@@ -1636,7 +1635,6 @@ class Room extends Component {
     
             if(is_confirm){
                 emedia.mgr.exitConference();
-                window.location.reload();
             }
         }
 
