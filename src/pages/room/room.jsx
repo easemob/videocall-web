@@ -729,7 +729,6 @@ function AdminChangeHandle(props) {
 }
 
 // 网络状态
-
 class NetworkStatus extends Component {
 
     // network_status
@@ -1596,7 +1595,10 @@ class Room extends Component {
                 token
             }
 
-            this.setState({ join_white_board_params }, this.join_white_board);
+            this.setState({ 
+                join_white_board_params,
+                talker_list_show: true
+            }, this.join_white_board);
         }
     }
 
@@ -1760,7 +1762,10 @@ class Room extends Component {
         stream_list.unshift(first_item);
 
 
-        this.setState({ stream_list },this._stream_bind_video)
+        this.setState({ 
+            stream_list,
+            white_board_show: false, 
+        },this._stream_bind_video)
     }
     
     // toggle 代指关闭或开启
@@ -1788,7 +1793,10 @@ class Room extends Component {
         }else {
             await emedia.mgr.resumeVideo(own_stream);
             video = !video
-            this.setState({ video })
+            this.setState({ 
+                video,
+                white_board_show: false, 
+            })
         }
 
     }
@@ -1851,6 +1859,7 @@ class Room extends Component {
         await emedia.mgr.resumeAudio(own_stream);
         this.setState({ audio: true })
     }
+
 
     audio_change = e => {
         this.setState({
@@ -1925,7 +1934,10 @@ class Room extends Component {
         }
 
         let _this = this;
-        this.setState({ stream_list:stream_list },() => {
+        this.setState({ 
+            stream_list:stream_list,
+            talker_list_show: true
+        },() => {
             _this._stream_bind_video();//绑定标签
 
             let { push_cdn, user_room } = _this.state;
@@ -2308,7 +2320,7 @@ class Room extends Component {
             <div 
                 key={id} 
                 className="item"
-                onDoubleClick={ index ? () => {this.toggle_main(index)} : () => {}} //mian 图不需要点击事件，所以不传index÷
+                onClick={ index ? () => {this.toggle_main(index)} : () => {}} //mian 图不需要点击事件，所以不传index÷
             >
 
                 <div className="info">
@@ -2531,7 +2543,12 @@ class Room extends Component {
 
         // 白板被创建了，不是创建者，没有销毁权限
         if(!am_i_white_board_creator) {
-            return ''
+            return <Tooltip title='白板已被创建,不能再发起'>
+                        <img 
+                            src={get_img_url_by_name('join-white-board-icon')} 
+                            style={{opacity:'0.7', cursor:'not-allowed'}}
+                        />
+                </Tooltip>
         }
 
         return <Tooltip title='退出白板'>
@@ -2616,7 +2633,8 @@ class Room extends Component {
                 _this.setState({
                     white_board_url,
                     white_board_is_created: true,
-                    am_i_white_board_creator: true
+                    am_i_white_board_creator: true,
+                    talker_list_show: true
                 })
                 message.success('创建白板成功');
                 _this.emit_white_board_is_created()
@@ -2839,16 +2857,17 @@ class Room extends Component {
                                 type="primary"  
                                 onClick={() => this.join_handle(3)}
                                 loading={this.state.loading}
+                                style={{width:'100%'}}
                             >
                                 以主播身份进入
                             </Button>
-                            <Button 
+                            {/* <Button 
                                 type="primary"  
                                 onClick={() => this.join_handle(1)}
                                 loading={this.state.loading}
                             >
                                 以观众身份进入
-                            </Button>
+                            </Button> */}
                         </div>
 
                     </Form>
