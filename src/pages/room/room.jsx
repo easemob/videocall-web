@@ -530,6 +530,7 @@ class Setting extends Component {
         this.setState({
             video:e.target.checked
         })
+
     }
     audio_change = e => {
         this.setState({
@@ -1768,8 +1769,30 @@ class Room extends Component {
         },this._stream_bind_video)
     }
     
-    // toggle 代指关闭或开启
+    // 更新 stream by id
+    upload_stream_by_id(sId, source) { 
+        // 只做一层拷贝
+        if(sId == this.state.own_stream.id) {
 
+            let own_stream = Object.assign(this.state.own_stream, source)
+            this.setState({ own_stream })
+        }
+
+
+        let { stream_list } = this.state;
+        stream_list.map(item => {
+            if(
+                item &&
+                item.stream &&
+                item.stream.id == sId
+            ) {
+                Object.assign(item.stream, source)
+            }
+        });
+
+        this.setState({ stream_list })
+    }
+    // toggle 代指关闭或开启
     // 关闭或开启自己的
     async toggle_video() {
 
@@ -1798,6 +1821,11 @@ class Room extends Component {
                 white_board_show: false, 
             })
         }
+
+
+
+        let {id: sId} = own_stream;
+        this.upload_stream_by_id(sId, { voff: video ? 0 : 1})
 
     }
     video_change = e => {
@@ -1984,6 +2012,7 @@ class Room extends Component {
         let { stream_list } = this.state;
 
         let _this = this;
+        console.log('this.refs', this.refs)
         stream_list.map(item => {
             if( item ){
 
@@ -2223,6 +2252,27 @@ class Room extends Component {
             </div>
         )
     }
+    // 视频关闭的显示框，不直接显示 video 是个黑框
+    _voff_show(stream) {
+
+        if(!stream) {
+            return <div className="voff-show"></div>
+        }
+
+        let { ext } = stream.member;
+        if( !ext || !ext.headImage ) {
+            return <div className="voff-show"></div>
+        }
+
+        let base_url = 'https://download-sdk.oss-cn-beijing.aliyuncs.com/downloads/RtcDemo/headImage/';
+        return <div className="voff-show">
+                    <div className="avatar-wrapper">
+                        <img src={ base_url + ext.headImage }/>
+                        <div> { get_nickname(stream.member) } </div>
+                    </div>
+                </div>
+                
+    }
     // 视频列表
     _get_drawer_component() {
         let _this = this;
@@ -2274,7 +2324,7 @@ class Room extends Component {
         let main_stream = this.state.stream_list[0];
 
         if(main_stream) {
-            let { is_speak, type } = main_stream.stream; //is_speak 是否在说话
+            let { is_speak, type, voff } = main_stream.stream; //is_speak 是否在说话
             let { is_me } = main_stream.member;
 
             let is_own_media_stream = is_me && type != emedia.StreamType.DESKTOP //是否是自己的人像流
@@ -2284,6 +2334,7 @@ class Room extends Component {
                     { is_speak ? 
                         <img src={get_img_url_by_name('is-speak-icon')} className='is-speak-icon'/> : ''
                     }
+                    { voff ? this._voff_show(main_stream) :'' } {/* 覆盖到 video上, 不能替换否则 stream 丢失*/}
                     <video 
                         style={ is_own_media_stream ? { transform: 'rotateY(180deg)' } : {}}
                         ref={`list-video-${main_stream.stream.id}`} 
@@ -2307,7 +2358,7 @@ class Room extends Component {
             return ''
         }
 
-        let { id, aoff, is_speak, type } = stream;
+        let { id, aoff, is_speak, type, voff } = stream;
         let { role, is_me } = member;
         let { role:my_role } = this.state.user_room;//拿到我自己的角色
         let { username:my_username } = this.state.user;//拿到我自己的username
@@ -2345,7 +2396,8 @@ class Room extends Component {
                         
                     </div>
                 </div>
-                
+                { voff ? this._voff_show(talker_item) :'' }
+
                 <video ref={`list-video-${id}`} autoPlay></video>
                 {/* 不是主持人 并且不是主持人自己 并且流不是共享桌面 才加载 */}
                 { 

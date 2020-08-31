@@ -353,6 +353,7 @@
                     line-height: 24px;
                     background: transparent;
                     padding: 0 6px;
+                    z-index: 2;
                     .name {
                         font-size:12px;
                         font-family:Alibaba-PuHuiTi-R,Alibaba-PuHuiTi;
@@ -389,6 +390,7 @@
                     left: 0px;
                     right: 0px;
                     overflow: hidden;
+                    z-index: 3; // 最上层
                     &:before {
                         content: ' ';
                         position: absolute;
@@ -714,10 +716,32 @@
     video {
         width: 100%;
         height: 100%;
-        background: #b6b5b5;
+        background: #f2efef;
         object-fit: contain;
     }
 
+    .voff-show {
+        position: absolute;
+        top:0;
+        left:0;
+        width: 100%;
+        height: 100%;
+        background: #f2efef;
+        z-index: 2; // 置于 video 之上
+
+        display: flex;
+        justify-content: center;
+        align-items: center;
+
+        .avatar-wrapper {
+            text-align: center;
+            font-size: 16px;
+            img {
+                width: 60px;
+                height: 60px;
+            }
+        }
+    }
     #leave-confirm-modal {
         .action-wrapper {
             display: flex;
