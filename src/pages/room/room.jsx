@@ -459,7 +459,10 @@ class Setting extends Component {
         headimg_url_suffix: '',
         push_cdn: false,
         rec:false,
-        recMerge:false
+        recMerge:false,
+        user_room:{
+            role: 3 
+        }
     }
 
     componentDidMount() {
@@ -497,18 +500,20 @@ class Setting extends Component {
             cdn,
             push_cdn,
             rec,
-            recMerge
+            recMerge,
+            user_room
         } = this.state;
 
-        let _this = this;
         
         // 回调上去
-        _this.props._get_setting_values({
+        this.props._get_setting_values({
             headimg_url_suffix, nickName, video, audio, cdn, push_cdn,
-            rec,recMerge
+            rec,recMerge,user_room
         })
-        _this.setState({ visible: false })
-        window.sessionStorage.setItem('easemob-nickName', nickName); //保存 nickName
+        this.setState({ visible: false });
+        if(this.props.is_localStorage_nickName_admin) {
+            window.localStorage.setItem('easemob-nickName', nickName); //保存 nickName
+        }
         window.sessionStorage.setItem('easemob-headimg_url_suffix', headimg_url_suffix); //保存 头像 url
         
     }
@@ -564,6 +569,14 @@ class Setting extends Component {
             push_cdn:checked
         })
     }
+    // 是否以观众身份加入会议
+    toggle_join_role = checked => {
+        this.setState({
+            user_room:{
+                role: checked ? 1 : 3 //开启就是观众身份，关闭就是主播身份
+            }
+        })
+    }
     render() {
         let { 
             visible, 
@@ -605,7 +618,8 @@ class Setting extends Component {
                         <Checkbox checked={rec} onChange={this.rec_change}>开启录制</Checkbox>
                         <Checkbox checked={recMerge} onChange={this.recMerge_change}>开启录制合并</Checkbox>
                         <Input placeholder="推流CDN地址" value={cdn} onChange={this.cdn_change} disabled={!push_cdn} />
-                        <span>是否推流 CDN</span> <Switch onChange={this.toggle_push_cdn}></Switch>
+                        <span>是否推流 CDN</span> <Switch onChange={this.toggle_push_cdn}></Switch><br />
+                        <span>是否以观众身份加入会议</span> <Switch onChange={this.toggle_join_role}></Switch>
                         <div className="action">
                             <Button type="primary" onClick={this.handleSubmit}>保存并返回</Button>
                         </div>
@@ -1090,7 +1104,7 @@ class Room extends Component {
             nickName:'',
             user: {},
             user_room: {
-                role: undefined
+                role: 3
             },
             confr: {},
             own_stream:null,
@@ -1206,7 +1220,8 @@ class Room extends Component {
             
             this.setState({ 
                 joined: true,
-                user_room
+                user_room,
+                join_role: role // 记忆以什么身份加入，判断是否显示 上下麦按钮（以观众身份进入显示）
             },this.get_confr_info)
     
             if(user_room.role == emedia.mgr.Role.AUDIENCE){ // 观众不推流
@@ -1225,10 +1240,9 @@ class Room extends Component {
 
         }
     }
-    join_handle(role){
+    join_handle(){
         var _this = this;
-        let { user_room } = this.state;
-        user_room.role = role;
+        let { role } = this.state.user_room;
         this.props.form.validateFields((err, values) => {
             
             let { audio, video } = _this.state;
@@ -1240,14 +1254,22 @@ class Room extends Component {
                 roomName: values.roomName,
                 password: values.password,
                 audio,
-                video,
-                user_room
+                video
             },() => {
                 if (!err) {
                     _this.join()
                 }
             })
         });
+    }
+    talker_is_full_handle() { // 主播已满，修改角色
+        this.setState({
+            user_room: {
+                role: 1
+            }
+        })
+
+        this.join_handle()
     }
     // join fun end
 
@@ -2487,7 +2509,8 @@ class Room extends Component {
                 video, 
                 shared_desktop,
                 room_setting_modal_show,
-                footer_el_show
+                footer_el_show,
+                join_role
             } = this.state
         
         return (
@@ -2513,6 +2536,7 @@ class Room extends Component {
                         </Tooltip>
                     }
                     {
+                        join_role != 1 ? '' :
                         role == 1 ? 
                         <Tooltip title='申请上麦'>
                             <img 
@@ -2933,19 +2957,12 @@ class Room extends Component {
                         <div className="action">
                             <Button 
                                 type="primary"  
-                                onClick={() => this.join_handle(3)}
+                                onClick={() => this.join_handle()}
                                 loading={this.state.loading}
                                 style={{width:'100%'}}
                             >
-                                以主播身份进入
+                                进入会议
                             </Button>
-                            {/* <Button 
-                                type="primary"  
-                                onClick={() => this.join_handle(1)}
-                                loading={this.state.loading}
-                            >
-                                以观众身份进入
-                            </Button> */}
                         </div>
 
                     </Form>
@@ -2954,7 +2971,7 @@ class Room extends Component {
                     <Modal
                         visible={this.state.talker_is_full}
                         closable={false}
-                        onOk={() => this.join_handle(1)}
+                        onOk={() => this.talker_is_full_handle()}
                         onCancel={this.close_talker_model}
                         okText="以观众身份登录"
                         cancelText="暂不登录"
@@ -2975,6 +2992,7 @@ class Room extends Component {
                     <Setting 
                         { ...{audio, video, nickName, headimg_url_suffix} }
                         _get_setting_values={this._get_setting_values} 
+                        is_localStorage_nickName_admin={this.state.is_localStorage_nickName_admin}
                         ref={setting_modal => this.setting_modal = setting_modal} />
 
                     {/* 设置昵称框 */}
