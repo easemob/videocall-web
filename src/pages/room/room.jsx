@@ -639,8 +639,7 @@ class SetNickName extends Component {
     submit() {
         let { nickName } = this.state;
         this.props._set_nickname(nickName);
-        window.sessionStorage.setItem('easemob-nickName', nickName);
-
+        
         this.setState({ visible: false })
     }
 
@@ -1269,10 +1268,16 @@ class Room extends Component {
         this.setState({ user })
         this.init_emedia_callback(); //登录之后 初始化 emedia
         this.init_white_board(); //初始化 white_board
-
+        
+        let _this = this;
         window.onbeforeunload=function(e){     
             var e = window.event||e;  
+
             emedia.mgr.exitConference();
+
+            if(_this.state.is_localStorage_nickName_admin) {// localStorage_nickName_admin 放开使用权限
+                window.localStorage.setItem('easemob-nickName-used', false);
+            }
         } 
 
         this._get_nickname_from_session();
@@ -1605,13 +1610,29 @@ class Room extends Component {
 
     // 从 sessionStore 拿昵称
     _get_nickname_from_session() {
-        let nickName = window.sessionStorage.getItem('easemob-nickName');
+        let nickName = window.localStorage.getItem('easemob-nickName');
+        let nickName_used = window.localStorage.getItem('easemob-nickName-used');
 
-        if(nickName) {
-            this.setState({ nickName })
-        } else {
+        if(!nickName) {
+            window.localStorage.setItem('easemob-nickName-used', true);
+            this.setState({ // 没有nickName，肯定是拥有者，用于判断是否需要 存到 localStorge-nickName
+                is_localStorage_nickName_admin: true
+            })
+            this.set_nickname_modal.show();
+
+            return 
+        } 
+        
+        if(nickName_used == 'true') { // 有人打开了 一个页面了 已经
             this.set_nickname_modal.show()
+        } else { // null 或者 false 说明是拥有者，直接置为 true
+            window.localStorage.setItem('easemob-nickName-used', true);
+            this.setState({ 
+                is_localStorage_nickName_admin: true,
+                nickName 
+            })
         }
+
     }
     // 从 sessionStore 拿头像 url
     _get_headimg_url_suffix_from_session() {
@@ -1625,7 +1646,12 @@ class Room extends Component {
     _set_nickname = nickName => {
         let { username } = this.state.user;
 
-        this.setState({ nickName: nickName || username })
+        this.setState({ nickName: nickName || username });
+
+        if(this.state.is_localStorage_nickName_admin) { 
+            // 是否是 localStorage_nickName 拥有者，一个浏览器只有第一个页面拥有localStorage_nickName
+            window.localStorage.setItem('easemob-nickName', nickName);
+        }
     }
     leave() {
 
