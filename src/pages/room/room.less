@@ -923,3 +923,48 @@
         }
     }
 }
+
+// 邀请信息框
+.inviteModal {
+    position: absolute;
+    width: 400px;
+    height: 350px;
+    text-align: center;
+    padding: 10px;
+
+    left: 50%;
+    bottom: 15%;
+    z-index: 4;
+
+    transform: translateX(-50%);
+    background: #fff;
+    box-shadow: 0 0 20px 0 rgba(0,0,0,.2);
+
+    .close {
+        position: absolute;
+        top: 10px;
+        left: 10px;
+        width: 15px;
+        height: 15px;
+
+        border-radius: 15px;
+        background: crimson;
+        line-height: 13px;
+        text-align: center;
+    }
+
+    textarea {
+        display: block;
+        width: 80%;
+        height: 250px;
+        margin: 10px auto;
+        padding: 15px 20px;
+        // background: #f2efef;
+        text-align: left;
+    }
+
+    button {
+        width: 200px;
+        border-radius:5px ;
+    }
+}

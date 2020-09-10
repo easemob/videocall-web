@@ -917,6 +917,40 @@ function toast(config) {
             </div>
         </div>, div)
 }
+
+// 邀请他人文案框
+function inviteModal(info) {
+
+    if(document.querySelector('#inviteModal')) {
+        return
+    }
+    const div = document.createElement('div');
+    div.id = 'inviteModal'
+    document.body.appendChild(div);
+
+    function destroy() {
+        const unmountResult = ReactDOM.unmountComponentAtNode(div);
+        if (unmountResult && div.parentNode) {
+          div.parentNode.removeChild(div);
+        }
+        
+    }
+
+    let content = `苏秦 邀请您参加腾讯会议
+    会议主题：苏秦的快速会议
+    
+    点击链接直接加入会议:
+    https://meeting.easemob.com/s/XWnxVB0X26cT
+    
+    会议 ID：657 126 410`
+    ReactDOM.render(
+        <div className="inviteModal" >
+            <span className="close" onClick={destroy}>x</span>
+            <div className="title">房间名称</div>
+            <textarea value={content} disabled></textarea>
+            <Button type="primary">复制</Button>
+        </div>, div)
+}
 // 选择共享桌面流组件
 class ChooseDesktopMedia extends PureComponent {
 
@@ -1089,6 +1123,34 @@ class ChooseDesktopMedia extends PureComponent {
             </Modal>
         )
     }
+}
+
+function getPageQuery(query) { // 从url获取参数
+    if(!query) {
+        return ''
+    }
+
+    let search = window.location.href.split('?')[1];
+
+    if(!search) {
+        return ''
+    }
+
+    let query_value = '';
+
+    let key_value_arr = search.split('&');
+    key_value_arr.map(item => {
+        let key = item.split('=')[0];
+        let value = item.split('=')[1];
+
+        if(query == key) {
+            query_value = value
+        }
+
+    })
+
+    return query_value
+
 }
 
 class Room extends Component {
@@ -2555,7 +2617,14 @@ class Room extends Component {
 
                     }
                     { this.get_white_board_action_btn() }
-
+                    
+                    <Tooltip title='邀请他人'>
+                        <Icon 
+                            type="user-add" 
+                            style={{fontSize: '22px', color: '#fff', margin: '0 5px'}}
+                            onClick={() => inviteModal()}
+                        />
+                    </Tooltip>
                     {
                         this._check_has_shared('desktop') ? 
                         <Tooltip title='有人在共享，不可共享桌面'>
@@ -2647,8 +2716,7 @@ class Room extends Component {
 
         let { 
             use_white_board,
-            white_board_is_created, 
-            am_i_white_board_creator,
+            white_board_is_created
         } = this.state;
 
         if(!use_white_board) { // 不启用白板
@@ -2946,7 +3014,7 @@ class Room extends Component {
                         <div className='version-text'>Version:{version}</div>
                         <Item>
                             {getFieldDecorator('roomName', {
-                                initialValue: process.env.REACT_APP_ROOMNAME,
+                                initialValue: getPageQuery('roomName') || process.env.REACT_APP_ROOMNAME,
                                 rules: [
                                     { required: true, message: '请输入房间名称' },
                                     { min:3 , message: '房间名称不能少于3位'},
@@ -2964,7 +3032,7 @@ class Room extends Component {
                         </Item>
                         <Item>
                         {getFieldDecorator('password', {
-                            initialValue: process.env.REACT_APP_ROOMPASSWORD,
+                            initialValue: getPageQuery('password') || process.env.REACT_APP_ROOMPASSWORD,
                             rules: [
                                 { required: true, message: '请输入房间密码' },
                                 { min:3 , message: '密码长度不能小于3位'},
@@ -3045,6 +3113,7 @@ class Room extends Component {
                         {this._get_control_footer_visibility_btn()}
                         {this._get_footer_el()}
                     </Footer>
+                    {/* 左侧选人下麦框 */}
                     {
                         role == 7 ?
                         <ToAudienceList {...this.state} ref={to_audience_list => this.to_audience_list = to_audience_list}/> :
