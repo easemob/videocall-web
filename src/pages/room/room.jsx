@@ -875,7 +875,7 @@ function RoomSetting(props) {
     )
 }
 
-// toast 框组件
+// toast 框组件 退出白板
 function toast(config) {
 
     const div = document.createElement('div');
@@ -1145,7 +1145,6 @@ class Room extends Component {
 
             use_white_board:true, //是否启用白板
             has_white_board_iframe: false, //是否已经存在白板iframe
-            white_board_show: false, // 是否展开白板
             white_board_url: '', // 白板加载的外部链接
             white_board_is_created: false, // 白板是否创建
             am_i_white_board_creator: false, // 我是否是白板创建者
@@ -1216,7 +1215,7 @@ class Room extends Component {
         try {
             const user_room = await emedia.mgr.joinRoom(params);
     
-            this.startTime();
+            // this.startTime();
             
             this.setState({ 
                 joined: true,
@@ -1595,7 +1594,6 @@ class Room extends Component {
                 message.success('白板管理员销毁了白板');
                 this.setState({
                     white_board_is_created: false,
-                    white_board_show: false,
                     footer_el_show:true
                 })
                 return
@@ -1805,6 +1803,11 @@ class Room extends Component {
             return
         }
 
+        if(this._check_has_shared()) { // 共享桌面或者白板，不可切换大图
+            message.warn('有人在共享，不可切换大图');
+            return 
+        }
+
         let { stream_list } = this.state;
 
         let first_item = stream_list.splice(index,1)[0];
@@ -1812,8 +1815,7 @@ class Room extends Component {
 
 
         this.setState({ 
-            stream_list,
-            white_board_show: false, 
+            stream_list
         },this._stream_bind_video)
     }
     
@@ -1865,8 +1867,7 @@ class Room extends Component {
             await emedia.mgr.resumeVideo(own_stream);
             video = !video
             this.setState({ 
-                video,
-                white_board_show: false, 
+                video 
             })
         }
 
@@ -1936,7 +1937,6 @@ class Room extends Component {
         this.setState({ audio: true })
     }
 
-
     audio_change = e => {
         this.setState({
           audio: e.target.checked,
@@ -2003,11 +2003,19 @@ class Room extends Component {
             }
         }
 
-        if(stream.located() && !stream_list[0]){// 自己publish的流 并且main没有画面
-           stream_list[0] = { stream, member };
+        if(stream.type == emedia.StreamType.DESKTOP) {
+            stream_list.unshift({stream,member});
+        } else if( // 将自己推的流显示到 main
+            !this._check_has_shared() // 没人在共享
+            && stream.located() 
+            && !stream_list[0] 
+        ) {
+            stream_list.unshift({stream,member});
         } else {
             stream_list.push({stream,member});
         }
+        
+
 
         let _this = this;
         this.setState({ 
@@ -2060,7 +2068,6 @@ class Room extends Component {
         let { stream_list } = this.state;
 
         let _this = this;
-        console.log('this.refs', this.refs)
         stream_list.map(item => {
             if( item ){
 
@@ -2078,6 +2085,44 @@ class Room extends Component {
 
         // 当bind stream to video 就监听一下video
         this._on_media_chanaged();
+    }
+    // 检查是否有别人共享了桌面或者 白板
+    _check_has_shared(type) {// type, desktop: 共享桌面，white-board: 白板
+
+
+        let check = false;
+        let main_stream = this.state.stream_list[0];
+
+        if( // 有人在共享桌面
+            main_stream 
+            && main_stream.stream 
+            && main_stream.stream.type == 1
+        ) {
+            check = true
+        }
+
+        if( this.state.white_board_is_created ) { // 白板被别人创建了
+            check = true
+        }
+
+        // 当type有值时，需要判断是否是自己共享的桌面 或者 创建的白板
+        if(
+            type == 'desktop' 
+            && main_stream 
+            && main_stream.member.is_me
+        ) {
+            check = false
+        }
+
+        if(
+            type == 'white-board' 
+            && this.state.am_i_white_board_creator
+        ) {
+            check = false
+        }
+
+        return check;
+        
     }
 
     //监听音视频变化
@@ -2355,7 +2400,7 @@ class Room extends Component {
                 width="336px"
             >
                 <img src={get_img_url_by_name('expand-icon')} className='expand-icon' onClick={this.collapse_talker_list}/>
-                { this.get_white_board_toggle_el() } 
+                {/* { this.get_white_board_toggle_el() }  */}
                 { stream_list.map((item, index) => {
 
                     if(index != 0 && item){ // 不渲染主画面
@@ -2458,49 +2503,6 @@ class Room extends Component {
                             
     }
 
-    // toggle 房间设置 modal
-    toggle_room_setting_modal() {
-        let { room_setting_modal_show } = this.state;
-
-        this.setState({
-            room_setting_modal_show: !room_setting_modal_show
-        })
-    }
-
-    // 底部栏的操作
-    hide_footer_el() {
-        this.setState({
-            footer_el_show: false
-        })
-    }
-    show_footer_el() {
-        this.setState({
-            footer_el_show: true
-        })
-    }
-    _get_control_footer_visibility_btn() {
-
-        let {
-            white_board_is_created,
-            white_board_show,
-            footer_el_show
-        } = this.state
-
-        if(!white_board_is_created) {
-            return ''
-        }
-
-        if(!white_board_show) {
-            return ''
-        }
-
-        if(footer_el_show) {
-            return <Icon type="down" onClick={() => this.hide_footer_el()}/>
-        }
-
-        return <Icon type="up" onClick={() => this.show_footer_el()} style={{top:0}}/> 
-
-    }
     _get_footer_el() {
         let { role } = this.state.user_room
 
@@ -2555,6 +2557,13 @@ class Room extends Component {
                     { this.get_white_board_action_btn() }
 
                     {
+                        this._check_has_shared('desktop') ? 
+                        <Tooltip title='有人在共享，不可共享桌面'>
+                            <img 
+                                src={get_img_url_by_name('share-desktop-icon')} 
+                                style={{opacity:'0.7', cursor:'not-allowed'}}
+                            />
+                        </Tooltip> :
                         shared_desktop ? 
                         <Tooltip title='停止共享桌面'>
                             <img 
@@ -2592,29 +2601,47 @@ class Room extends Component {
             </div>
         )
     }
+    // toggle 房间设置 modal
+    toggle_room_setting_modal() {
+        let { room_setting_modal_show } = this.state;
 
-    // 白板相关的方法
-    // 获取白板 元素框
-    get_white_board_toggle_el() {
+        this.setState({
+            room_setting_modal_show: !room_setting_modal_show
+        })
+    }
 
-        let { white_board_is_created, white_board_show } = this.state;
+    // 底部栏的操作
+    hide_footer_el() {
+        this.setState({
+            footer_el_show: false
+        })
+    }
+    show_footer_el() {
+        this.setState({
+            footer_el_show: true
+        })
+    }
 
-        if(white_board_is_created){
-            return <Tooltip title={white_board_show ? '隐藏白板': '展开白板'} placement="left">
+    _get_control_footer_visibility_btn() {// 展开/收起 音视频控制按钮组的图标
 
-                        <div 
-                            className="white-board-toggle"
-                            onClick={() => this.toggle_white_board()}
-                        >
-                            <div className='head'></div>
-                            <img src={get_img_url_by_name('toggle-white-board-icon')} />
-                        </div>
-                    </Tooltip>
-            
+        let {
+            white_board_is_created,
+            footer_el_show
+        } = this.state
+
+        if(!white_board_is_created) {
+            return ''
         }
 
-        return ''
+        if(footer_el_show) {
+            return <Icon type="down" onClick={() => this.hide_footer_el()}/>
+        }
+
+        return <Icon type="up" onClick={() => this.show_footer_el()} style={{top:0}}/> 
+
     }
+
+    // 白板相关的方法
     // 获取发起白板的操作按钮
     get_white_board_action_btn() {
 
@@ -2633,6 +2660,15 @@ class Room extends Component {
             return ''
         }
 
+        if(this._check_has_shared('white-board')) {
+            return <Tooltip title='有人在共享中，不能发起白板'>
+                        <img 
+                            src={get_img_url_by_name('join-white-board-icon')} 
+                            style={{opacity:'0.7', cursor:'not-allowed'}}
+                        />
+                </Tooltip>
+        }
+
         // 白板没有创建，都能发起白板
         if(!white_board_is_created) {
             return <Tooltip title='发起白板'>
@@ -2643,31 +2679,20 @@ class Room extends Component {
                 </Tooltip>
         }
 
-        // 白板被创建了，不是创建者，没有销毁权限
-        if(!am_i_white_board_creator) {
-            return <Tooltip title='白板已被创建,不能再发起'>
-                        <img 
-                            src={get_img_url_by_name('join-white-board-icon')} 
-                            style={{opacity:'0.7', cursor:'not-allowed'}}
-                        />
-                </Tooltip>
-        }
-
         return <Tooltip title='退出白板'>
                     <img 
                         src={get_img_url_by_name('destory-white-board-icon')} 
                         onClick={() => this.confirm_destory_white_board()}
                     />
                 </Tooltip>
+
+
         
     }
-    
-
     // 获取白板的操作界面
     get_white_board_content_el() {
         let { 
             white_board_is_created, 
-            white_board_show, 
             white_board_url
         } = this.state; //白板相关
 
@@ -2675,9 +2700,7 @@ class Room extends Component {
             return ''
         }
 
-        if(!white_board_show) {
-            return ''
-        }
+        
         // 如果是 https 协议，将返回的路径 协议名替换为 https 否则 iframe报错（不同协议）
         // 返回的是 http 协议
         if(location.protocol == 'https:') {
@@ -2736,10 +2759,11 @@ class Room extends Component {
                     white_board_url,
                     white_board_is_created: true,
                     am_i_white_board_creator: true,
-                    talker_list_show: true
+                    talker_list_show: true,
                 })
                 message.success('创建白板成功');
                 _this.emit_white_board_is_created()
+                _this.set_main_stream_to_talker_list()
 
                 this.setState({
                     white_board_info: res
@@ -2753,7 +2777,7 @@ class Room extends Component {
         this.white_board.join(params)
 
     }
-
+ 
     // 加入白板
     join_white_board() {
         let { join_white_board_params } = this.state;
@@ -2769,10 +2793,10 @@ class Room extends Component {
                 let white_board_url =  res.whiteBoardUrl; //为白板房间地址
                 _this.setState({
                     white_board_url,
-                    white_board_is_created: true
+                    white_board_is_created: true,
                 })
                 message.success('加入白板成功')
-
+                _this.set_main_stream_to_talker_list()
             },
             error: function(err){
                 console.log("加入白板失败", err);
@@ -2782,6 +2806,15 @@ class Room extends Component {
 
     }
 
+    // 白板加入成功，将mian 画面挤到列表
+    set_main_stream_to_talker_list() {
+        let { stream_list } = this.state;
+        stream_list.unshift(null)
+
+        this.setState({
+            stream_list
+        }, this._stream_bind_video)
+    }
     // confirm destory_white_board
     confirm_destory_white_board() {
         toast({
@@ -2805,7 +2838,8 @@ class Room extends Component {
             roomId,
             userName,
             token,
-            suc: function(){
+            suc: function(data){
+                console.log('wh data', data);
                 message.success('已经退出了白板');
                 _this.setState({ 
                     white_board_is_created: false,
@@ -2819,14 +2853,6 @@ class Room extends Component {
             }
         });
         
-    }
-
-    toggle_white_board() {
-        let { white_board_show } = this.state
-       
-        this.setState({
-            white_board_show: !white_board_show
-        })
     }
 
 
