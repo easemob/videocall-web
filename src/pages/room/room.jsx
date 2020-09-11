@@ -1299,7 +1299,7 @@ class Room extends Component {
         try {
             const user_room = await emedia.mgr.joinRoom(params);
     
-            // this.startTime();
+            this.startTime();
             
             this.setState({ 
                 joined: true,
