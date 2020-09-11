@@ -1238,6 +1238,24 @@ class Room extends Component {
         };
 
         this.toggle_main = this.toggle_main.bind(this);
+        this.join_handle = this.join_handle.bind(this);
+        this.talker_is_full_handle = this.talker_is_full_handle.bind(this);
+        this.leave = this.leave.bind(this);
+        this.toggle_audio = this.toggle_audio.bind(this);
+        this.toggle_video = this.toggle_video.bind(this);
+        this.apply_talker = this.apply_talker.bind(this); 
+        this.apply_audience = this.apply_audience.bind(this); 
+        this.stop_share_desktop = this.stop_share_desktop.bind(this); 
+        this.share_desktop = this.share_desktop.bind(this); 
+        
+        
+        this.hide_footer_el = this.hide_footer_el.bind(this);   
+        this.show_footer_el = this.show_footer_el.bind(this);  
+        this.toggle_room_setting_modal = this.toggle_room_setting_modal.bind(this); 
+        
+        
+        this.confirm_destory_white_board = this.confirm_destory_white_board.bind(this);   
+        this.create_white_board = this.create_white_board.bind(this);  
     }
 
     // join fun start
@@ -2485,7 +2503,6 @@ class Room extends Component {
                 width="336px"
             >
                 <img src={get_img_url_by_name('expand-icon')} className='expand-icon' onClick={this.collapse_talker_list}/>
-                {/* { this.get_white_board_toggle_el() }  */}
                 { stream_list.map((item, index) => {
 
                     if(index != 0 && item){ // 不渲染主画面
