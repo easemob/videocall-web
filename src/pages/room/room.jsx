@@ -2566,7 +2566,7 @@ class Room extends Component {
             <div 
                 key={id} 
                 className="item"
-                onClick={ index ? () => {this.toggle_main(index)} : () => {}} //mian 图不需要点击事件，所以不传index÷
+                onDoubleClick={ index ? () => {this.toggle_main(index)} : () => {}} //mian 图不需要点击事件，所以不传index÷
             >
 
                 <div className="info">
