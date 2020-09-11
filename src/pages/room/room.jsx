@@ -921,6 +921,10 @@ function toast(config) {
 // 邀请他人文案框
 function inviteModal(info) {
 
+    if(!info) {
+        return
+    }
+
     if(document.querySelector('#inviteModal')) {
         return
     }
@@ -936,19 +940,36 @@ function inviteModal(info) {
         
     }
 
-    let content = `苏秦 邀请您参加腾讯会议
-    会议主题：苏秦的快速会议
+    function copy() { // 复制邀请文本
+        let textarea = document.querySelector('textarea#invite');
+        textarea.select();//选中文本
+        try {
+            document.execCommand('copy');
+            message.success('已复制邀请文本到粘贴板')
+        } catch (error) {
+            message.error('复制邀请文本失败')
+        }
+    }
+
+    const roomName = info.roomName || '';
+    const password = info.password || '';
+    const invitees = info.invitees || ''; //邀请人
+
+    let content = invitees + '邀请您参加环信会议\r\n' +
+    '会议主题：' + invitees + '的快速会议\r\n\r\n' + 
     
-    点击链接直接加入会议:
-    https://meeting.easemob.com/s/XWnxVB0X26cT
+    '点击链接直接加入会议:\r\n' + 
+    'file:///Users/suqin/Desktop/%E8%BD%AF%E4%BB%B6%E5%BC%80%E5%8F%91%E6%96%87%E6%A1%A3/%E7%8E%AF%E4%BF%A1/project/meeting-share-loading-page/index.html?'+
+    'roomName='+ roomName + '&password='+ password + '&invitees='+ invitees +'\r\n\r\n' +
     
-    会议 ID：657 126 410`
+    '房间名称：' + roomName;
+
     ReactDOM.render(
         <div className="inviteModal" >
             <span className="close" onClick={destroy}>x</span>
-            <div className="title">房间名称</div>
-            <textarea value={content} disabled></textarea>
-            <Button type="primary">复制</Button>
+            <div className="title">房间名称：{roomName}</div>
+            <textarea value={content} readOnly id='invite'></textarea>
+            <Button type="primary" onClick={copy}>复制</Button>
         </div>, div)
 }
 // 选择共享桌面流组件
@@ -1170,6 +1191,7 @@ class Room extends Component {
             },
             confr: {},
             own_stream:null,
+            own_member: null,
             // join end
             time:0,// 秒的单位
             stream_list: [null],//默认 main画面为空
@@ -2063,6 +2085,8 @@ class Room extends Component {
             if( stream.type != emedia.StreamType.DESKTOP ) { // 自己推的人像流（用来被控制开关摄像头）
                 this.setState({ own_stream: stream }) //用来控制流
             }
+
+            this.setState({own_member: member})
         }
 
         if(stream.type == emedia.StreamType.DESKTOP) {
@@ -2319,7 +2343,6 @@ class Room extends Component {
                 // 计算在 第几行第几列
                 let {
                     col_num,
-                    row_num,
                     cell_width,
                     cell_height,
                 } = layout_info;
@@ -2574,7 +2597,10 @@ class Room extends Component {
                 shared_desktop,
                 room_setting_modal_show,
                 footer_el_show,
-                join_role
+                join_role,
+                roomName,
+                password,
+                own_member
             } = this.state
         
         return (
@@ -2622,7 +2648,11 @@ class Room extends Component {
                         <Icon 
                             type="user-add" 
                             style={{fontSize: '22px', color: '#fff', margin: '0 5px'}}
-                            onClick={() => inviteModal()}
+                            onClick={() => inviteModal({
+                                roomName, 
+                                password,
+                                invitees: get_nickname(own_member)
+                            })}
                         />
                     </Tooltip>
                     {
