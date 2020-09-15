@@ -1,5 +1,6 @@
 import React, {Component, PureComponent} from 'react' 
 import ReactDOM from 'react-dom'
+import debounce from 'lodash.debounce'; // 防抖函数
 
 import { 
     Layout,
@@ -1255,7 +1256,9 @@ class Room extends Component {
         
         
         this.confirm_destory_white_board = this.confirm_destory_white_board.bind(this);   
-        this.create_white_board = this.create_white_board.bind(this);  
+        this.create_white_board = this.create_white_board.bind(this);
+        
+        this.talker_list_scroll = debounce(this.talker_list_scroll_stop.bind(this), 1000)
     }
 
     // join fun start
@@ -1328,7 +1331,7 @@ class Room extends Component {
             if(user_room.role == emedia.mgr.Role.AUDIENCE){ // 观众不推流
                 return
             }
-            this.publish();
+            // this.publish();
             
         } catch (error) { 
             
@@ -1405,6 +1408,7 @@ class Room extends Component {
 
         this._get_nickname_from_session();
         this._get_headimg_url_suffix_from_session();
+
     }
 
     componentWillUnmount() {
@@ -2469,6 +2473,86 @@ class Room extends Component {
                 </div>
                 
     }
+
+    // 主播列表滚动 停止
+    // 更新订阅，不可见的只订阅音频
+    talker_list_scroll_stop() {
+
+        
+        // 当画面不可见时，重新订阅（只订阅音频）
+
+        // 获取需要更新的video元素
+        let wrapper_el = document.querySelector('.talker-list-wrapper');
+        let els = wrapper_el.querySelectorAll('video');
+
+        let wrapper_el_height = wrapper_el.getBoundingClientRect().height;
+        let el_height = els[0].getBoundingClientRect().height;
+
+        const isNotVisible = element => { // 元素是否可见
+
+            let top = element.getBoundingClientRect().top;
+
+            if(top >= wrapper_el_height) { // top 比容器还高，说明在容器下面
+                return true
+            }
+
+            if( 
+                top < 0 
+                && Math.abs(top - 60) > el_height // 负值时，已经越过了 60
+            ) { // 负值说明元素向上超出 容器，整个都超出，才算不可见
+                return true
+            }
+        }
+
+        let _this = this;
+        const getItemBySid = sid => { // 获取 stream 和 member
+            if(!sid) {
+                return null
+            }
+
+            let result = null
+            _this.state.stream_list.map(item => {
+                if(
+                    item
+                    && item.member
+                    && item.stream
+                    && item.stream.id == sid
+                ) {
+                    result = item
+                }
+            })
+
+            return result
+        }
+
+
+        for (let index = 0; index < els.length; index++) {
+            const element = els[index];
+
+            let sid = element.getAttribute('hx_stream');
+            if(sid) {
+                let item = getItemBySid(sid);
+
+                if(
+                    item 
+                    && item.member 
+                    && item.stream
+                ) {
+                    console.log('element sid',item.member);
+
+                    if(isNotVisible(element)) {
+                        // 不订阅视频
+                        // emedia.mgr.subscribe(item.member, item.stream, false, true, element)
+                    } else { // 恢复订阅视频
+                        // emedia.mgr.subscribe(item.member, item.stream, true, true, element)
+                    }
+                }
+            }
+            
+        }
+        
+    }
+
     // 视频列表
     _get_drawer_component() {
         let _this = this;
@@ -2501,8 +2585,16 @@ class Room extends Component {
                 mask={false}
                 getContainer={false}
                 width="336px"
+                onScroll={this.talker_list_scroll}
+                className='talker-list-wrapper'
             >
-                <img src={get_img_url_by_name('expand-icon')} className='expand-icon' onClick={this.collapse_talker_list}/>
+                <img 
+                    src={get_img_url_by_name('expand-icon')} 
+                    className='expand-icon' 
+                    onClick={this.collapse_talker_list}
+                />
+                
+
                 { stream_list.map((item, index) => {
 
                     if(index != 0 && item){ // 不渲染主画面
@@ -3044,8 +3136,9 @@ class Room extends Component {
 
         return (
             <div style={{width:'100%', height:'100%'}}>
-                {/* join compoent */}
-                <div className="login-wrap" style={{display: joined ? 'none' : 'flex'}}>
+                { !joined ?
+                // join compoent 
+                <div className="login-wrap">
                     <div className="header">
                         <img src={get_img_url_by_name('logo-text-login')} />
                     </div>
@@ -3142,10 +3235,9 @@ class Room extends Component {
                         _set_nickname={this._set_nickname}
                     />    
                 </div>
-                
-                {/* room compoent */}
-                
-                <Layout className="meeting" style={{display: joined ? 'block' : 'none'}}>
+                :
+                // room compoent
+                <Layout className="meeting">
                     <Header>
                         {this._get_header_el()}
                     </Header>
@@ -3176,6 +3268,8 @@ class Room extends Component {
                     }
 
                 </Layout>
+                }
+                
             </div>
         )
     }
