@@ -3136,9 +3136,8 @@ class Room extends Component {
 
         return (
             <div style={{width:'100%', height:'100%'}}>
-                { !joined ?
-                // join compoent 
-                <div className="login-wrap">
+                {/* join compoent */}
+                <div className="login-wrap" style={{display: joined ? 'none' : 'flex'}}>
                     <div className="header">
                         <img src={get_img_url_by_name('logo-text-login')} />
                     </div>
@@ -3235,9 +3234,10 @@ class Room extends Component {
                         _set_nickname={this._set_nickname}
                     />    
                 </div>
-                :
-                // room compoent
-                <Layout className="meeting">
+                
+                {/* room compoent */}
+                
+                <Layout className="meeting" style={{display: joined ? 'block' : 'none'}}>
                     <Header>
                         {this._get_header_el()}
                     </Header>
@@ -3268,8 +3268,6 @@ class Room extends Component {
                     }
 
                 </Layout>
-                }
-                
             </div>
         )
     }
