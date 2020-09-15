@@ -1235,7 +1235,9 @@ class Room extends Component {
             am_i_white_board_creator: false, // 我是否是白板创建者
 
 
-            footer_el_show: true //是否显示底部
+            footer_el_show: true, //是否显示底部
+
+            not_visible_arr: [] // 主播列表不可见标签集合，默认都可见
         };
 
         this.toggle_main = this.toggle_main.bind(this);
@@ -1331,7 +1333,7 @@ class Room extends Component {
             if(user_room.role == emedia.mgr.Role.AUDIENCE){ // 观众不推流
                 return
             }
-            // this.publish();
+            this.publish();
             
         } catch (error) { 
             
@@ -2525,29 +2527,61 @@ class Room extends Component {
             return result
         }
 
+        const visible_change = (sid, type) => { 
+
+            let { not_visible_arr } = _this.state;
+            // 存储一个不可见 arr
+            if(type == 'not-visible' && not_visible_arr.indexOf(sid) > -1) {
+                // 上次也是不可见
+
+                return false
+            }
+
+            if(type == 'not-visible' && not_visible_arr.indexOf(sid) == -1) {
+                // 上次可见 或者首次
+                not_visible_arr.push(sid);
+
+                _this.setState({ not_visible_arr })
+                return true
+            }
+
+            if(type == 'visible' && not_visible_arr.indexOf(sid) > -1) {
+                // 上次是不可见, 这次是可见，从不可见剔除出来
+                let index = not_visible_arr.indexOf(sid);
+                not_visible_arr.splice(index, 1)
+
+                _this.setState({ not_visible_arr })
+                return true
+            }
+
+            if(type == 'visible' && not_visible_arr.indexOf(sid) == -1) {
+                // 上次是可见, 这次也是可见，不做处理
+                
+                return false
+            }
+
+        }
 
         for (let index = 0; index < els.length; index++) {
+
             const element = els[index];
 
             let sid = element.getAttribute('hx_stream');
-            if(sid) {
-                let item = getItemBySid(sid);
-
-                if(
-                    item 
-                    && item.member 
-                    && item.stream
-                ) {
-                    console.log('element sid',item.member);
-
-                    if(isNotVisible(element)) {
-                        // 不订阅视频
-                        // emedia.mgr.subscribe(item.member, item.stream, false, true, element)
-                    } else { // 恢复订阅视频
-                        // emedia.mgr.subscribe(item.member, item.stream, true, true, element)
-                    }
+            if(!sid) { continue };
+            
+            let item = getItemBySid(sid);
+            if(isNotVisible(element)) {
+                
+                if(visible_change(sid, 'not-visible')) {// 检测可见行是否变化
+                    // 不订阅视频
+                    emedia.mgr.subscribe(item.member, item.stream, false, true, element)
+                } 
+            } else { // 恢复订阅视频
+                if(visible_change(sid, 'visible')) { 
+                    emedia.mgr.subscribe(item.member, item.stream, true, true, element)
                 }
             }
+
             
         }
         
@@ -3046,7 +3080,6 @@ class Room extends Component {
             userName,
             token,
             suc: function(data){
-                console.log('wh data', data);
                 message.success('已经退出了白板');
                 _this.setState({ 
                     white_board_is_created: false,
