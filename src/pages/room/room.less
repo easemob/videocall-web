@@ -315,9 +315,11 @@
             }
         };
     }
+    
+    // 主播列表 UI
     .ant-drawer-content {
         background:rgba(0,0,0,0.8);
-        
+        overflow: inherit;
         .ant-drawer-header {
             background: rgba(0, 0, 0, 0.8);
             line-height: 14px;
@@ -345,7 +347,7 @@
     
                 position: relative;
                 margin: 5px 6px;
-
+    
                 .info {
                     position: absolute;
                     top: 0;
@@ -360,7 +362,7 @@
                         color:#fff;
                         margin-right: 4px;
                     }
-
+    
                     .status-icon {
                         float: right;
                     }
@@ -370,18 +372,18 @@
                     position: absolute;
                     left: 6px;
                     bottom: 6px;
-
+    
                     line-height:20px;
                     background:rgba(0,0,0,1);
                     border-radius:10px;
                     padding: 0 6px;
                     color:rgba(239,65,63,1);
                     font-size: 12px;
-
+    
                     cursor: pointer;
                     z-index:1
                 }
-
+    
                 .manage-talker-mask {
                     box-sizing: content-box;
                     position: absolute;
@@ -401,7 +403,7 @@
                         height: 100%;
                         opacity: 0;
                     }
-
+    
                     .action {
                         position: absolute;
                         left: 50%;
@@ -457,7 +459,7 @@
                 border-radius: 4px;
                 background: rgba(0,0,0,0.75);
                 color:#fff;
-
+    
                 .ant-popover-message {
                     color: #fff
                 }
@@ -470,7 +472,7 @@
                     border-color: rgba(239,65,63,1);
                 }
             }
-
+    
             // 白板缩略图样式
             .white-board-toggle {
                 height: 200px;
@@ -480,7 +482,7 @@
                 line-height: 200px;
                 text-align: center;
                 cursor: pointer;
-
+    
                 position: relative;
                 .head {
                     width: 100%;
@@ -489,19 +491,33 @@
                     top: 0;
                     background: linear-gradient(180deg,rgba(0,0,0,1) 0%,rgba(0,0,0,0) 100%);
                 }
-
+    
             }
             
         };
-        .expand-icon{
+        // .expand-icon{
+        //     position: absolute;
+        //     left: 16px;
+        //     bottom: 16px;
+        //     z-index: 4;
+        //     cursor: pointer;
+        //     transform: rotate(180deg);
+        // }
+        .control-btn {
+            height: 110px;
+            width: 25px;
             position: absolute;
-            left: 16px;
-            bottom: 16px;
-            z-index: 4;
+            left: -25px;
+            top: 50%;
+            background: rgba(207, 207, 207, 0.8);
+            border-radius: 18px 0 0 18px;
+            z-index: 5;
             cursor: pointer;
-            transform: rotate(180deg);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            
         }
-        
         .mute-action-wrapper {
             width: 40px;
             height: 40px;
@@ -509,7 +525,7 @@
             top: 10px;
             right: 10px;
             z-index: 2;
-
+    
             img {
                 cursor: pointer;
             }
@@ -553,33 +569,21 @@
     }
     .ant-layout-footer {
         bottom: 16px;
-        .actions-wrap {
-            display: flex;
-            justify-content: space-between;
-            position: relative;
+        text-align: center;
+        .actions {
+            padding: 0 27px;
+            line-height:60px;
+            background:rgba(0,0,0,0.8);
+            border-radius:30px;
+
+            display: inline-block;
 
             img {
+                margin:0 5px;
+                width: 40px;
+                height: 40px;
                 cursor: pointer;
             }
-            .actions {
-                padding: 0 27px;
-                height:60px;
-                background:rgba(0,0,0,0.8);
-                border-radius:30px;
-
-                display: flex;
-                justify-content: center;
-                align-items: center;
-
-                img {
-                    margin:0 5px;
-                    width: 40px;
-                    height: 40px;
-
-                }
-            }
-
-            
         }
 
         // 房间设置框
@@ -972,3 +976,5 @@
         border-radius:5px ;
     }
 }
+
+

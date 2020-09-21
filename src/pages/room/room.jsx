@@ -823,7 +823,6 @@ function RoomSetting(props) {
     let { 
             room_setting_modal_show, 
             roomName, 
-            password, 
             stream_list,
 
             confr,
@@ -860,7 +859,8 @@ function RoomSetting(props) {
                 <div className="text">{roomName}</div>
             <div className="item-wrapper">
                 <div className="title">房间密码</div>
-                <Input type="text" disabled value={password}/>
+                {/* 房间名称和密码一样 */}
+                <Input type="text" disabled value={roomName}/>  
             </div>
             <div className="item-wrapper">
                 <div className="title">主持人</div>
@@ -953,15 +953,14 @@ function inviteModal(info) {
     }
 
     const roomName = info.roomName || '';
-    const password = info.password || '';
     const invitees = info.invitees || ''; //邀请人
 
     let content = invitees + '邀请您参加环信会议\r\n' +
     '会议主题：' + invitees + '的快速会议\r\n\r\n' + 
     
     '点击链接直接加入会议:\r\n' + 
-    'file:///Users/suqin/Desktop/%E8%BD%AF%E4%BB%B6%E5%BC%80%E5%8F%91%E6%96%87%E6%A1%A3/%E7%8E%AF%E4%BF%A1/project/meeting-share-loading-page/index.html?'+
-    'roomName='+ roomName + '&password='+ password + '&invitees='+ invitees +'\r\n\r\n' +
+    'http://172.17.1.190:5500/meeting-share-loading-page/index.html?'+
+    'roomName='+ roomName + '&invitees='+ invitees +'\r\n\r\n' +
     
     '房间名称：' + roomName;
 
@@ -1184,7 +1183,6 @@ class Room extends Component {
 
             // join start
             roomName:'',
-            password:'',
             nickName:'',
             user: {},
             user_room: {
@@ -1229,7 +1227,6 @@ class Room extends Component {
             cdn_zorder:1, //更新CDN布局，递增 1，配合服务端
 
             use_white_board:true, //是否启用白板
-            has_white_board_iframe: false, //是否已经存在白板iframe
             white_board_url: '', // 白板加载的外部链接
             white_board_is_created: false, // 白板是否创建
             am_i_white_board_creator: false, // 我是否是白板创建者
@@ -1269,7 +1266,6 @@ class Room extends Component {
         this.setState({ loading:true, talker_is_full:false })
         let {
             roomName,
-            password,
             nickName,
             headimg_url_suffix,
             push_cdn,
@@ -1282,7 +1278,7 @@ class Room extends Component {
         
         let params = {
             roomName,
-            password,
+            password: roomName,
             role,
             config:{ 
                 nickName,
@@ -1358,7 +1354,6 @@ class Room extends Component {
             }
             _this.setState({
                 roomName: values.roomName,
-                password: values.password,
                 audio,
                 video
             },() => {
@@ -2590,7 +2585,7 @@ class Room extends Component {
     // 视频列表
     _get_drawer_component() {
         let _this = this;
-        let { stream_list } = this.state;
+        let { stream_list, talker_list_show } = this.state;
         let { role } = this.state.user_room;
         let { audienceTotal } = this.state.confr;
 
@@ -2614,24 +2609,29 @@ class Room extends Component {
             <Drawer 
                 title={`主播${get_talkers()} 观众${audienceTotal}`}
                 placement="right"
-                closable={false}
-                visible={this.state.talker_list_show}
+                closable={true}
+                visible={talker_list_show}
                 mask={false}
                 getContainer={false}
                 width="336px"
+                zIndex='5'
                 onScroll={this.talker_list_scroll}
                 className='talker-list-wrapper'
             >
-                <img 
+                {/* <img 
                     src={get_img_url_by_name('expand-icon')} 
                     className='expand-icon' 
                     onClick={this.collapse_talker_list}
-                />
-                
+                /> */}
+                <div className="control-btn" onClick={this.control_talker_list}>
+                    <Icon type="right" 
+                        style={ talker_list_show ? {} : {transform: 'rotateY(180deg)'} }
+                    />
+                </div>
 
                 { stream_list.map((item, index) => {
 
-                    if(index != 0 && item){ // 不渲染主画面
+                    if(index != 0 && item){ // 不渲染主画面， 0位置：代表的主页面
                         return _this._get_video_item(item,index);
                     }
                 }) }
@@ -2731,7 +2731,7 @@ class Room extends Component {
                             
     }
 
-    _get_footer_el() {
+    _get_action_el() {
         let { role } = this.state.user_room
 
         let { 
@@ -2739,16 +2739,12 @@ class Room extends Component {
                 video, 
                 shared_desktop,
                 room_setting_modal_show,
-                footer_el_show,
                 join_role,
                 roomName,
-                password,
                 own_member
             } = this.state
         
         return (
-            <div className="actions-wrap"style={{display:footer_el_show ? 'flex' : 'none'}} >
-                <img src={get_img_url_by_name('apply-icon')} style={{visibility:'hidden'}}/>
                 <div className="actions">
                     {
                         <Tooltip title={ audio ? '静音' : '解除静音'}>
@@ -2790,10 +2786,9 @@ class Room extends Component {
                     <Tooltip title='邀请他人'>
                         <Icon 
                             type="user-add" 
-                            style={{fontSize: '22px', color: '#fff', margin: '0 5px'}}
+                            style={{fontSize: '22px', color: '#fff', margin: '0 5px', verticalAlign: 'middle'}}
                             onClick={() => inviteModal({
                                 roomName, 
-                                password,
                                 invitees: get_nickname(own_member)
                             })}
                         />
@@ -2832,15 +2827,7 @@ class Room extends Component {
                         /> 
                     </Tooltip>
 
-                    
                 </div>
-                <img 
-                    src={get_img_url_by_name('expand-icon')} 
-                    onClick={this.expand_talker_list} 
-                    style={{visibility:this.state.talker_list_show ? 'hidden' : 'visible'}}/>
-
-                <RoomSetting {...this.state}/>
-            </div>
         )
     }
     // toggle 房间设置 modal
@@ -2960,14 +2947,14 @@ class Room extends Component {
 
         let { username:creator } = this.state.user;
 
-        let { roomName, password:roomPswd } = this.state;
+        let { roomName } = this.state;
 
         let options = {
             key:'whiteBoard',
             val:JSON.stringify({
                 creator, 
                 roomName,
-                roomPswd,
+                roomPswd: roomName, // 房间密码和名称一样
                 timestamp: new Date().getTime() 
             })
         }
@@ -2983,13 +2970,13 @@ class Room extends Component {
     }
     
     create_white_board() {
-        let { roomName, password } = this.state;
+        let { roomName } = this.state;
         let { username:userName, token } = this.state.user;
 
         let _this = this;
         let params = {
             roomName,
-            password,
+            password: roomName, // 房间名称和密码一样
             userName,
             token,
 
@@ -3096,15 +3083,13 @@ class Room extends Component {
     }
 
 
-    expand_talker_list = () => {
-        this.setState({
-            talker_list_show:true
-        })
-    }
-    collapse_talker_list = () => {
-        this.setState({
-            talker_list_show:false
-        })
+    // expand_talker_list = () => {
+    //     this.setState({
+    //         talker_list_show:true
+    //     })
+    // }
+    control_talker_list = () => {
+        this.setState(state => ({ talker_list_show: !state.talker_list_show }) )
     }
     
     startTime() {
@@ -3141,12 +3126,13 @@ class Room extends Component {
     // 获取会议信息
     get_confr_info = async () => {
         let { confrId } = this.state.user_room;
-        let { password } = this.state;
+        let { roomName } = this.state;
 
         if(!confrId){
             return
         }
 
+        let password = roomName; // 房间名称和密码一样
         const confr = await emedia.mgr.selectConfr(confrId, password);
 
         this.setState({ confr:confr.confr })
@@ -3165,7 +3151,13 @@ class Room extends Component {
         let { joined } = this.state;
         let { role } = this.state.user_room;
 
-        let { audio, video, nickName, headimg_url_suffix } = this.state;
+        let { 
+            audio,
+            video, 
+            nickName, 
+            headimg_url_suffix,
+            footer_el_show
+        } = this.state;
 
         return (
             <div style={{width:'100%', height:'100%'}}>
@@ -3201,23 +3193,6 @@ class Room extends Component {
                                 autoComplete="off"
                                 />
                             )}
-                        </Item>
-                        <Item>
-                        {getFieldDecorator('password', {
-                            initialValue: getPageQuery('password') || process.env.REACT_APP_ROOMPASSWORD,
-                            rules: [
-                                { required: true, message: '请输入房间密码' },
-                                { min:3 , message: '密码长度不能小于3位'},
-                                { pattern: /^[\u4e00-\u9fa5\w-]*$/, message: '请输入中文、英文、数字、减号或下划线'},
-                                { max:18, message:'请小于18位'}
-                            ],
-                        })(
-                            <Input
-                            prefix={<Icon type="lock" style={{ color: 'rgba(0,0,0,.25)' }} />}
-                            placeholder="房间密码"
-                            autoComplete="off"
-                            />
-                        )}
                         </Item>
 
                         <div className="action">
@@ -3281,9 +3256,11 @@ class Room extends Component {
                         {this._get_main_el()}
                     </Content>
                     {this._get_drawer_component()}
-                    <Footer>
+                    <Footer
+                        style={{display:footer_el_show ? 'block' : 'none'}} >
                         {this._get_control_footer_visibility_btn()}
-                        {this._get_footer_el()}
+                        {this._get_action_el()}
+                        <RoomSetting {...this.state}/>
                     </Footer>
                     {/* 左侧选人下麦框 */}
                     {
