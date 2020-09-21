@@ -2565,6 +2565,7 @@ class Room extends Component {
             if(!sid) { continue };
             
             let item = getItemBySid(sid);
+            if(item.stream.located()) { continue }; // 自己的不做任何处理
             if(isNotVisible(element)) {
                 
                 if(visible_change(sid, 'not-visible')) {// 检测可见行是否变化
