@@ -1191,6 +1191,7 @@ class Room extends Component {
             },
             confr: {},
             own_stream:null,
+            own_desktop_stream: null, // 自己发起的桌面流，不显示（保存起来，用于停止共享）
             own_member: null,
             // join end
             time:0,// 秒的单位
@@ -2073,25 +2074,28 @@ class Room extends Component {
     }
 
     stop_share_desktop() {
-        console.log('stop_share_desktop');
         
-        let { stream_list } = this.state;
+        let { own_desktop_stream } = this.state;
 
-        stream_list.map((item) => {
-            if(
-                item &&
-                item.stream &&
-                item.stream.type == emedia.StreamType.DESKTOP
-            ){
-                emedia.mgr.unpublish(item.stream);
-            }
-        })
+        if(!own_desktop_stream) return;
+
+        emedia.mgr.unpublish(own_desktop_stream);
         
         this.setState({ 
             shared_desktop:false
         });
     }
     _on_stream_added(member, stream) {
+
+        if(
+            stream.type == emedia.StreamType.DESKTOP 
+            && stream.located()
+        ) { // 自己的共享桌面不显示
+            this.setState({ // 保存下来，用于停止共享
+                own_desktop_stream: stream
+            })
+            return
+        }
         if(!member || !stream) {
             return
         }
