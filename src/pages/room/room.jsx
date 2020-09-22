@@ -955,15 +955,16 @@ function inviteModal(info) {
     const roomName = info.roomName || '';
     const invitees = info.invitees || ''; //邀请人
 
-    let content = invitees + '邀请您参加环信会议\r\n' +
-    '会议主题：' + invitees + '的快速会议\r\n\r\n' + 
+    let content = invitees + '邀请您参加视频会议\r\n' +
+    '会议名称：' + roomName + '\r\n\r\n' + 
     
     '点击链接直接加入会议:\r\n' + 
-    'http://172.17.1.190:5500/meeting-share-loading-page/index.html?'+
+    'https://rtc-turn4-hsb.easemob.com/rtc-ws/meeting-share-loading-page/index.html?'+
     'roomName='+ roomName + '&invitees='+ invitees +'\r\n\r\n' +
     
-    '房间名称：' + roomName;
+    'app下载地址：http://www.easemob.com/download/rtc';
 
+    
     ReactDOM.render(
         <div className="inviteModal" >
             <span className="close" onClick={destroy}>x</span>
