@@ -154,7 +154,7 @@ class ToAudienceList extends Component {
                             !item.member.is_me &&
                             item.stream.type != emedia.StreamType.DESKTOP
                         ) {
-                            let { headImage } = item.member.ext;
+                            let headImage = item.member.ext && item.member.ext.headImage;
                             return (
                                 <div className="info-wrapper" key={item.member.name}>
 
@@ -1825,7 +1825,7 @@ class Room extends Component {
 
         confirm({
             title:`是否同意${nickName || memberId}的上麦请求`,
-            onOk: () => agreeCallback(memberId, to_audience_modal),
+            onOk: () => agreeCallback(memberId, to_audience_modal), // 如果主播已满（sdk 内部测试）, to_audience_modal: 为回调函数
             onCancel: () => refuseCallback(memberId),
             cancelText:'拒绝',
             okText:'同意'
