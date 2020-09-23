@@ -3168,7 +3168,14 @@ class Room extends Component {
         return (
             <div style={{width:'100%', height:'100%'}}>
                 {/* join compoent */}
-                <div className="login-wrap" style={{display: joined ? 'none' : 'flex'}}>
+                <div 
+                    className="login-wrap" 
+                    style={{
+                        display: joined ? 'none' : 'flex',
+                        background: "url("+ get_img_url_by_name('login-bg') +")",
+                        backgroundSize: 'cover'
+                    }}
+                >
                     <div className="header">
                         <img src={get_img_url_by_name('logo-text-login')} />
                     </div>
