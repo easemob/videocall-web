@@ -1217,7 +1217,7 @@ class Room extends Component {
                 cdn:'',
                 layoutStyle : 'GRID',
                 canvas :{ 
-                    bgclr : 0x980000,
+                    bgclr : 0x000000,
                     w : 640,
                     h : 480,
                     fps: 20, //输出帧率
@@ -2409,7 +2409,7 @@ class Room extends Component {
                         "z": cdn_zorder,
                         "w": layout_info.cell_width,
                         "h": layout_info.cell_height,
-                        "style": "fill"
+                        "style": "AspectFit"
                     })
                 }
             })
