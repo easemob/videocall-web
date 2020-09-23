@@ -195,16 +195,14 @@ class MuteAction extends Component {
         let { mute_all } = this.state
         return(
 
-            <div className='mute-action-wrapper'>
-                <Tooltip title={ mute_all ? '解除禁言' : '全体禁言' } placement="left">
-                        {
-                            mute_all ? 
-                            <img src={get_img_url_by_name('mute-all-icon')} onClick={this.unmute_all_action}/> :
-                            <img src={get_img_url_by_name('unmute-all-icon')} onClick={this.mute_all_action}/>
-                            
-                        }
-                </Tooltip>
-            </div>
+            <Tooltip title={ mute_all ? '解除禁言' : '全体禁言' } placement="left">
+                {
+                    mute_all ? 
+                    <img className='mute-action' src={get_img_url_by_name('mute-all-icon')} onClick={this.unmute_all_action}/> :
+                    <img className='mute-action' src={get_img_url_by_name('unmute-all-icon')} onClick={this.mute_all_action}/>
+                    
+                }
+            </Tooltip>
         )
     }
 }
@@ -346,7 +344,7 @@ const LeaveConfirmModal = {
         ReactDOM.render(
             <div 
                 className="leave-confirm-modal" 
-                style={{opacity: this.visible ? 1 : 0}}
+                style={{display: this.visible ? 'block' : 'none'}}
             >
                 <div className="title">
                     <span>警告</span>
@@ -2488,26 +2486,26 @@ class Room extends Component {
         // 当画面不可见时，重新订阅（只订阅音频）
 
         // 获取需要更新的video元素
-        let wrapper_el = document.querySelector('.talker-list-wrapper');
-        let els = wrapper_el.querySelectorAll('video');
+        let els = document.querySelectorAll('.talker-list-wrapper video');
 
-        let wrapper_el_height = wrapper_el.getBoundingClientRect().height;
+        let body_height = document.body.getBoundingClientRect().height;
         let el_height = els[0].getBoundingClientRect().height;
 
         const isNotVisible = element => { // 元素是否可见
 
             let top = element.getBoundingClientRect().top;
 
-            if(top >= wrapper_el_height) { // top 比容器还高，说明在容器下面
+            if(top >= body_height) { // top 比容器还高，说明在容器下面
                 return true
             }
 
-            if( 
-                top < 0 
-                && Math.abs(top - 60) > el_height // 负值时，已经越过了 60
-            ) { // 负值说明元素向上超出 容器，整个都超出，才算不可见
+            // 在上面 往上滑 125：是第一个可见的 video 的位置 滑出去了看不见了
+            if(top < 125 && Math.abs(top - 125) > el_height) {
                 return true
             }
+
+            return false // 介于 125 ~ boby_height 之间的为可见
+
         }
 
         let _this = this;
@@ -2594,6 +2592,7 @@ class Room extends Component {
 
     // 视频列表
     _get_drawer_component() {
+
         let _this = this;
         let { stream_list, talker_list_show } = this.state;
         let { role } = this.state.user_room;
@@ -2614,42 +2613,33 @@ class Room extends Component {
             return talkers
         }
 
+        return <div 
+                className="talker-list-wrapper" 
+                style={talker_list_show ? {} : {transform: 'translateX(calc(100% + 6px))'}}
+               >
+                    <div className="control-btn" onClick={this.control_talker_list}>
+                        <Icon type="right" 
+                            style={ talker_list_show ? {} : {transform: 'rotateY(180deg)'} }
+                        />
+                    </div>
+                    <div className="header">
+                        主播 {get_talkers()} 观众 {audienceTotal}
+                        { role == 7 ? <MuteAction {...this.state}/> : ''}
+                    </div>
+                    <div 
+                        className="content"
+                        onScroll={this.talker_list_scroll}
+                    >
+                        { stream_list.map((item, index) => {
 
-        return (
-            <Drawer 
-                title={`主播${get_talkers()} 观众${audienceTotal}`}
-                placement="right"
-                closable={true}
-                visible={talker_list_show}
-                mask={false}
-                getContainer={false}
-                width="336px"
-                zIndex='5'
-                onScroll={this.talker_list_scroll}
-                className='talker-list-wrapper'
-            >
-                {/* <img 
-                    src={get_img_url_by_name('expand-icon')} 
-                    className='expand-icon' 
-                    onClick={this.collapse_talker_list}
-                /> */}
-                <div className="control-btn" onClick={this.control_talker_list}>
-                    <Icon type="right" 
-                        style={ talker_list_show ? {} : {transform: 'rotateY(180deg)'} }
-                    />
+                            if(index != 0 && item){ // 不渲染主画面， 0位置：代表的主页面
+                                return _this._get_video_item(item,index);
+                            }
+                        }) }
+                    </div>
                 </div>
-
-                { stream_list.map((item, index) => {
-
-                    if(index != 0 && item){ // 不渲染主画面， 0位置：代表的主页面
-                        return _this._get_video_item(item,index);
-                    }
-                }) }
-                { role == 7 ? <MuteAction {...this.state}/> : ''}
-            </Drawer>
-        )
-
     }
+    
 
     _get_main_el() {
         let main_stream = this.state.stream_list[0];

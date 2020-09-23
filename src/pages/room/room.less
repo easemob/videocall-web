@@ -315,29 +315,57 @@
     }
     
     // 主播列表 UI
-    .ant-drawer-content {
-        background:rgba(0,0,0,0.8);
-        overflow: inherit;
-        .ant-drawer-header {
-            background: rgba(0, 0, 0, 0.8);
-            line-height: 14px;
-            border: none;
+    .talker-list-wrapper {
+        width: 336px;
+        height: calc(100% - 66px);
+        background: rgba(0,0,0,0.8);
+        border-radius: 10px;
+
+        position: absolute;
+        bottom: 6px;
+        right: 6px;
+        z-index: 2;
+        transition: .5s;
+
+
+        .control-btn { // 伸缩按钮
+            height: 110px;
+            width: 25px;
             position: absolute;
-            top: 0;
-            width: 100%;
-            z-index: 1;
-            border-radius: 0;
+            left: -25px;
+            top: 50%;
+            transform: translateY(-50%);
+            background: rgba(207, 207, 207, 0.8);
+            border-radius: 18px 0 0 18px;
+            z-index: 5;
+            cursor: pointer;
+            display: flex;
+            justify-content: center;
+            align-items: center;
             
-            .ant-drawer-title {
-                font-size:14px;
-                font-family:Alibaba-PuHuiTi-R,Alibaba-PuHuiTi;
-                color:rgba(255,255,255,1);
-                text-align: center;
-            }
         }
-        .ant-drawer-body {
-            padding: 0;
-            padding-top: 60px;
+
+        .header {
+            line-height: 60px;
+
+            font-size:14px;
+            font-family:Alibaba-PuHuiTi-R,Alibaba-PuHuiTi;
+            color:rgba(255,255,255,1);
+            text-align: center;
+
+            position: relative;
+            img.mute-action {
+                position: absolute;
+                top: 10px;
+                right: 10px;
+                cursor: pointer;
+            }
+            
+        }
+
+        .content { // 列表内容区
+            height: calc(100% - 60px);
+            overflow: auto;
             .item {
                 height: 200px;
                 background: #dadada;
@@ -443,93 +471,8 @@
                   }
                 
             }
-    
-            .total {
-                line-height: 40px;
-                text-align: center;
-                
-            };
-    
-            .ant-popover-arrow {
-                border-right-color: rgba(0,0,0,0.75);
-                border-bottom-color: rgba(0,0,0,0.75);
-            }
-            .ant-popover-inner {
-                border-radius: 4px;
-                background: rgba(0,0,0,0.75);
-                color:#fff;
-    
-                .ant-popover-message {
-                    color: #fff
-                }
-                .ant-btn-sm {
-                    color: #fff;
-                    background: transparent;
-                }
-                .ant-btn-primary {
-                    background:rgba(239,65,63,1);
-                    border-color: rgba(239,65,63,1);
-                }
-            }
-    
-            // 白板缩略图样式
-            .white-board-toggle {
-                height: 200px;
-                background: #fff;
-                margin: 5px 6px;
-                font-size: 20px;
-                line-height: 200px;
-                text-align: center;
-                cursor: pointer;
-    
-                position: relative;
-                .head {
-                    width: 100%;
-                    height: 24px;
-                    position: absolute;
-                    top: 0;
-                    background: linear-gradient(180deg,rgba(0,0,0,1) 0%,rgba(0,0,0,0) 100%);
-                }
-    
-            }
-            
-        };
-        // .expand-icon{
-        //     position: absolute;
-        //     left: 16px;
-        //     bottom: 16px;
-        //     z-index: 4;
-        //     cursor: pointer;
-        //     transform: rotate(180deg);
-        // }
-        .control-btn {
-            height: 110px;
-            width: 25px;
-            position: absolute;
-            left: -25px;
-            top: 50%;
-            transform: translateY(-50%);
-            background: rgba(207, 207, 207, 0.8);
-            border-radius: 18px 0 0 18px;
-            z-index: 5;
-            cursor: pointer;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            
         }
-        .mute-action-wrapper {
-            width: 40px;
-            height: 40px;
-            position: absolute;
-            top: 10px;
-            right: 10px;
-            z-index: 2;
-    
-            img {
-                cursor: pointer;
-            }
-        }
+
     }
     // 选人下麦列表
     .to-audience-list {
