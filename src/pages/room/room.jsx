@@ -1345,6 +1345,11 @@ class Room extends Component {
         }
     }
     join_handle(){
+
+        if(!this.state.nickName) { //没有昵称直接返回 不加入
+            this.set_nickname_modal.show()
+            return
+        }
         var _this = this;
         let { role } = this.state.user_room;
         this.props.form.validateFields((err, values) => {
@@ -1733,7 +1738,7 @@ class Room extends Component {
         }
     }
 
-    // 从 sessionStore 拿昵称
+    // 从 sessionStore 拿昵称 return false: 没有昵称，需要设置， true：有昵称，不需要设置
     _get_nickname_from_session() {
         let nickName = window.localStorage.getItem('easemob-nickName');
         let nickName_used = window.localStorage.getItem('easemob-nickName-used');
@@ -1743,19 +1748,18 @@ class Room extends Component {
             this.setState({ // 没有nickName，肯定是拥有者，用于判断是否需要 存到 localStorge-nickName
                 is_localStorage_nickName_admin: true
             })
-            this.set_nickname_modal.show();
-
-            return 
+            return
         } 
         
         if(nickName_used == 'true') { // 有人打开了 一个页面了 已经
-            this.set_nickname_modal.show()
+            return 
         } else { // null 或者 false 说明是拥有者，直接置为 true
             window.localStorage.setItem('easemob-nickName-used', true);
             this.setState({ 
                 is_localStorage_nickName_admin: true,
                 nickName 
-            })
+            });
+            return
         }
 
     }
