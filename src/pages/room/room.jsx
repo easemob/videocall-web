@@ -2655,7 +2655,7 @@ class Room extends Component {
         let main_stream = this.state.stream_list[0];
 
         if(main_stream) {
-            let { is_speak, type, voff } = main_stream.stream; //is_speak 是否在说话
+            let { is_speak, type, voff, aoff } = main_stream.stream; //is_speak 是否在说话
             let { is_me } = main_stream.member;
 
             let is_own_media_stream = is_me && type != emedia.StreamType.DESKTOP //是否是自己的人像流
@@ -2664,6 +2664,9 @@ class Room extends Component {
                 <div className="main-video-wrapper">
                     { is_speak ? 
                         <img src={get_img_url_by_name('is-speak-icon')} className='is-speak-icon'/> : ''
+                    }
+                    { aoff ? 
+                        <img src={get_img_url_by_name('audio-is-close-icon')} className='is-speak-icon'/> : ''
                     }
                     { voff ? this._voff_show(main_stream) :'' } {/* 覆盖到 video上, 不能替换否则 stream 丢失*/}
                     <video 
