@@ -3176,7 +3176,7 @@ class Room extends Component {
                     <div className="header">
                         <img src={get_img_url_by_name('logo-text-login')} />
                     </div>
-                    <Form className="login-form">
+                    <Form className="login-form" onSubmit={this.join_handle}>
                         <img 
                             src={get_img_url_by_name('setting-icon')}
                             className="setting-handle" 
@@ -3208,7 +3208,7 @@ class Room extends Component {
                         <div className="action">
                             <Button 
                                 type="primary"  
-                                onClick={() => this.join_handle()}
+                                onClick={this.join_handle}
                                 loading={this.state.loading}
                                 style={{width:'100%'}}
                             >
