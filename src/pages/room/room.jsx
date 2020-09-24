@@ -2084,7 +2084,8 @@ class Room extends Component {
         emedia.mgr.unpublish(own_desktop_stream);
         
         this.setState({ 
-            shared_desktop:false
+            shared_desktop:false,
+            own_desktop_stream: null
         });
     }
     _on_stream_added(member, stream) {
@@ -2199,41 +2200,72 @@ class Room extends Component {
         this._on_media_chanaged();
     }
     // 检查是否有别人共享了桌面或者 白板
-    _check_has_shared(type) {// type, desktop: 共享桌面，white-board: 白板
+    _check_has_shared(type) {
 
-
-        let check = false;
+        let { own_desktop_stream, white_board_is_created, am_i_white_board_creator } = this.state;
         let main_stream = this.state.stream_list[0];
 
-        if( // 有人在共享桌面
-            main_stream 
-            && main_stream.stream 
-            && main_stream.stream.type == 1
-        ) {
-            check = true
+        if(!type) { // type 没值，就是不是图标状态的变化
+            if(own_desktop_stream) { // 自己共享的屏幕
+                return true
+            }
+
+            if( // 有人在共享桌面
+                main_stream 
+                && main_stream.stream 
+                && main_stream.stream.type == 1
+            ) {
+                return true
+            }
+      
+            if(white_board_is_created) { return true } // 有人共享白板
+
+            return false
+        } else { // 就是图标状态 需要检测是否自己共享的白板或者屏幕
+            // 当有type 时, 是操作按钮的显示状态，需要判断是否是自己共享的桌面 或者 创建的白板
+            // type， desktop: 共享桌面，white-board: 白板
+            // 如果是自己共享的 需要停止共享 return false
+            // 只检测不可点击状态 
+
+            let check = false;
+
+            if(
+                type == 'desktop'
+            ) { // 有人共享白板，别人共享屏幕 
+                if(
+                    white_board_is_created ||
+                    (
+                        main_stream 
+                        && main_stream.stream 
+                        && main_stream.stream.type == 1
+                    )
+                )
+                check = true
+            }
+
+
+
+            if(
+                type == 'white-board' 
+                
+            ) {
+                if(
+                    own_desktop_stream 
+                    || (
+                        main_stream 
+                        && main_stream.stream 
+                        && main_stream.stream.type == 1
+                    )
+                    || (white_board_is_created && !am_i_white_board_creator)
+                ) { // 有人共享屏幕 或者别人共享白板
+                    check = true
+                }
+            }
+
+            return check
+
         }
 
-        if( this.state.white_board_is_created ) { // 白板被别人创建了
-            check = true
-        }
-
-        // 当type有值时，需要判断是否是自己共享的桌面 或者 创建的白板
-        if(
-            type == 'desktop' 
-            && main_stream 
-            && main_stream.member.is_me
-        ) {
-            check = false
-        }
-
-        if(
-            type == 'white-board' 
-            && this.state.am_i_white_board_creator
-        ) {
-            check = false
-        }
-
-        return check;
         
     }
 
@@ -2613,29 +2645,30 @@ class Room extends Component {
             return talkers
         }
 
-        return <div 
-                className="talker-list-wrapper" 
-                style={talker_list_show ? {} : {transform: 'translateX(calc(100% + 6px))'}}
-               >
-                    <div className="control-btn" onClick={this.control_talker_list}>
-                        <Icon type="right" 
-                            style={ talker_list_show ? {} : {transform: 'rotateY(180deg)'} }
-                        />
-                    </div>
-                    <div className="header">
-                        主播 {get_talkers()} 观众 {audienceTotal}
-                        { role == 7 ? <MuteAction {...this.state}/> : ''}
-                    </div>
+        return  <div className="talker-list-placeholder">
                     <div 
-                        className="content"
-                        onScroll={this.talker_list_scroll}
+                        className="talker-list-wrapper" 
+                        style={talker_list_show ? {} : {transform: 'translateX(calc(100% + 6px))'}}
                     >
-                        { stream_list.map((item, index) => {
+                        <div className="control-btn" onClick={this.control_talker_list}>
+                            <Icon type="right" 
+                                style={ talker_list_show ? {} : {transform: 'rotateY(180deg)'} }
+                            />
+                        </div>
+                        <div className="header">
+                            主播 {get_talkers()} 观众 {audienceTotal}
+                            { role == 7 ? <MuteAction {...this.state}/> : ''}
+                        </div>
+                        <div className="content"
+                            onScroll={this.talker_list_scroll}
+                        >
+                            { stream_list.map((item, index) => {
 
-                            if(index != 0 && item){ // 不渲染主画面， 0位置：代表的主页面
-                                return _this._get_video_item(item,index);
-                            }
-                        }) }
+                                if(index != 0 && item){ // 不渲染主画面， 0位置：代表的主页面
+                                    return _this._get_video_item(item,index);
+                                }
+                            }) }
+                        </div>
                     </div>
                 </div>
     }
@@ -2748,6 +2781,7 @@ class Room extends Component {
             } = this.state
         
         return (
+                
                 <div className="actions">
                     {
                         <Tooltip title={ audio ? '静音' : '解除静音'}>
@@ -2869,7 +2903,7 @@ class Room extends Component {
             return <Icon type="down" onClick={() => this.hide_footer_el()}/>
         }
 
-        return <Icon type="up" onClick={() => this.show_footer_el()} style={{top:0}}/> 
+        return <Icon type="up" onClick={() => this.show_footer_el()}/> 
 
     }
 
@@ -2879,7 +2913,7 @@ class Room extends Component {
 
         let { 
             use_white_board,
-            white_board_is_created
+            white_board_is_created,
         } = this.state;
 
         if(!use_white_board) { // 不启用白板
@@ -2891,7 +2925,8 @@ class Room extends Component {
             return ''
         }
 
-        if(this._check_has_shared('white-board')) {
+        if (this._check_has_shared('white-board'))
+        { 
             return <Tooltip title='有人在共享中，不能发起白板'>
                         <img 
                             src={get_img_url_by_name('join-white-board-icon')} 
@@ -3086,11 +3121,6 @@ class Room extends Component {
     }
 
 
-    // expand_talker_list = () => {
-    //     this.setState({
-    //         talker_list_show:true
-    //     })
-    // }
     control_talker_list = () => {
         this.setState(state => ({ talker_list_show: !state.talker_list_show }) )
     }
@@ -3266,12 +3296,15 @@ class Room extends Component {
                         {this._get_main_el()}
                     </Content>
                     {this._get_drawer_component()}
-                    <Footer
-                        style={{display:footer_el_show ? 'block' : 'none'}} >
-                        {this._get_control_footer_visibility_btn()}
-                        {this._get_action_el()}
-                        <RoomSetting {...this.state}/>
-                    </Footer>
+                    <div className="footer-wrapper">
+                        <Footer
+                            style={ footer_el_show ? {} : { transform: 'translateY(calc(100% + 16px))'}} 
+                        >
+                            {this._get_control_footer_visibility_btn()}
+                            {this._get_action_el()}
+                            <RoomSetting {...this.state}/>
+                        </Footer>
+                    </div>
                     {/* 左侧选人下麦框 */}
                     {
                         role == 7 ?

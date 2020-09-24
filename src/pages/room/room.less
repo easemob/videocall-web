@@ -203,7 +203,7 @@
     .ant-layout-header, .ant-layout-footer {
         position: absolute;
         width: 100%;
-        z-index: 3;
+        z-index: 4;
         padding: 0 26px;
         background: transparent;
     }
@@ -315,161 +315,173 @@
     }
     
     // 主播列表 UI
-    .talker-list-wrapper {
-        width: 336px;
-        height: calc(100% - 66px);
-        background: rgba(0,0,0,0.8);
-        border-radius: 10px;
+    .talker-list-placeholder {
 
-        position: absolute;
+
+        position: fixed;
+        
+        width: 0;
         bottom: 6px;
         right: 6px;
-        z-index: 2;
-        transition: .5s;
+        z-index: 3;
+        height: calc(100% - 66px);
+        
+        .talker-list-wrapper {
 
-
-        .control-btn { // 伸缩按钮
-            height: 110px;
-            width: 25px;
+            width: 336px;
+            height: 100%;
+            background: rgba(0,0,0,0.8);
+            border-radius: 10px;
+    
             position: absolute;
-            left: -25px;
-            top: 50%;
-            transform: translateY(-50%);
-            background: rgba(207, 207, 207, 0.8);
-            border-radius: 18px 0 0 18px;
-            z-index: 5;
-            cursor: pointer;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            
-        }
-
-        .header {
-            line-height: 60px;
-
-            font-size:14px;
-            font-family:Alibaba-PuHuiTi-R,Alibaba-PuHuiTi;
-            color:rgba(255,255,255,1);
-            text-align: center;
-
-            position: relative;
-            img.mute-action {
+            right: 0;
+            // z-index: 2;
+            transition: .5s;
+    
+    
+            .control-btn { // 伸缩按钮
+                height: 110px;
+                width: 25px;
                 position: absolute;
-                top: 10px;
-                right: 10px;
+                left: -25px;
+                top: 50%;
+                transform: translateY(-50%);
+                background: rgba(207, 207, 207, 0.8);
+                border-radius: 18px 0 0 18px;
+                z-index: 5;
                 cursor: pointer;
+                display: flex;
+                justify-content: center;
+                align-items: center;
+                
             }
-            
-        }
-
-        .content { // 列表内容区
-            height: calc(100% - 60px);
-            overflow: auto;
-            .item {
-                height: 200px;
-                background: #dadada;
-                border-bottom: 1px solid;
+    
+            .header {
+                line-height: 60px;
+    
+                font-size:14px;
+                font-family:Alibaba-PuHuiTi-R,Alibaba-PuHuiTi;
+                color:rgba(255,255,255,1);
+                text-align: center;
     
                 position: relative;
-                margin: 5px 6px;
-    
-                .info {
+                img.mute-action {
                     position: absolute;
-                    top: 0;
-                    width: 100%;
-                    line-height: 24px;
-                    background: transparent;
-                    padding: 0 6px;
-                    z-index: 5;
-                    background: linear-gradient(#0c0c0ce0, #f2ecec00);
-                    .name {
-                        font-size:12px;
-                        font-family:Alibaba-PuHuiTi-R,Alibaba-PuHuiTi;
-                        color:#fff;
-                        margin-right: 4px;
-                    }
-    
-                    .status-icon {
-                        float: right;
-                    }
+                    top: 10px;
+                    right: 10px;
+                    cursor: pointer;
                 }
                 
-                .no-speak-action {
-                    position: absolute;
-                    left: 6px;
-                    bottom: 6px;
+            }
     
-                    line-height:20px;
-                    background:rgba(0,0,0,1);
-                    border-radius:10px;
-                    padding: 0 6px;
-                    color:rgba(239,65,63,1);
-                    font-size: 12px;
-    
-                    cursor: pointer;
-                    z-index:1
-                }
-    
-                .manage-talker-mask {
-                    box-sizing: content-box;
-                    position: absolute;
-                    top: 0;
-                    bottom: 0;
-                    left: 0px;
-                    right: 0px;
-                    overflow: hidden;
-                    z-index: 3; // 最上层
-                    &:before {
-                        content: ' ';
+            .content { // 列表内容区
+                height: calc(100% - 60px);
+                overflow: auto;
+                .item {
+                    height: 200px;
+                    background: #dadada;
+                    border-bottom: 1px solid;
+        
+                    position: relative;
+                    margin: 5px 6px;
+        
+                    .info {
                         position: absolute;
-                        z-index: 1;
-                        background-color: fade(#000, 50%);
-                        transition: all 0.3s;
+                        top: 0;
                         width: 100%;
-                        height: 100%;
-                        opacity: 0;
-                    }
-    
-                    .action {
-                        position: absolute;
-                        left: 50%;
-                        top: 50%;
-                        transform: translate(-50%, -50%);
-                        z-index: 10;
-                        white-space: nowrap;
-                        opacity: 0;
-                        transition: all 0.3s;
-                        i {
-                          z-index: 10;
-                          transition: all 0.3s;
-                          cursor: pointer;
-                          font-size: 16px;
-                          width: 16px;
-                          color: rgba(255,255,255,0.7);
-                          margin: 0 4px;
-                          &:hover {
-                            color: rgba(255,255,255,1);
-                          }
+                        line-height: 24px;
+                        background: transparent;
+                        padding: 0 6px;
+                        z-index: 5;
+                        background: linear-gradient(#0c0c0ce0, #f2ecec00);
+                        .name {
+                            font-size:12px;
+                            font-family:Alibaba-PuHuiTi-R,Alibaba-PuHuiTi;
+                            color:#fff;
+                            margin-right: 4px;
                         }
-                      }
-                      .ant-dropdown-menu {
-                            border-radius: 5px;
-                      }
-                      .ant-dropdown-menu-item {
-                            border-radius: 5px;
-                      }
-                }
-                .manage-talker-mask:hover {
-                    &:before {
-                      opacity: 1;
-                    }
-                    .action {
-                      opacity: 1;
+        
+                        .status-icon {
+                            float: right;
+                        }
                     }
                     
-                  }
-                
+                    .no-speak-action {
+                        position: absolute;
+                        left: 6px;
+                        bottom: 6px;
+        
+                        line-height:20px;
+                        background:rgba(0,0,0,1);
+                        border-radius:10px;
+                        padding: 0 6px;
+                        color:rgba(239,65,63,1);
+                        font-size: 12px;
+        
+                        cursor: pointer;
+                        z-index:1
+                    }
+        
+                    .manage-talker-mask {
+                        box-sizing: content-box;
+                        position: absolute;
+                        top: 0;
+                        bottom: 0;
+                        left: 0px;
+                        right: 0px;
+                        overflow: hidden;
+                        z-index: 3; // 最上层
+                        &:before {
+                            content: ' ';
+                            position: absolute;
+                            z-index: 1;
+                            background-color: fade(#000, 50%);
+                            transition: all 0.3s;
+                            width: 100%;
+                            height: 100%;
+                            opacity: 0;
+                        }
+        
+                        .action {
+                            position: absolute;
+                            left: 50%;
+                            top: 50%;
+                            transform: translate(-50%, -50%);
+                            z-index: 10;
+                            white-space: nowrap;
+                            opacity: 0;
+                            transition: all 0.3s;
+                            i {
+                              z-index: 10;
+                              transition: all 0.3s;
+                              cursor: pointer;
+                              font-size: 16px;
+                              width: 16px;
+                              color: rgba(255,255,255,0.7);
+                              margin: 0 4px;
+                              &:hover {
+                                color: rgba(255,255,255,1);
+                              }
+                            }
+                          }
+                          .ant-dropdown-menu {
+                                border-radius: 5px;
+                          }
+                          .ant-dropdown-menu-item {
+                                border-radius: 5px;
+                          }
+                    }
+                    .manage-talker-mask:hover {
+                        &:before {
+                          opacity: 1;
+                        }
+                        .action {
+                          opacity: 1;
+                        }
+                        
+                      }
+                    
+                }
             }
         }
 
@@ -510,9 +522,20 @@
         }
         
     }
-    .ant-layout-footer {
+    .footer-wrapper {
+        position: fixed;
         bottom: 16px;
+        height: 0;
+        width: 100%;
+        z-index: 1000;
+    }
+    .ant-layout-footer {
+        width: 100%;
+        height: 60px;
         text-align: center;
+        transition: 0.5s;
+        bottom: 0;
+        
         .actions {
             padding: 0 27px;
             line-height:60px;
@@ -705,7 +728,7 @@
             position: absolute;
             right: 16px;
             top: 55px;
-            z-index: 2;
+            z-index: 3;
 
             padding: 0 10px;
 
