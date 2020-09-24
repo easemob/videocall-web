@@ -1323,7 +1323,6 @@ class Room extends Component {
             this.setState({ 
                 joined: true,
                 user_room,
-                join_role: role // 记忆以什么身份加入，判断是否显示 上下麦按钮（以观众身份进入显示）
             },this.get_confr_info)
     
             if(user_room.role == emedia.mgr.Role.AUDIENCE){ // 观众不推流
@@ -1852,7 +1851,7 @@ class Room extends Component {
     async apply_audience() {
 
         let { stream_list } = this.state;
-        if(stream_list.length == 1){
+        if(stream_list.filter(item => item).length == 1){ // 过滤后 如果只有一个主播
             message.warn('当前您是唯一主播，不允许下麦');
             return
         }
@@ -1864,12 +1863,19 @@ class Room extends Component {
         }
         let memName = appkey + '_' + my_username;
 
-        try {
-            await emedia.mgr.degradeRole(confrId, [memName], emedia.mgr.Role.AUDIENCE);
-            this.reset_state()
-        } catch (error) {
-            
-        }
+        Modal.confirm({
+            title: '下麦后不能发布语音视频',
+            okText: '确认下麦',
+            cancelText: '取消',
+            onOk: async () => {
+                try {
+                    await emedia.mgr.degradeRole(confrId, [memName], emedia.mgr.Role.AUDIENCE);
+                    this.reset_state()
+                } catch (error) {
+                    
+                }
+            }
+        });
 
 
     }
@@ -2775,7 +2781,6 @@ class Room extends Component {
                 video, 
                 shared_desktop,
                 room_setting_modal_show,
-                join_role,
                 roomName,
                 own_member
             } = this.state
@@ -2802,7 +2807,6 @@ class Room extends Component {
                         </Tooltip>
                     }
                     {
-                        join_role != 1 ? '' :
                         role == 1 ? 
                         <Tooltip title='申请上麦'>
                             <img 
