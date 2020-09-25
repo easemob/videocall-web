@@ -210,8 +210,8 @@
     .ant-layout-header {
         top: 0;
         height: auto;
-        line-height: 60px;
-        background:linear-gradient(180deg,rgba(0,0,0,0.8) 0%,rgba(0,0,0,0) 100%);
+        line-height: 50px;
+        background: #232426;;
 
         .header-wrapper {
             display: inline-flex;
@@ -340,14 +340,15 @@
     
     
             .control-btn { // 伸缩按钮
-                height: 110px;
-                width: 25px;
+                width: 22px;
+                height: 96px;
+                background: rgba(0, 0, 0, 0.8);
+                border-radius: 8px 0px 0px 8px;
+
                 position: absolute;
-                left: -25px;
+                left: -22px;
                 top: 50%;
                 transform: translateY(-50%);
-                background: rgba(207, 207, 207, 0.8);
-                border-radius: 18px 0 0 18px;
                 z-index: 5;
                 cursor: pointer;
                 display: flex;
@@ -488,6 +489,9 @@
     }
     // 选人下麦列表
     .to-audience-list {
+        .ant-drawer-content {
+            background: rgba(0, 0, 0, 0.8);
+        }
         .ant-drawer-body {
             padding-top:0;
         }
@@ -522,32 +526,23 @@
         }
         
     }
-    .footer-wrapper {
-        position: fixed;
-        bottom: 16px;
-        height: 0;
-        width: 100%;
-        z-index: 1000;
-    }
+    
     .ant-layout-footer {
         width: 100%;
         height: 60px;
         text-align: center;
-        transition: 0.5s;
+        background: rgba(0, 0, 0, 0.8);
         bottom: 0;
-        
+
         .actions {
-            padding: 0 27px;
-            line-height:60px;
-            background:rgba(0,0,0,0.8);
-            border-radius:30px;
-
-            display: inline-block;
-
+            width: 100%;
+            height: 100%;
+            display: flex;
+            justify-content: space-around;
+            align-items: center;
             img {
-                margin:0 5px;
-                width: 40px;
-                height: 40px;
+                width: 24px;
+                height: 24px;
                 cursor: pointer;
             }
         }
@@ -616,23 +611,6 @@
             animation: roomSettingOpen .5s;
         }
 
-        // 显示或者隐藏 footer-el 向下按钮
-        .anticon-down, .anticon-up {
-            position: absolute;
-            left: 50%;
-            transform: translateX(-50%);
-            top: -22px;
-            width: 2em;
-            font-size: 20px;
-
-            color: #fff;
-            background-color: rgba(0, 0, 0, 0.8);
-            border-radius: 5px;
-
-            cursor: pointer;
-
-
-        }
     }
     
     // 主画面
@@ -686,7 +664,7 @@
     video {
         width: 100%;
         height: 100%;
-        background: #f2efef;
+        background: #3E464B;
         object-fit: contain;
     }
 
@@ -696,7 +674,7 @@
         left:0;
         width: 100%;
         height: 100%;
-        background: #f2efef;
+        background: #3E464B;
         z-index: 2; // 置于 video 之上
 
         display: flex;
@@ -705,10 +683,14 @@
 
         .avatar-wrapper {
             text-align: center;
-            font-size: 16px;
+            
+            font-size: 14px;
+            font-family: PingFangSC-Regular, PingFang SC;
+            color: #FFFFFF;
+            line-height: 20px;
             img {
-                width: 60px;
-                height: 60px;
+                width: 68px;
+                height: 68px;
             }
         }
     }
@@ -782,6 +764,7 @@
         z-index: 1;
 
         border: none;
+        padding: 50px 0 60px 0;
     }
 
     // electorn 选择屏幕 框

@@ -1232,8 +1232,6 @@ class Room extends Component {
             am_i_white_board_creator: false, // 我是否是白板创建者
 
 
-            footer_el_show: true, //是否显示底部
-
             not_visible_arr: [] // 主播列表不可见标签集合，默认都可见
         };
 
@@ -1248,9 +1246,6 @@ class Room extends Component {
         this.stop_share_desktop = this.stop_share_desktop.bind(this); 
         this.share_desktop = this.share_desktop.bind(this); 
         
-        
-        this.hide_footer_el = this.hide_footer_el.bind(this);   
-        this.show_footer_el = this.show_footer_el.bind(this);  
         this.toggle_room_setting_modal = this.toggle_room_setting_modal.bind(this); 
         
         
@@ -1701,7 +1696,6 @@ class Room extends Component {
                 message.success('白板管理员销毁了白板');
                 this.setState({
                     white_board_is_created: false,
-                    footer_el_show:true
                 })
                 return
             }
@@ -2657,7 +2651,8 @@ class Room extends Component {
                         style={talker_list_show ? {} : {transform: 'translateX(calc(100% + 6px))'}}
                     >
                         <div className="control-btn" onClick={this.control_talker_list}>
-                            <Icon type="right" 
+                            <img 
+                                src={get_img_url_by_name('expand-icon')} 
                                 style={ talker_list_show ? {} : {transform: 'rotateY(180deg)'} }
                             />
                         </div>
@@ -2785,6 +2780,31 @@ class Room extends Component {
                 own_member
             } = this.state
         
+
+        let icons = { // 图标的样式和动作
+            micro:{
+                icon_index: 'audio'
+            },
+            camera: {
+                icon_index: 'video'
+            },
+            change_role: {
+                icon_index: 'role'
+            }, 
+            share_desktop: {
+                icon_index: 'shared_desktop'
+            },
+            share_white_board: {
+                icon_index: 'white_board_is_created'
+            },
+            invitees: {
+                icon_index: 'invitees'
+            },
+            seeting: {
+                icon_index: ''
+            }
+        }
+        
         return (
                 
                 <div className="actions">
@@ -2825,9 +2845,8 @@ class Room extends Component {
                     { this.get_white_board_action_btn() }
                     
                     <Tooltip title='邀请他人'>
-                        <Icon 
-                            type="user-add" 
-                            style={{fontSize: '22px', color: '#fff', margin: '0 5px', verticalAlign: 'middle'}}
+                        <img 
+                            src={get_img_url_by_name('invite-icon')} 
                             onClick={() => inviteModal({
                                 roomName, 
                                 invitees: get_nickname(own_member)
@@ -2880,36 +2899,6 @@ class Room extends Component {
         })
     }
 
-    // 底部栏的操作
-    hide_footer_el() {
-        this.setState({
-            footer_el_show: false
-        })
-    }
-    show_footer_el() {
-        this.setState({
-            footer_el_show: true
-        })
-    }
-
-    _get_control_footer_visibility_btn() {// 展开/收起 音视频控制按钮组的图标
-
-        let {
-            white_board_is_created,
-            footer_el_show
-        } = this.state
-
-        if(!white_board_is_created) {
-            return ''
-        }
-
-        if(footer_el_show) {
-            return <Icon type="down" onClick={() => this.hide_footer_el()}/>
-        }
-
-        return <Icon type="up" onClick={() => this.show_footer_el()}/> 
-
-    }
 
     // 白板相关的方法
     // 获取发起白板的操作按钮
@@ -3113,7 +3102,6 @@ class Room extends Component {
                 _this.setState({ 
                     white_board_is_created: false,
                     am_i_white_board_creator: false,
-                    footer_el_show:true
                 });// 默认不显示
                 _this.emit_white_board_is_destroyed()
             },
@@ -3193,7 +3181,6 @@ class Room extends Component {
             video, 
             nickName, 
             headimg_url_suffix,
-            footer_el_show
         } = this.state;
 
         return (
@@ -3300,15 +3287,10 @@ class Room extends Component {
                         {this._get_main_el()}
                     </Content>
                     {this._get_drawer_component()}
-                    <div className="footer-wrapper">
-                        <Footer
-                            style={ footer_el_show ? {} : { transform: 'translateY(calc(100% + 16px))'}} 
-                        >
-                            {this._get_control_footer_visibility_btn()}
-                            {this._get_action_el()}
-                            <RoomSetting {...this.state}/>
-                        </Footer>
-                    </div>
+                    <Footer>
+                        {this._get_action_el()}
+                        <RoomSetting {...this.state}/>
+                    </Footer>
                     {/* 左侧选人下麦框 */}
                     {
                         role == 7 ?
