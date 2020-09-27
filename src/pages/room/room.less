@@ -537,6 +537,14 @@
             display: flex;
             justify-content: space-around;
             align-items: center;
+
+            .wrapper {
+                color: #fff;
+                display: flex;
+                flex-direction: column;
+                align-items: center;
+                font-size: 10px;
+            }
             img {
                 width: 24px;
                 height: 24px;
@@ -849,7 +857,7 @@
     position: absolute;
 
     left: 50%;
-    bottom: 100px;
+    bottom: 70px;
     transform: translateX(-50%);
     z-index:2;
     padding: 0 10px;
@@ -917,11 +925,14 @@
         height: 15px;
 
         border-radius: 15px;
-        background: crimson;
+        background: #b9b2b4;
+        color: rgba(50,50,50, 0.6);
         line-height: 13px;
         text-align: center;
 
         cursor: pointer;
+
+        padding: 0 0 3px 1px;
     }
 
     textarea {

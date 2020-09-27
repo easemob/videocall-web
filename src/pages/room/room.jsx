@@ -2807,43 +2807,38 @@ class Room extends Component {
         return (
                 
                 <div className="actions">
-                    {
-                        <Tooltip title={ audio ? '静音' : '解除静音'}>
-                            <img src={audio ? 
-                                        get_img_url_by_name('micro-is-open-icon') : 
-                                        get_img_url_by_name('micro-is-close-icon')} 
-                                    onClick={() => this.toggle_audio()}/>
-                        </Tooltip>
-                           
-                    }
-                    {
-                        <Tooltip title={ video ? '关闭视频' : '开启视频'}>
-                            <img
-                                   src={video ? 
-                                       get_img_url_by_name('video-is-open-icon') : 
-                                       get_img_url_by_name('video-is-close-icon')} 
-                                   onClick={() => this.toggle_video()}/>
-                        </Tooltip>
-                    }
-                    {
-                        role == 1 ? 
-                        <Tooltip title='申请上麦'>
+                    <div className="wrapper">
+                        <img src={audio ? 
+                             get_img_url_by_name('micro-is-open-icon') : 
+                             get_img_url_by_name('micro-is-close-icon')} 
+                             onClick={() => this.toggle_audio()}
+                        />
+                        <span className="text">{ audio ? '静音' : '解除静音'}</span>
+                    </div>
+                    <div className="wrapper">
+                        <img src={video ? 
+                             get_img_url_by_name('video-is-open-icon') : 
+                             get_img_url_by_name('video-is-close-icon')} 
+                             onClick={() => this.toggle_video()}
+                        />
+                        <span className="text">{video ? '关闭视频' : '开启视频'}</span>
+                    </div>
+                    <div className="wrapper">
+                        { role == 1 ? 
                             <img 
                                 src={get_img_url_by_name('apply-to-talker-icon')} 
                                 onClick={() => this.apply_talker()}
-                            />
-                        </Tooltip> :
-                        <Tooltip title='下麦'>
+                            /> :
                             <img 
                                 src={get_img_url_by_name('apply-to-audience-icon')} 
                                 onClick={() => this.apply_audience()}
                             /> 
-                        </Tooltip>
-
-                    }
+                        }
+                        <span>{ role == 1 ? '上麦' : '下麦' }</span>
+                    </div>
                     { this.get_white_board_action_btn() }
                     
-                    <Tooltip title='邀请他人'>
+                    <div className="wrapper">
                         <img 
                             src={get_img_url_by_name('invite-icon')} 
                             onClick={() => inviteModal({
@@ -2851,32 +2846,30 @@ class Room extends Component {
                                 invitees: get_nickname(own_member)
                             })}
                         />
-                    </Tooltip>
-                    {
-                        this._check_has_shared('desktop') ? 
-                        <Tooltip title='有人在共享，不可共享桌面'>
-                            <img 
-                                src={get_img_url_by_name('share-desktop-icon')} 
-                                style={{opacity:'0.7', cursor:'not-allowed'}}
-                            />
-                        </Tooltip> :
-                        shared_desktop ? 
-                        <Tooltip title='停止共享桌面'>
-                            <img 
-                                src={get_img_url_by_name('stop-share-desktop-icon')} 
-                                onClick={() => this.stop_share_desktop()}
-                            />
-                        </Tooltip> :
-                        <Tooltip title='共享桌面'>
-                            <img 
-                                src={get_img_url_by_name('share-desktop-icon')} 
-                                onClick={() => this.share_desktop()}
-                            /> 
-                        </Tooltip>
-                    }
-
-
-                    <Tooltip title='房间设置'>
+                        <span>邀请他人</span>
+                    </div>
+                    <div className="wrapper">
+                        {
+                            this._check_has_shared('desktop') ? 
+                            <Tooltip title='有人在共享，不可共享桌面'>
+                                <img 
+                                    src={get_img_url_by_name('share-desktop-icon')} 
+                                    style={{opacity:'0.7', cursor:'not-allowed'}}
+                                />
+                            </Tooltip> :
+                            shared_desktop ? 
+                                <img 
+                                    src={get_img_url_by_name('stop-share-desktop-icon')} 
+                                    onClick={() => this.stop_share_desktop()}
+                                /> :
+                                <img 
+                                    src={get_img_url_by_name('share-desktop-icon')} 
+                                    onClick={() => this.share_desktop()}
+                                />
+                        }
+                        <span>{shared_desktop? '停止共享' : '共享桌面'}</span>
+                    </div>
+                    <div className="wrapper">
                         <img 
                             src={ room_setting_modal_show ? 
                                     get_img_url_by_name('room-setting-close-icon') : 
@@ -2884,7 +2877,9 @@ class Room extends Component {
                                 } 
                             onClick={() => this.toggle_room_setting_modal()}
                         /> 
-                    </Tooltip>
+                        <span>房间设置</span>
+                    </div>
+                    
 
                 </div>
         )
@@ -2919,32 +2914,38 @@ class Room extends Component {
 
         if (this._check_has_shared('white-board'))
         { 
-            return <Tooltip title='有人在共享中，不能发起白板'>
-                        <img 
-                            src={get_img_url_by_name('join-white-board-icon')} 
-                            style={{opacity:'0.7', cursor:'not-allowed'}}
-                        />
-                </Tooltip>
+            return <div className="wrapper">
+                        <Tooltip title='有人在共享中，不能发起白板'>
+                            <img 
+                                src={get_img_url_by_name('join-white-board-icon')} 
+                                style={{opacity:'0.7', cursor:'not-allowed'}}
+                            />
+                        </Tooltip>
+                        <span>发起白板</span>
+                </div>
         }
 
         // 白板没有创建，都能发起白板
         if(!white_board_is_created) {
-            return <Tooltip title='发起白板'>
+            return <div className="wrapper">
                         <img 
                             src={get_img_url_by_name('join-white-board-icon')} 
                             onClick={() => this.create_white_board()}
                         />
-                </Tooltip>
+                        <span>发起白板</span>
+                    </div>
         }
 
-        return <Tooltip title='退出白板'>
+        return <div className="wrapper">
                     <img 
                         src={get_img_url_by_name('destory-white-board-icon')} 
                         onClick={() => this.confirm_destory_white_board()}
                     />
-                </Tooltip>
+                    <span>退出白板</span>
+                </div>
 
 
+                
         
     }
     // 获取白板的操作界面
