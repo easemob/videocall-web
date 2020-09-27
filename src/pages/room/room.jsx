@@ -853,8 +853,12 @@ function RoomSetting(props) {
         <div 
             className={`room-setting${room_setting_modal_show ? " open":''}`}
         >
-                <div className="title">房间名称</div>
-                <div className="text">{roomName}</div>
+            <img 
+                className='close-icon'
+                src={get_img_url_by_name('close-handle-icon')} 
+                onClick={() => props.toggle_room_setting_modal()}/>
+            <div className="title">房间名称</div>
+            <div className="text">{roomName}</div>
             <div className="item-wrapper">
                 <div className="title">房间密码</div>
                 {/* 房间名称和密码一样 */}
@@ -1198,7 +1202,7 @@ class Room extends Component {
             audio:true,
             video:false,
             headimg_url_suffix: '',
-            joined: false,
+            joined: true,
             loading: false,
 
             talker_is_full:false, //主播已满
@@ -2638,7 +2642,7 @@ class Room extends Component {
         return  <div className="talker-list-placeholder">
                     <div 
                         className="talker-list-wrapper" 
-                        style={talker_list_show ? {} : {transform: 'translateX(calc(100% + 6px))'}}
+                        style={talker_list_show ? {} : {transform: 'translateX(calc(100% + 10px))'}}
                     >
                         <div className="control-btn" onClick={this.control_talker_list}>
                             <img 
@@ -3284,7 +3288,7 @@ class Room extends Component {
                     {this._get_drawer_component()}
                     <Footer>
                         {this._get_action_el()}
-                        <RoomSetting {...this.state}/>
+                        <RoomSetting {...this.state} toggle_room_setting_modal={this.toggle_room_setting_modal}/>
                     </Footer>
                     {/* 左侧选人下麦框 */}
                     {
