@@ -1173,7 +1173,7 @@ function getPageQuery(query) { // 从url获取参数
 
     })
 
-    return query_value
+    return decodeURI(query_value)
 
 }
 
@@ -2647,7 +2647,7 @@ class Room extends Component {
                         <div className="control-btn" onClick={this.control_talker_list}>
                             <img 
                                 src={get_img_url_by_name('expand-icon')} 
-                                style={ talker_list_show ? {} : {transform: 'rotateY(180deg)'} }
+                                style={ talker_list_show ? {transform: 'rotateY(180deg)'} : {} }
                             />
                         </div>
                         <div className="header">
