@@ -2512,7 +2512,7 @@ class Room extends Component {
         let body_height = document.body.getBoundingClientRect().height;
         let el_height = els[0].getBoundingClientRect().height;
         let footer_height = document.querySelector('footer').getBoundingClientRect().height;
-        
+
         const isNotVisible = element => { // 元素是否可见
 
             let top = element.getBoundingClientRect().top;
@@ -2682,7 +2682,7 @@ class Room extends Component {
                     { aoff ? 
                         <img src={get_img_url_by_name('audio-is-close-icon')} className='is-speak-icon'/> : ''
                     }
-                    { voff ? this._voff_show(main_stream) :'' } {/* 覆盖到 video上, 不能替换否则 stream 丢失*/}
+                    { voff ? this._voff_show(main_stream, 'main') :'' } {/* 覆盖到 video上, 不能替换否则 stream 丢失*/}
                     <video 
                         style={ is_own_media_stream ? { transform: 'rotateY(180deg)' } : {}}
                         ref={`list-video-${main_stream.stream.id}`} 
