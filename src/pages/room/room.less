@@ -210,7 +210,7 @@
     .ant-layout-header {
         top: 0;
         height: auto;
-        line-height: 50px;
+        height: 50px;
         background: #232426;;
 
         .header-wrapper {
@@ -218,60 +218,48 @@
             width: 100%;
             justify-content: space-between;
             align-items: center;
+            img.logo {
+                width: 70px;
+                height: 20px;
+            }
+            .name-wrapper {
+                text-align: center;
+                color:rgba(255,255,255,1);
+                font-family:PingFangSC-Regular,PingFang SC;
+                line-height: 1;
+                .name {
+                    font-size:18px;
+                }
+
+                .time {
+                    display: inline-block;
+                    margin-top: 2px;
+                    padding: 2px 5px;
     
-            .info-wrapper {
+                    background:rgba(0,0,0,0.8);
+                    border-radius:7px;
+                    font-size:10px;
+                    line-height:10px;
+    
+                }
+            }
+
+            .leave-action-wrapper {
                 display: flex;
                 align-items: center;
-                line-height: 1;
-
-                img{
-                    width: 34px;
-                    height: 34px;
-                }
-
-                .name-wrapper {
-                    position: relative;
-
-                    .name {
-                        font-size:18px;
-                        font-family:PingFangSC-Regular,PingFang SC;
-                        font-weight:400;
-                        color:rgba(255,255,255,1);
-                        line-height:20px;
-                    }
-
-                    .time {
-                        position: absolute;
-                        right: 50%;
-                        bottom: -20px;
-                        transform: translateX(50%);
-    
-                        padding: 2px 5px;
-        
-                        background:rgba(0,0,0,0.8);
-                        border-radius:7px;
-                        font-size:10px;
-                        font-family:PingFangSC-Regular,PingFang SC;
-                        font-weight:400;
-                        color:rgba(255,255,255,1);
-                        line-height:10px;
-        
-                        min-width: 50px;
-                        text-align: center;
-                    }
-                }
                 .network-wrapper {
-                    display: inline-block;
-                    margin: 0 16px 0 7px;
+                    margin-right: 5px;
                     height: 18px;
-
+                    display: flex;
+                    align-items: flex-end;
+    
                     .network-item {
-                        display: inline-block;
+                        float: left;
                         width: 3px;
                         background: #fff;
                         margin-right: 3px;
                     }
-
+    
                     .network-item.one {
                         height: 25%;
                     }
@@ -289,26 +277,25 @@
                     }
                 }
                 
-                
-            }
-            .leave-action {
-                cursor: pointer;
-                background:rgba(0,0,0,0.6);
-                line-height: 28px;
-                color: #EF413F;
-
-                border-radius: 17px;
-                padding: 0 15px;
-
-                img {
-                    width:16px;
-                    height:16px;
-                    margin: 0 2px 0 0;
-
-                }
-
-                &:hover {
-                    background:#33373d;
+                .leave-action {
+                    cursor: pointer;
+                    background:rgba(0,0,0,0.6);
+                    line-height: 28px;
+                    color: #EF413F;
+    
+                    border-radius: 17px;
+                    padding: 0 15px;
+    
+                    img {
+                        width:16px;
+                        height:16px;
+                        margin: 0 2px 0 0;
+    
+                    }
+    
+                    &:hover {
+                        background:#33373d;
+                    }
                 }
             }
         };
@@ -321,10 +308,10 @@
         position: fixed;
         
         width: 0;
-        bottom: 6px;
-        right: 6px;
+        bottom: 70px;
+        right: 10px;
         z-index: 3;
-        height: calc(100% - 66px);
+        height: calc(100% - 130px); // 去掉header 和footer
         
         .talker-list-wrapper {
 
@@ -355,6 +342,12 @@
                 justify-content: center;
                 align-items: center;
                 
+                &:hover {
+                    img { opacity: 1 };
+                }
+                img {
+                    opacity: 0.6;
+                }
             }
     
             .header {
@@ -394,7 +387,7 @@
                         background: transparent;
                         padding: 0 6px;
                         z-index: 5;
-                        background: linear-gradient(#0c0c0ce0, #f2ecec00);
+                        background: #232426;
                         .name {
                             font-size:12px;
                             font-family:Alibaba-PuHuiTi-R,Alibaba-PuHuiTi;
@@ -404,6 +397,11 @@
         
                         .status-icon {
                             float: right;
+                            .icon-wrapper {
+                                display: inline-block;
+                                width: 16px;
+                                margin-right: 3px;
+                            }
                         }
                     }
                     
@@ -688,9 +686,19 @@
             font-family: PingFangSC-Regular, PingFang SC;
             color: #FFFFFF;
             line-height: 20px;
-            img {
+            img.avatar {
                 width: 68px;
                 height: 68px;
+            }
+
+            .nick-name {
+                position: relative;
+                img {
+                    position: absolute;
+                    top: -50%;
+                    left: 50%;
+                    transform: translateX(-50%);
+                }
             }
         }
     }

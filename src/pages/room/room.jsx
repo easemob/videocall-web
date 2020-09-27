@@ -2450,46 +2450,29 @@ class Room extends Component {
     }
     _get_header_el() { 
 
-        let { roomName, stream_list } = this.state;
-
-        let admin = ''; 
-        stream_list.map(item => { //获取admin name
-            
-            if(
-                item &&
-                item.member && 
-                item.member.role == 7
-            ) {
-                admin = item.member.nickName || item.member.name.slice(-5);
-                return
-            }
-        })
+        let { roomName } = this.state;
 
         return (
             <div className="header-wrapper">
-                <div>
-                    <img src={get_img_url_by_name('logo-text-room')}/>
-                </div>
-                <div className='info-wrapper'>
-                    <Tooltip title={'主持人: ' + (admin || 'admin')} placement="bottom">
-                        <img src={get_img_url_by_name('admin-icon')} />
-                    </Tooltip>
-                    <NetworkStatus />
-                    <div className="name-wrapper">
-                        <span className="name">{roomName || '房间名称'}</span>
-                        <div className="time">{this._get_tick()}</div>
-                    </div>
+                <img className='logo' src={get_img_url_by_name('logo-text-room')}/>
+                <div className="name-wrapper">
+                    <div className="name">{roomName || '房间名称'}</div>
+                    <div className="time">{this._get_tick()}</div>
                 </div>
 
-                <div onClick={() => this.leave()} className="leave-action">
-                    <img src={get_img_url_by_name('leave-icon')} />
-                    <span>离开房间</span>
+                <div className='leave-action-wrapper'>
+                    <NetworkStatus />
+                    <div onClick={() => this.leave()} className="leave-action">
+                        <img src={get_img_url_by_name('leave-icon')} />
+                        <span>离开房间</span>
+                    </div>
                 </div>
             </div>
         )
     }
     // 视频关闭的显示框，不直接显示 video 是个黑框
-    _voff_show(stream) {
+    // type: 区分 main画面和talker-list， 默认不显示admin 标志和 名字（因为talker-list 上面有）
+    _voff_show(stream, type) {
 
         if(!stream) {
             return <div className="voff-show"></div>
@@ -2503,8 +2486,14 @@ class Room extends Component {
         let base_url = 'https://download-sdk.oss-cn-beijing.aliyuncs.com/downloads/RtcDemo/headImage/';
         return <div className="voff-show">
                     <div className="avatar-wrapper">
-                        <img src={ base_url + ext.headImage }/>
-                        <div> { get_nickname(stream.member) } </div>
+                        <img className='avatar' src={ base_url + ext.headImage }/>
+                        {/* 只在main 画面显示 */}
+                        { type == 'main' ? 
+                            <div className='nick-name'> 
+                                { get_nickname(stream.member) } 
+                                { stream.member.role == 7 ? <img src={ get_img_url_by_name('admin-icon') }/> : ''}
+                            </div> : ''
+                        }
                     </div>
                 </div>
                 
@@ -2522,12 +2511,13 @@ class Room extends Component {
 
         let body_height = document.body.getBoundingClientRect().height;
         let el_height = els[0].getBoundingClientRect().height;
-
+        let footer_height = document.querySelector('footer').getBoundingClientRect().height;
+        
         const isNotVisible = element => { // 元素是否可见
 
             let top = element.getBoundingClientRect().top;
 
-            if(top >= body_height) { // top 比容器还高，说明在容器下面
+            if(top >= (body_height-footer_height )) { // top 比(容器 - 底部栏高度 )还高，说明在容器下面
                 return true
             }
 
@@ -2734,7 +2724,7 @@ class Room extends Component {
 
                 <div className="info">
                     <span className="name">
-                        { nickName + (role == 7 ? '(主持人)' : '') + (is_me ? '(我)' : '')}
+                        { nickName + (is_me ? '(我)' : '')}
                     </span>
 
                     {/* <img src={get_img_url_by_name('no-speak-icon')}/> */}
@@ -2745,12 +2735,17 @@ class Room extends Component {
                      */}
                     <div className="status-icon"> 
 
-                        {
-                            aoff ? 
-                            <img src={get_img_url_by_name('audio-is-close-icon')} /> : 
-                            ( is_speak ? 
-                            <img src={get_img_url_by_name('is-speak-icon')} /> : '' )
-                        }
+                        <span className='icon-wrapper'>
+                            { role == 7 ? <img src={ get_img_url_by_name('admin-small-icon') }/> : ''}
+                        </span>
+                        <span className='icon-wrapper'>
+                            {
+                                aoff ? 
+                                <img src={get_img_url_by_name('audio-is-close-icon')} /> : 
+                                ( is_speak ? 
+                                <img src={get_img_url_by_name('is-speak-icon')} /> : '' )
+                            }
+                        </span>
                         
                     </div>
                 </div>
@@ -2880,7 +2875,7 @@ class Room extends Component {
                     <Tooltip title='房间设置'>
                         <img 
                             src={ room_setting_modal_show ? 
-                                    get_img_url_by_name('room-setting-open-icon') : 
+                                    get_img_url_by_name('room-setting-close-icon') : 
                                     get_img_url_by_name('room-setting-close-icon')
                                 } 
                             onClick={() => this.toggle_room_setting_modal()}
