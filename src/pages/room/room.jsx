@@ -1202,7 +1202,7 @@ class Room extends Component {
             audio:true,
             video:false,
             headimg_url_suffix: '',
-            joined: true,
+            joined: false,
             loading: false,
 
             talker_is_full:false, //主播已满
