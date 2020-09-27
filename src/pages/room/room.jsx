@@ -962,7 +962,7 @@ function inviteModal(info) {
     
     '点击链接直接加入会议:\r\n' + 
     'https://rtc-turn4-hsb.easemob.com/rtc-ws/meeting-share-loading-page/index.html?'+
-    'roomName='+ roomName + '&invitees='+ invitees +'\r\n\r\n' +
+    'roomName='+ encodeURI(roomName) + '&invitees='+ encodeURI(invitees) +'\r\n\r\n' +
     
     'app下载地址：http://www.easemob.com/download/rtc';
 
