@@ -1311,7 +1311,7 @@ class Room extends Component {
         try {
             const user_room = await emedia.mgr.joinRoom(params);
     
-            this.startTime();
+            // this.startTime();
             
             this.setState({ 
                 joined: true,
@@ -1915,8 +1915,9 @@ class Room extends Component {
             return
         }
 
-        if(this._check_has_shared()) { // 共享桌面或者白板，不可切换大图
-            message.warn('有人在共享，不可切换大图');
+        let shared_content = this._check_has_shared();
+        if(shared_content) { // 共享桌面或者白板，不可切换大图
+            message.warn(`${shared_content == 'desktop' ? '有人在共享桌面，不可切换大图': '有人在共享白板，不可切换大图'}`);
             return 
         }
 
@@ -2210,9 +2211,10 @@ class Room extends Component {
         let { own_desktop_stream, white_board_is_created, am_i_white_board_creator } = this.state;
         let main_stream = this.state.stream_list[0];
 
+        // 返回是共享的屏幕或者白板，可区分
         if(!type) { // type 没值，就是不是图标状态的变化
             if(own_desktop_stream) { // 自己共享的屏幕
-                return true
+                return 'desktop'
             }
 
             if( // 有人在共享桌面
@@ -2220,10 +2222,10 @@ class Room extends Component {
                 && main_stream.stream 
                 && main_stream.stream.type == 1
             ) {
-                return true
+                return 'desktop'
             }
       
-            if(white_board_is_created) { return true } // 有人共享白板
+            if(white_board_is_created) { return 'white-board' } // 有人共享白板
 
             return false
         } else { // 就是图标状态 需要检测是否自己共享的白板或者屏幕
@@ -2237,23 +2239,15 @@ class Room extends Component {
             if(
                 type == 'desktop'
             ) { // 有人共享白板，别人共享屏幕 
-                if(
-                    white_board_is_created ||
-                    (
-                        main_stream 
-                        && main_stream.stream 
-                        && main_stream.stream.type == 1
-                    )
-                )
-                check = true
+                if( white_board_is_created ) check = 'white-board';
+                if (
+                    main_stream 
+                    && main_stream.stream 
+                    && main_stream.stream.type == 1
+                ) check = 'desktop';
             }
-
-
-
-            if(
-                type == 'white-board' 
-                
-            ) {
+            
+            if( type == 'white-board' ) {
                 if(
                     own_desktop_stream 
                     || (
@@ -2261,9 +2255,9 @@ class Room extends Component {
                         && main_stream.stream 
                         && main_stream.stream.type == 1
                     )
-                    || (white_board_is_created && !am_i_white_board_creator)
-                ) { // 有人共享屏幕 或者别人共享白板
-                    check = true
+                ) check = 'desktop'; // 有人共享屏幕
+                if (white_board_is_created && !am_i_white_board_creator) { //  别人共享白板
+                    check = 'white-board'
                 }
             }
 
@@ -2804,6 +2798,8 @@ class Room extends Component {
             }
         }
         
+        let shared_content = this._check_has_shared('desktop');
+
         return (
                 
                 <div className="actions">
@@ -2850,8 +2846,9 @@ class Room extends Component {
                     </div>
                     <div className="wrapper">
                         {
-                            this._check_has_shared('desktop') ? 
-                            <Tooltip title='有人在共享，不可共享桌面'>
+                            shared_content ? 
+                            <Tooltip title={ shared_content == 'desktop' ? 
+                                            '有人在共享桌面，不可再共享桌面': '有人在共享白板，不可再共享桌面'}>
                                 <img 
                                     src={get_img_url_by_name('share-desktop-icon')} 
                                     style={{opacity:'0.7', cursor:'not-allowed'}}
@@ -2911,11 +2908,13 @@ class Room extends Component {
         if( role == emedia.mgr.Role.AUDIENCE) { // 观众不能启用 
             return ''
         }
+        let shared_content = this._check_has_shared('white-board');
 
-        if (this._check_has_shared('white-board'))
+        if(shared_content)
         { 
             return <div className="wrapper">
-                        <Tooltip title='有人在共享中，不能发起白板'>
+                        <Tooltip title={ shared_content == 'desktop' ? 
+                                            '有人在共享桌面，不可再发起白板': '有人在共享白板，不可再发起白板'}>
                             <img 
                                 src={get_img_url_by_name('join-white-board-icon')} 
                                 style={{opacity:'0.7', cursor:'not-allowed'}}
