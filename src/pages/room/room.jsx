@@ -860,11 +860,6 @@ function RoomSetting(props) {
             <div className="title">房间名称</div>
             <div className="text">{roomName}</div>
             <div className="item-wrapper">
-                <div className="title">房间密码</div>
-                {/* 房间名称和密码一样 */}
-                <Input type="text" disabled value={roomName}/>  
-            </div>
-            <div className="item-wrapper">
                 <div className="title">主持人</div>
                 {
                     get_admins().map((item,index) => {
@@ -961,7 +956,7 @@ function inviteModal(info) {
     '会议名称：' + roomName + '\r\n\r\n' + 
     
     '点击链接直接加入会议:\r\n' + 
-    'https://rtc-turn4-hsb.easemob.com/rtc-ws/meeting-share-loading-page/index.html?'+
+    'https://meeting.easemob.com/invite/index.html?'+
     'roomName='+ encodeURI(roomName) + '&invitees='+ encodeURI(invitees) +'\r\n\r\n' +
     
     'app下载地址：http://www.easemob.com/download/rtc';
@@ -1191,7 +1186,6 @@ class Room extends Component {
             user_room: {
                 role: 3
             },
-            confr: {},
             own_stream:null,
             own_desktop_stream: null, // 自己发起的桌面流，不显示（保存起来，用于停止共享）
             own_member: null,
@@ -1409,6 +1403,13 @@ class Room extends Component {
         this._get_nickname_from_session();
         this._get_headimg_url_suffix_from_session();
 
+        if(getPageQuery('roomName')) { // 有roomName 认定为邀请的，自动加入会议
+            let _this = this;
+            setTimeout(() => {
+                _this.join_handle()
+                window.location.hash = '' // 防止退出后，重复加入
+            },2000) // 给个延时，让页面充分加载
+        }
     }
 
     componentWillUnmount() {
@@ -2622,7 +2623,6 @@ class Room extends Component {
         let _this = this;
         let { stream_list, talker_list_show } = this.state;
         let { role } = this.state.user_room;
-        let { audienceTotal } = this.state.confr;
 
         function get_talkers() {
             let talkers = 0;
@@ -2651,7 +2651,7 @@ class Room extends Component {
                             />
                         </div>
                         <div className="header">
-                            主播 {get_talkers()} 观众 {audienceTotal}
+                            参会人数 {get_talkers()}
                             { role == 7 ? <MuteAction {...this.state}/> : ''}
                         </div>
                         <div className="content"
