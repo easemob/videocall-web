@@ -853,10 +853,17 @@ function RoomSetting(props) {
         <div 
             className={`room-setting${room_setting_modal_show ? " open":''}`}
         >
-            <img 
+            {/* <img 
                 className='close-icon'
                 src={get_img_url_by_name('close-handle-icon')} 
-                onClick={() => props.toggle_room_setting_modal()}/>
+                onClick={() => props.toggle_room_setting_modal()}/> */}
+
+            <Icon 
+                className='close-icon'
+                type="close-circle"
+                //  theme="filled" 
+                onClick={() => props.toggle_room_setting_modal()}
+            />
             <div className="title">房间名称</div>
             <div className="text">{roomName}</div>
             <div className="item-wrapper">
@@ -1196,7 +1203,7 @@ class Room extends Component {
             audio:true,
             video:false,
             headimg_url_suffix: '',
-            joined: false,
+            joined: true,
             loading: false,
 
             talker_is_full:false, //主播已满
@@ -2869,7 +2876,7 @@ class Room extends Component {
                     <div className="wrapper">
                         <img 
                             src={ room_setting_modal_show ? 
-                                    get_img_url_by_name('room-setting-close-icon') : 
+                                    get_img_url_by_name('room-setting-open-icon') : 
                                     get_img_url_by_name('room-setting-close-icon')
                                 } 
                             onClick={() => this.toggle_room_setting_modal()}
