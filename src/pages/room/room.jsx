@@ -301,66 +301,6 @@ class ManageTalker extends Component {
     }
 }
 
-// 以函数调用的形式，显示提示框 appendChild + ReactDom.render()
-const LeaveConfirmModal = {
-
-    visible: false,
-    roleToken:null,
-    show(roleToken) {
-        
-        this.roleToken = roleToken;
-        this.visible = true;
-        this.render();
-    },
-
-    hide() {
-        this.visible = false;
-        this.render()
-    },
-
-    leave() {
-        emedia.mgr.exitConference();
-        this.visible = false;
-        this.render();
-    },
-
-    async end() {
-        if(!this.roleToken) {
-            return
-        }
-        this.visible = false;
-        await emedia.mgr.destroyConference(this.roleToken);
-        this.render();
-    },
-
-    render() {
-        let dom = document.querySelector('#leave-confirm-modal');
-        if(!dom) {
-            dom = document.createElement('div');
-            dom.setAttribute('id', 'leave-confirm-modal');
-            document.querySelector('.meeting').appendChild(dom);
-        }
-
-        ReactDOM.render(
-            <div 
-                className="leave-confirm-modal" 
-                style={{display: this.visible ? 'block' : 'none'}}
-            >
-                <div className="title">
-                    <span>警告</span>
-                    <img src={get_img_url_by_name('close-handle-icon')} onClick={() => this.hide()}/>
-                </div>
-                <div className="text">
-                    如果您不想结束会议<br></br>请在离开会议前指定新的主持人
-                </div>
-                <div className="handle">
-                    <span className="leave" onClick={() => this.leave()}>离开会议</span><br />
-                    <span className="end" onClick={() => this.end()}>结束会议</span>
-                </div>
-            </div>, dom)
-    }
-}
-
 // 获取头像组件
 import axios from 'axios'
 class HeadImages extends Component {
@@ -1237,7 +1177,8 @@ class Room extends Component {
             am_i_white_board_creator: false, // 我是否是白板创建者
 
 
-            not_visible_arr: [] // 主播列表不可见标签集合，默认都可见
+            not_visible_arr: [], // 主播列表不可见标签集合，默认都可见
+            leaveConfirmModal_show: false
         };
 
         this.toggle_main = this.toggle_main.bind(this);
@@ -1258,6 +1199,11 @@ class Room extends Component {
         this.create_white_board = this.create_white_board.bind(this);
         
         this.talker_list_scroll = debounce(this.talker_list_scroll_stop.bind(this), 1000)
+
+
+        this.hide_leaveConfirmModal = this.hide_leaveConfirmModal.bind(this);
+        this.leave_handle = this.leave_handle.bind(this);
+        this.leave = this.leave.bind(this);
     }
 
     // join fun start
@@ -1459,6 +1405,7 @@ class Room extends Component {
 
         };
 
+        
         emedia.mgr.onConferenceExit = function (reason, failed) {
             function get_failed_reason(failed) {
                 let reasons = {
@@ -1499,17 +1446,14 @@ class Room extends Component {
 
             console.log('onConferenceExit', reason, failed);
             
-            if(reason !== 0) { // 正常挂断不给提示
+            
+            if(
+                _this.state.am_i_white_board_creator &&
+                reason == 11
+            ){ // 会议结束、 销毁白板,
+                _this.destroy_white_board();
+            }
 
-                let { am_i_white_board_creator } = _this.state;
-
-                if(
-                    am_i_white_board_creator &&
-                    reason == 11
-                ){ // 会议结束、 销毁白板,
-                    _this.destroy_white_board();
-                }
-            } 
             message.warn(reason_text, 2, () => window.location.reload());
         };
         emedia.mgr.onConfrAttrsUpdated = function(confr_attrs){ 
@@ -1787,21 +1731,62 @@ class Room extends Component {
             window.localStorage.setItem('easemob-nickName', nickName);
         }
     }
-    leave() {
 
-        let { role, confrId } = this.state.user_room;
+    // 退出会议相关
+    hide_leaveConfirmModal() {
+        this.setState({ leaveConfirmModal_show: false})
+    }
+    get_leaveConfirmModal() {
+        let { leaveConfirmModal_show } = this.state;
+        if(!leaveConfirmModal_show) return '';
+        
+        let { confrId } = this.state.user_room;
+
+        return <div className="leave-confirm-modal" >
+                <div className="title">
+                    <span>警告</span>
+                    <img 
+                        src={get_img_url_by_name('close-handle-icon')} 
+                        onClick={this.hide_leaveConfirmModal}
+                    />
+                </div>
+                <div className="text">
+                    如果您不想结束会议<br></br>请在离开会议前指定新的主持人
+                </div>
+                <div className="handle">
+                    <span className="leave" onClick={this.leave}>离开会议</span><br />
+                    <span className="end" onClick={() => emedia.mgr.destroyConference(confrId)}>结束会议</span>
+                </div>
+            </div>
+    }
+    leave_handle() {
+
+        let { role } = this.state.user_room;
 
         if(role == 7) {
-            LeaveConfirmModal.show(confrId);
+            this.setState( state => ({leaveConfirmModal_show: !state.leaveConfirmModal_show}) )
         } else {
             let is_confirm = window.confirm('确定退出会议吗？');
     
             if(is_confirm){
-                emedia.mgr.exitConference();
+                this.leave()
             }
         }
 
     }
+    leave(){
+        let { am_i_white_board_creator } = this.state;
+        if(am_i_white_board_creator) {
+            Modal.warn({
+                title: '白板还在共享中，请先退出白板',
+                okText: '知道了'
+            });
+            return
+        }
+
+        emedia.mgr.exitConference();
+    }
+
     publish() {
         let { audio, video }  = this.state;
         // video = { // 设置 video 分辨率
@@ -2470,7 +2455,7 @@ class Room extends Component {
 
                 <div className='leave-action-wrapper'>
                     <NetworkStatus />
-                    <div onClick={() => this.leave()} className="leave-action">
+                    <div onClick={this.leave_handle} className="leave-action">
                         <img src={get_img_url_by_name('leave-icon')} />
                         <span>离开房间</span>
                     </div>
@@ -3300,6 +3285,8 @@ class Room extends Component {
                         {this._get_action_el()}
                         <RoomSetting {...this.state} toggle_room_setting_modal={this.toggle_room_setting_modal}/>
                     </Footer>
+                    {/* 退出确认框 */}
+                    { this.get_leaveConfirmModal() }
                     {/* 左侧选人下麦框 */}
                     {
                         role == 7 ?

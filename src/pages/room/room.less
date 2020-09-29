@@ -717,64 +717,58 @@
             }
         }
     }
-    #leave-confirm-modal {
-        .action-wrapper {
+    .leave-confirm-modal {
+        width: 240px;
+        height: 188px;
+        color: #fff;
+        background:rgba(0,0,0,0.8);
+        border-radius:10px;
+
+        position: absolute;
+        right: 16px;
+        top: 55px;
+        z-index: 3;
+
+        padding: 0 10px;
+
+        transition: all 0.3s;
+        .title {
+            line-height: 40px;
             display: flex;
-            justify-content: space-around;
+            justify-content: space-between;
+
+            img {
+                cursor: pointer;
+            }
         }
 
-        .leave-confirm-modal {
-            width: 240px;
-            height: 188px;
-            color: #fff;
-            background:rgba(0,0,0,0.8);
-            border-radius:10px;
+        .text {
+            font-size: 14px;
+            text-align: center;
+            margin-top: 20px;
+        }
 
-            position: absolute;
-            right: 16px;
-            top: 55px;
-            z-index: 3;
+        .handle {
+            text-align: center;
+            margin: 16px 0;
+            .leave,.end {
+                display: inline-block;
+                width:92px;
+                line-height:20px;
+                background:rgba(28,28,30,1);
+                border-radius:10px;
 
-            padding: 0 10px;
+                color:rgba(0,175,239,1);
+                font-size: 12px;
 
-            transition: all 0.3s;
-            .title {
-                line-height: 40px;
-                display: flex;
-                justify-content: space-between;
-
-                img {
-                    cursor: pointer;
-                }
+                cursor: pointer;
             }
-
-            .text {
-                font-size: 14px;
-                text-align: center;
-                margin-top: 20px;
-            }
-
-            .handle {
-                text-align: center;
-                margin: 16px 0;
-                .leave,.end {
-                    display: inline-block;
-                    width:92px;
-                    line-height:20px;
-                    background:rgba(28,28,30,1);
-                    border-radius:10px;
-
-                    color:rgba(0,175,239,1);
-                    font-size: 12px;
-
-                    cursor: pointer;
-                }
-                .leave {
-                    margin-bottom: 12px;
-                }
+            .leave {
+                margin-bottom: 12px;
             }
         }
     }
+    
 
     // 白板操作界面
     iframe[name="white-board"] {
