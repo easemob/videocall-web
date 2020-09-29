@@ -3239,7 +3239,7 @@ class Room extends Component {
                                 loading={this.state.loading}
                                 style={{width:'100%'}}
                             >
-                                进入会议
+                                加入会议
                             </Button>
                         </div>
 
