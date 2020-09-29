@@ -1187,7 +1187,7 @@ class Room extends Component {
         this.state = {
 
             // join start
-            roomName:'',
+            roomName: getPageQuery('roomName') ||'',
             nickName:'',
             user: {},
             user_room: {
@@ -1415,7 +1415,7 @@ class Room extends Component {
             setTimeout(() => {
                 _this.join_handle()
                 window.location.hash = '' // 防止退出后，重复加入
-            },1200) // 给个延时，让页面充分加载
+            },1000) // 给个延时，让页面充分加载
         }
     }
 
@@ -1778,7 +1778,7 @@ class Room extends Component {
     _set_nickname = nickName => {
         let { username } = this.state.user;
 
-        this.setState({ nickName: nickName || username });
+        this.setState({ nickName: nickName || username },this.join_handle);
 
         if(this.state.is_localStorage_nickName_admin) { 
             // 是否是 localStorage_nickName 拥有者，一个浏览器只有第一个页面拥有localStorage_nickName
@@ -3187,6 +3187,7 @@ class Room extends Component {
             video, 
             nickName, 
             headimg_url_suffix,
+            roomName
         } = this.state;
 
         return (
@@ -3215,7 +3216,7 @@ class Room extends Component {
                         <div className='version-text'>Version:{version}</div>
                         <Item>
                             {getFieldDecorator('roomName', {
-                                initialValue: getPageQuery('roomName') || process.env.REACT_APP_ROOMNAME,
+                                initialValue: roomName || process.env.REACT_APP_ROOMNAME,
                                 rules: [
                                     { required: true, message: '请输入房间名称' },
                                     { min:3 , message: '房间名称不能少于3位'},
