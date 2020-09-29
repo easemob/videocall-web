@@ -1319,6 +1319,7 @@ class Room extends Component {
             const user_room = await emedia.mgr.joinRoom(params);
     
             this.startTime();
+
             
             this.setState({ 
                 joined: true,
@@ -1329,6 +1330,8 @@ class Room extends Component {
                 return
             }
             this.publish();
+
+            window.location.hash = '' //加入会议成功，清除query 防止退出后，重复加入
             
         } catch (error) { 
             
@@ -1414,7 +1417,6 @@ class Room extends Component {
             let _this = this;
             setTimeout(() => {
                 _this.join_handle()
-                window.location.hash = '' // 防止退出后，重复加入
             },1000) // 给个延时，让页面充分加载
         }
     }
