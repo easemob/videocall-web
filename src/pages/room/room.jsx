@@ -1348,6 +1348,13 @@ class Room extends Component {
         let _this = this;
         window.onbeforeunload=function(e){     
             var e = window.event||e;  
+            if(
+                _this.state.am_i_white_board_creator
+            ) { // 是白板创建者 首先销毁白板
+
+                _this.emit_white_board_is_destroyed();
+                _this.destroy_white_board()
+            }
 
             emedia.mgr.exitConference();
 
@@ -1777,14 +1784,11 @@ class Room extends Component {
     leave(){
         let { am_i_white_board_creator } = this.state;
         if(am_i_white_board_creator) {
-            Modal.warn({
-                title: '白板还在共享中，请先退出白板',
-                okText: '知道了'
-            });
-            return
+            this.emit_white_board_is_destroyed()
+            this.destroy_white_board()
         }
 
-        emedia.mgr.exitConference();
+        setTimeout(emedia.mgr.exitConference,300) // 用于发送 销毁会议的消息
     }
 
     publish() {
@@ -3091,6 +3095,7 @@ class Room extends Component {
             userName,
             token,
             suc: function(data){
+
                 message.success('已经退出了白板');
                 _this.setState({ 
                     white_board_is_created: false,
