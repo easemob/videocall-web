@@ -18,7 +18,8 @@ import {
     Menu,
     Switch,
     Radio,
-    Tabs
+    Tabs,
+    Alert
 } from 'antd';
 import './room.less';
 
@@ -27,6 +28,7 @@ import emedia from 'easemob-emedia';
 import whiteBoards from './whiteboardsSdk';
 import login from './login.js'
 import { appkey, version } from '../../config';
+
 
 // assets
 
@@ -1462,7 +1464,11 @@ class Room extends Component {
                 _this.destroy_white_board();
             }
 
-            message.warn(reason_text, 2, () => window.location.reload());
+            message.warn(reason_text, 2, () => {
+                if(!_this.state.talker_is_full){ // 主播已满的加入会议，也会走正常挂断 -- 但是不能刷新
+                    window.location.reload()
+                }
+            });
         };
         emedia.mgr.onConfrAttrsUpdated = function(confr_attrs){ 
             console.log('onConfrAttrsUpdated', confr_attrs);
@@ -3199,6 +3205,7 @@ class Room extends Component {
 
         return (
             <div style={{width:'100%', height:'100%'}}>
+
                 {/* join compoent */}
                 <div 
                     className="login-wrap" 
@@ -3208,6 +3215,10 @@ class Room extends Component {
                         backgroundSize: 'cover'
                     }}
                 >
+                    {
+                        emedia.browser != 'chrome' ? 
+                        <Alert message="为了最佳使用体验，请使用chrome浏览器" type="warning" closable/> : ''
+                    }
                     <div className="header">
                         <img src={get_img_url_by_name('logo-text-login')} />
                     </div>
@@ -3249,6 +3260,10 @@ class Room extends Component {
                             >
                                 加入会议
                             </Button>
+                            <div className='info-tips'>
+                                <Icon type="info-circle" /> 
+                                直接加入会议，无需创建
+                            </div>
                         </div>
 
                     </Form>
