@@ -1234,7 +1234,7 @@ class Room extends Component {
                 rec, 
                 recMerge,
 
-                // maxTalkerCount:1,//会议最大主播人数
+                maxTalkerCount:1,//会议最大主播人数
                 // maxVideoCount:1, //会议最大视频数
                 // maxPubDesktopCount:1 //会议最大共享桌面数
             }
@@ -1301,6 +1301,7 @@ class Room extends Component {
         this.props.form.validateFields((err, values) => {
             
             let { audio, video } = _this.state;
+
             if(role == 1){//观众默认关闭摄像头、麦克风
                 audio = false;
                 video = false;
@@ -1801,7 +1802,21 @@ class Room extends Component {
         //         exact: 720
         //     }
         // }
-        emedia.mgr.publish({ audio, video });
+
+        if(!audio && !video) { // mic 和 camera 都没打开， 直接publish会报错
+            let _this = this;
+            (async function() {
+                await emedia.mgr.publish({ audio: true });
+                _this.close_audio()
+            })()
+
+        } else {
+
+            emedia.mgr.publish({ audio, video });
+        }
+
+
+
     }
     // 上麦申请
     apply_talker() {
