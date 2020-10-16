@@ -1149,7 +1149,7 @@ class Room extends Component {
             loading: false,
 
             talker_is_full:false, //主播已满
-
+            talker_full_btn_disable: false, // talker_is_full model button disabled
             shared_desktop:false,
 
             set_nickname_modal_show: false,
@@ -1236,7 +1236,7 @@ class Room extends Component {
                 rec, 
                 recMerge,
 
-                maxTalkerCount:1,//会议最大主播人数
+                // maxTalkerCount:1,//会议最大主播人数
                 // maxVideoCount:1, //会议最大视频数
                 // maxPubDesktopCount:1 //会议最大共享桌面数
             }
@@ -1284,7 +1284,11 @@ class Room extends Component {
         } catch (error) { 
             
             if(/cause: -523|cause:-523/.test(error.errorMessage)){ // 主播已满
-                this.setState({ talker_is_full: true, loading:false });
+                this.setState({ 
+                    talker_is_full: true, 
+                    loading:false,
+                    talker_full_btn_disable: true
+                });
                 return
             }
             message.error(error.errorMessage || error.message) // errorMessage: 接口错误， message：js 语法错误 
@@ -1292,8 +1296,8 @@ class Room extends Component {
 
         }
     }
-    join_handle(){
-
+    join_handle(e){
+        e && e.preventDefault();
         if(!this.state.nickName) { //没有昵称直接返回 不加入
             this.set_nickname_modal.show()
             return
@@ -1301,7 +1305,6 @@ class Room extends Component {
         var _this = this;
         let { role } = this.state.user_room;
         this.props.form.validateFields((err, values) => {
-            
             let { audio, video } = _this.state;
 
             if(role == 1){//观众默认关闭摄像头、麦克风
@@ -1323,7 +1326,7 @@ class Room extends Component {
         this.setState({
             user_room: {
                 role: 1
-            }
+            },
         })
 
         this.join_handle()
@@ -1464,10 +1467,18 @@ class Room extends Component {
                 _this.destroy_white_board();
             }
 
-            message.warn(reason_text, 2, () => {
-                if(!_this.state.talker_is_full){ // 主播已满的加入会议，也会走正常挂断 -- 但是不能刷新
-                    window.location.reload()
+            
+            message.warn(reason_text, 1.5, () => {
+                
+                if(_this.state.talker_is_full){ // 主播已满的加入会议，也会走正常挂断 -- 但是不能刷新
+                    _this.setState({
+                        talker_full_btn_disable: false
+                    })
+                    return
                 }
+
+
+                window.location.reload()
             });
         };
         emedia.mgr.onConfrAttrsUpdated = function(confr_attrs){ 
@@ -3200,7 +3211,8 @@ class Room extends Component {
             video, 
             nickName, 
             headimg_url_suffix,
-            roomName
+            roomName,
+            talker_full_btn_disable
         } = this.state;
 
         return (
@@ -3244,7 +3256,7 @@ class Room extends Component {
                             })(
                                 <Input
                                 prefix={<Icon type="home" style={{ color: 'rgba(0,0,0,.25)' }} />}
-                                placeholder="房间名称"
+                                placeholder="会议名称"
                                 maxLength={18}
                                 autoComplete="off"
                                 />
@@ -3262,7 +3274,7 @@ class Room extends Component {
                             </Button>
                             <div className='info-tips'>
                                 <Icon type="info-circle" /> 
-                                直接加入会议，无需创建
+                                不用创建会议，初次加入则自动创建
                             </div>
                         </div>
 
@@ -3282,6 +3294,8 @@ class Room extends Component {
                         width='470px'
                         className="talker-is-full-modal"
 
+                        okButtonProps={{disabled: talker_full_btn_disable}}
+                        cancelButtonProps={{disabled: talker_full_btn_disable}}
                     >
                         <div>
                             <img src={get_img_url_by_name('warning-icon')}/>
