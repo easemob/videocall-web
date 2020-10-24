@@ -1182,7 +1182,8 @@ class Room extends Component {
             not_visible_arr: [], // 主播列表不可见标签集合，默认都可见
             leaveConfirmModal_show: false,
 
-            prev_volumes: {} // 每个流的音量集合
+            prev_volumes: {}, // 每个流的音量集合
+            subed_v_els: {}, // 订阅过的 video 标签
         };
 
         this.toggle_main = this.toggle_main.bind(this);
@@ -1268,7 +1269,7 @@ class Room extends Component {
         try {
             const user_room = await emedia.mgr.joinRoom(params);
     
-            // this.startTime();
+            process.env.NODE_ENV == 'development' ? '' : this.startTime();
 
             
             this.setState({ 
@@ -1942,11 +1943,8 @@ class Room extends Component {
         this.setState({ stream_list })
 
     }
+    
     toggle_main(index) {
-        if(!index) {
-            return
-        }
-
         let shared_content = this._check_has_shared();
         if(shared_content) { // 共享桌面或者白板，不可切换大图
             message.warn(`${shared_content == 'desktop' ? '有人在共享桌面，不可切换大图': '有人在共享白板，不可切换大图'}`);
@@ -1954,23 +1952,13 @@ class Room extends Component {
         }
 
         let { stream_list } = this.state;
-
         let first_item = stream_list.splice(index,1)[0];
         stream_list.unshift(first_item);
 
 
         this.setState({ 
             stream_list
-        },this._stream_bind_video)
-    }
-    toggle_main(index) {
-        // alert('aaa')
-        let shared_content = this._check_has_shared();
-        if(shared_content) { // 共享桌面或者白板，不可切换大图
-            message.warn(`${shared_content == 'desktop' ? '有人在共享桌面，不可切换大图': '有人在共享白板，不可切换大图'}`);
-            return 
-        }
-
+        }, this.move_v_els)
     }
     // 更新 stream by id
     upload_stream_by_id(sId, source) { 
@@ -2209,7 +2197,32 @@ class Room extends Component {
             emedia.mgr.subscribe(member, stream, true, true, el).then(() => w_el.appendChild(el));
         }
         this._on_media_chanaged_by_stream(el, stream)
+
+        let { subed_v_els } = this.state;
+        subed_v_els[stream.id] = el;
+        this.setState({
+            subed_v_els
+        });
+
     }
+
+    move_v_els() {
+        // 通过原生 js， 移动 DOM 节点
+        let v_wrappers = document.querySelectorAll('.v-wrapper[sid]');
+        console.log('v-wrappers', v_wrappers);
+
+        for (let index = 0; index < v_wrappers.length; index++) {
+            const v_wrapper = v_wrappers[index];
+            
+            let sId = v_wrapper.getAttribute('sid');
+            let v_el = this.state.subed_v_els[sId];
+    
+            v_wrapper.appendChild(v_el);
+        }
+
+    }
+
+
     _on_stream_removed(stream) {
         if(!stream){
             return
@@ -2229,8 +2242,8 @@ class Room extends Component {
 
         let _this = this;
         this.setState({ stream_list },() => {
-            _this._stream_bind_video()//绑定标签
-
+            // _this._stream_bind_video()//绑定标签
+            // _this.move_v_els()
             let { push_cdn, user_room } = _this.state;
             if(push_cdn && user_room.isCreator){ //只有创建者 并且开启推流 可更新布局
 
@@ -2241,28 +2254,28 @@ class Room extends Component {
         })
     }
     
-    _stream_bind_video() {
-        let { stream_list } = this.state;
+    // _stream_bind_video() {
+    //     let { stream_list } = this.state;
 
-        let _this = this;
-        stream_list.map(item => {
-            if( item ){
+    //     let _this = this;
+    //     stream_list.map(item => {
+    //         if( item ){
 
-                let { id } = item.stream;
-                let el = _this.refs[`list-video-${id}`];
+    //             let { id } = item.stream;
+    //             let el = _this.refs[`list-video-${id}`];
     
-                let { stream, member } = item;
-                if( stream.located() ){
-                    emedia.mgr.streamBindVideo(stream, el);
-                }else {
-                    emedia.mgr.subscribe(member, stream, true, true, el)
-                }
-            }
-        });
+    //             let { stream, member } = item;
+    //             if( stream.located() ){
+    //                 emedia.mgr.streamBindVideo(stream, el);
+    //             }else {
+    //                 emedia.mgr.subscribe(member, stream, true, true, el)
+    //             }
+    //         }
+    //     });
 
-        // 当bind stream to video 就监听一下video
-        this._on_media_chanaged();
-    }
+    //     // 当bind stream to video 就监听一下video
+    //     this._on_media_chanaged();
+    // }
     // 检查是否有别人共享了桌面或者 白板
     _check_has_shared(type) {
 
@@ -2388,21 +2401,21 @@ class Room extends Component {
 
             // 监听谁在说话
             // 函数触发，就证明有人说话 拿 stream_id
-            emedia.mgr.onSoundChanaged(el, function (meterData, stream) {
-                let { instant } = meterData;
-                let volume = Math.round((instant/3) * 100);
-                volume = volume > 14 ? 14 : volume;
+            // emedia.mgr.onSoundChanaged(el, function (meterData, stream) {
+            //     let { instant } = meterData;
+            //     let volume = Math.round((instant/3) * 100);
+            //     volume = volume > 14 ? 14 : volume;
 
 
-                let prev_volumes = _this.state.prev_volumes;
-                if(prev_volumes[stream.id] != volume ) { // 避免每次 setState
-                    _this.sound_chanaged(stream.id, volume);
-                    prev_volumes[stream.id] != volume
-                    _this.setState({
-                        prev_volumes
-                    })
-                }
-            });
+            //     let prev_volumes = _this.state.prev_volumes;
+            //     if(prev_volumes[stream.id] != volume ) { // 避免每次 setState
+            //         _this.sound_chanaged(stream.id, volume);
+            //         prev_volumes[stream.id] != volume
+            //         _this.setState({
+            //             prev_volumes
+            //         })
+            //     }
+            // });
         // } 
     }
 
@@ -2723,7 +2736,6 @@ class Room extends Component {
                 </div>
     }
     
-
     _get_main_el() {
         let main_stream = this.state.stream_list[0];
 
@@ -2734,7 +2746,7 @@ class Room extends Component {
             let is_own_media_stream = is_me && type != emedia.StreamType.DESKTOP //是否是自己的人像流
 
             return (
-                <div className="main-video-wrapper" sid={main_stream.stream.id} >
+                <div className="main-video-wrapper v-wrapper" sid={main_stream.stream.id} >
                     
                     { aoff ? 
                         <img src={get_img_url_by_name('micro-is-close-icon')} className='is-speak-icon'/> : 
@@ -2776,10 +2788,10 @@ class Room extends Component {
         return (
             <div 
                 key={id} 
-                className="item"
+                className="item v-wrapper"
                 sid={stream.id}
                 // onDoubleClick={ index ? () => {this.toggle_main(index)} : () => {}} //mian 图不需要点击事件，所以不传index÷
-                onDoubleClick={this.toggle_main } //mian 图不需要点击事件，所以不传index÷
+                onDoubleClick={ () => this.toggle_main(index) } //mian 图不需要点击事件，所以不传index÷
             >
 
                 <div className="info">
@@ -3128,7 +3140,7 @@ class Room extends Component {
 
         this.setState({
             stream_list
-        }, this._stream_bind_video)
+        }, this.move_v_els)
     }
     // confirm destory_white_board
     confirm_destory_white_board() {
