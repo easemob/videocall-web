@@ -1143,7 +1143,7 @@ class Room extends Component {
             stream_list: [null],//默认 main画面为空
             talker_list_show:false,
             audio:true,
-            video:false,
+            video:true,
             headimg_url_suffix: '',
             joined: false,
             loading: false,
@@ -1180,7 +1180,9 @@ class Room extends Component {
 
 
             not_visible_arr: [], // 主播列表不可见标签集合，默认都可见
-            leaveConfirmModal_show: false
+            leaveConfirmModal_show: false,
+
+            prev_volumes: {} // 每个流的音量集合
         };
 
         this.toggle_main = this.toggle_main.bind(this);
@@ -1266,7 +1268,7 @@ class Room extends Component {
         try {
             const user_room = await emedia.mgr.joinRoom(params);
     
-            this.startTime();
+            // this.startTime();
 
             
             this.setState({ 
@@ -1298,10 +1300,10 @@ class Room extends Component {
     }
     join_handle(e){
         e && e.preventDefault();
-        if(!this.state.nickName) { //没有昵称直接返回 不加入
-            this.set_nickname_modal.show()
-            return
-        }
+        // if(!this.state.nickName) { //没有昵称直接返回 不加入
+        //     this.set_nickname_modal.show()
+        //     return
+        // }
         var _this = this;
         let { role } = this.state.user_room;
         this.props.form.validateFields((err, values) => {
@@ -1961,7 +1963,15 @@ class Room extends Component {
             stream_list
         },this._stream_bind_video)
     }
-    
+    toggle_main(index) {
+        // alert('aaa')
+        let shared_content = this._check_has_shared();
+        if(shared_content) { // 共享桌面或者白板，不可切换大图
+            message.warn(`${shared_content == 'desktop' ? '有人在共享桌面，不可切换大图': '有人在共享白板，不可切换大图'}`);
+            return 
+        }
+
+    }
     // 更新 stream by id
     upload_stream_by_id(sId, source) { 
         // 只做一层拷贝
@@ -2171,7 +2181,9 @@ class Room extends Component {
             stream_list:stream_list,
             talker_list_show: true
         },() => {
-            _this._stream_bind_video();//绑定标签
+            // _this._stream_bind_video();//绑定标签
+            _this.insert_video_by_stream(member,stream);
+
 
             let { push_cdn, user_room } = _this.state;
             if(push_cdn && user_room.isCreator){ //只有创建者 并且开启推流 可更新布局
@@ -2182,6 +2194,22 @@ class Room extends Component {
             }
         })
     } 
+
+    insert_video_by_stream(member,stream) {
+
+        let el = document.createElement('video');
+        el.autoplay = true;
+
+        let w_el = document.querySelector('[sid='+ stream.id +']');
+
+        if( stream.located() ){
+            emedia.mgr.streamBindVideo(stream, el);
+            w_el.appendChild(el)
+        }else {
+            emedia.mgr.subscribe(member, stream, true, true, el).then(() => w_el.appendChild(el));
+        }
+        this._on_media_chanaged_by_stream(el, stream)
+    }
     _on_stream_removed(stream) {
         if(!stream){
             return
@@ -2299,7 +2327,7 @@ class Room extends Component {
     }
 
     //监听音视频变化
-    _on_media_chanaged() {
+    _on_media_chanaged_by_stream(el, stream) {
 
         // 音视频变化，触发 setState stream_list
          this.set_stream_item_changed = (constaints, id) => {
@@ -2327,9 +2355,9 @@ class Room extends Component {
         }
 
         // 有人在说话处理流 status: is_speak 在说话、no_speak 没说话
-        this.sound_chanaged = (id, status) => { 
+        this.sound_chanaged = (id, volume) => { 
 
-            if(!status || !id) {
+            if(!id) {
                 return
             }
 
@@ -2341,8 +2369,7 @@ class Room extends Component {
                     item.stream &&
                     item.stream.id == id
                 ){
-                    
-                    item.stream.is_speak = (status == 'is_speak' ? true : false)
+                    item.stream.volume = volume
                 }
 
                 return item
@@ -2351,8 +2378,8 @@ class Room extends Component {
             this.setState({ stream_list })
         }
         let _this = this;
-        for (const key in this.refs) {
-            let el = this.refs[key];
+        // for (const key in this.refs) {
+        //     let el = this.refs[key];
             
             // 监听音视频的开关
             emedia.mgr.onMediaChanaged(el, function (constaints, stream) {
@@ -2362,17 +2389,21 @@ class Room extends Component {
             // 监听谁在说话
             // 函数触发，就证明有人说话 拿 stream_id
             emedia.mgr.onSoundChanaged(el, function (meterData, stream) {
-                
                 let { instant } = meterData;
-                if(instant * 100 > 1){
-                    _this.sound_chanaged(stream.id, 'is_speak')
-                }else {
-                    _this.sound_chanaged(stream.id, 'no_speak')
+                let volume = Math.round((instant/3) * 100);
+                volume = volume > 14 ? 14 : volume;
 
+
+                let prev_volumes = _this.state.prev_volumes;
+                if(prev_volumes[stream.id] != volume ) { // 避免每次 setState
+                    _this.sound_chanaged(stream.id, volume);
+                    prev_volumes[stream.id] != volume
+                    _this.setState({
+                        prev_volumes
+                    })
                 }
-                
             });
-        } 
+        // } 
     }
 
     // 推流 CDN 更新布局 九宫格布局
@@ -2697,25 +2728,24 @@ class Room extends Component {
         let main_stream = this.state.stream_list[0];
 
         if(main_stream) {
-            let { is_speak, type, voff, aoff } = main_stream.stream; //is_speak 是否在说话
+            let { volume, type, voff, aoff } = main_stream.stream; //volume 说话音量
             let { is_me } = main_stream.member;
 
             let is_own_media_stream = is_me && type != emedia.StreamType.DESKTOP //是否是自己的人像流
 
             return (
-                <div className="main-video-wrapper">
-                    { is_speak ? 
-                        <img src={get_img_url_by_name('is-speak-icon')} className='is-speak-icon'/> : ''
-                    }
+                <div className="main-video-wrapper" sid={main_stream.stream.id} >
+                    
                     { aoff ? 
-                        <img src={get_img_url_by_name('audio-is-close-icon')} className='is-speak-icon'/> : ''
+                        <img src={get_img_url_by_name('micro-is-close-icon')} className='is-speak-icon'/> : 
+                        <img src={get_img_url_by_name('volume-' + (volume || 0))} className='is-speak-icon'/>
                     }
                     { voff ? this._voff_show(main_stream, 'main') :'' } {/* 覆盖到 video上, 不能替换否则 stream 丢失*/}
-                    <video 
+                    {/* <video 
                         style={ is_own_media_stream ? { transform: 'rotateY(180deg)' } : {}}
                         ref={`list-video-${main_stream.stream.id}`} 
                         autoPlay
-                    ></video>
+                    ></video> */}
                 </div>
             )
         }
@@ -2734,7 +2764,7 @@ class Room extends Component {
             return ''
         }
 
-        let { id, aoff, is_speak, type, voff } = stream;
+        let { id, aoff, volume, type, voff } = stream;
         let { role, is_me } = member;
         let { role:my_role } = this.state.user_room;//拿到我自己的角色
         let { username:my_username } = this.state.user;//拿到我自己的username
@@ -2747,7 +2777,9 @@ class Room extends Component {
             <div 
                 key={id} 
                 className="item"
-                onDoubleClick={ index ? () => {this.toggle_main(index)} : () => {}} //mian 图不需要点击事件，所以不传index÷
+                sid={stream.id}
+                // onDoubleClick={ index ? () => {this.toggle_main(index)} : () => {}} //mian 图不需要点击事件，所以不传index÷
+                onDoubleClick={this.toggle_main } //mian 图不需要点击事件，所以不传index÷
             >
 
                 <div className="info">
@@ -2759,27 +2791,22 @@ class Room extends Component {
                     {/* 
                      * 对方没有开启音频 显示audio-is-close-icon
                      * 对方开启音频 不说话 不显示图标
-                     * 对方开启音频 在说话 显示is-speak-icon
+                     * 对方开启音频 在说话 显示volume-icon
                      */}
                     <div className="status-icon"> 
 
-                        <span className='icon-wrapper'>
-                            { role == 7 ? <img src={ get_img_url_by_name('admin-small-icon') }/> : ''}
-                        </span>
-                        <span className='icon-wrapper'>
-                            {
-                                aoff ? 
-                                <img src={get_img_url_by_name('audio-is-close-icon')} /> : 
-                                ( is_speak ? 
-                                <img src={get_img_url_by_name('is-speak-icon')} /> : '' )
-                            }
-                        </span>
+                        { role == 7 ? <img className='admin' src={ get_img_url_by_name('admin-small-icon') }/> : ''}
+                        {
+                            aoff ? 
+                            <img src={get_img_url_by_name('micro-is-close-icon')} /> : 
+                            <img src={get_img_url_by_name('volume-'+(volume || 0))} />
+                        }
                         
                     </div>
                 </div>
                 { voff ? this._voff_show(talker_item) :'' }
 
-                <video ref={`list-video-${id}`} autoPlay></video>
+                {/* <video ref={`list-video-${id}`} autoPlay></video> */}
                 {/* 不是主持人 并且不是主持人自己 并且流不是共享桌面 才加载 */}
                 { 
                     (my_role == 7 && !is_me && type != emedia.StreamType.DESKTOP) ? 
