@@ -19,7 +19,8 @@ import {
     Switch,
     Radio,
     Tabs,
-    Alert
+    Alert,
+    notification
 } from 'antd';
 import './room.less';
 
@@ -31,7 +32,14 @@ import { appkey, version } from '../../config';
 
 
 // assets
-
+function notification_show(type, message) {
+    notification[type]({
+        message,
+        placement: 'bottomRight',
+        className: 'openNotification',
+        // duration: 1000
+    });
+}
 const requireContext = require.context('../../assets/images', true, /^\.\/.*\.png$/)// 通过webpack 获取 img
 const get_img_url_by_name = (name) => {
     if(!name){
@@ -552,10 +560,6 @@ class Setting extends Component {
                             ref={head_images => this.head_images = head_images}
                             headimg_change={this.headimg_change}/>
                         </div>
-                        <div>昵称</div>
-                        <Input placeholder="请输入昵称" value={nickName} onChange={this.nick_name_change} />
-                        <Checkbox checked={video} onChange={this.video_change}>打开摄像头</Checkbox>
-                        <Checkbox checked={audio} onChange={this.audio_change}>打开麦克风</Checkbox>
                         <Checkbox checked={rec} onChange={this.rec_change}>开启录制</Checkbox>
                         <Checkbox checked={recMerge} onChange={this.recMerge_change}>开启录制合并</Checkbox>
                         <Input placeholder="推流CDN地址" value={cdn} onChange={this.cdn_change} disabled={!push_cdn} />
@@ -1830,20 +1834,23 @@ class Room extends Component {
         //         exact: 720
         //     }
         // }
-
+        let constraints = { audio, video };
         if(!audio && !video) { // mic 和 camera 都没打开， 直接publish会报错
-            let _this = this;
-            (async function() {
-                await emedia.mgr.publish({ audio: true });
-                _this.close_audio()
-            })()
-
-        } else {
-
-            emedia.mgr.publish({ audio, video });
+            constranints = { audio: true }
         }
 
-
+        let _this = this;
+        (async function() {
+            try {
+                await emedia.mgr.publish(constraints);
+                notification_show('success', '发布流成功');
+                if(!audio && !video) { // getUserMedia 后再关闭音频
+                    _this.close_audio()
+                }
+            } catch (error) {
+                notification_show('error', '发布流失败')
+            }
+        })()
 
     }
     // 上麦申请
@@ -2212,7 +2219,11 @@ class Room extends Component {
             emedia.mgr.streamBindVideo(stream, el);
             w_el.appendChild(el)
         }else {
-            emedia.mgr.subscribe(member, stream, true, true, el).then(() => w_el.appendChild(el));
+            emedia.mgr.subscribe(member, stream, true, true, el)
+            .then(() => w_el.appendChild(el))
+            .catch(() => {
+                notification_show('error', `订阅${member.nickName}的流失败`)
+            });
         }
         this._on_media_chanaged_by_stream(el, stream)
 
@@ -3279,8 +3290,8 @@ class Room extends Component {
                         /> 
                             
                         <img src={get_img_url_by_name('logo')} />
-                        <div style={{marginTop:'17px'}}>欢迎使用环信多人会议</div>
-                        <div className='version-text'>Version:{version}</div>
+                        <div className='app-name'>环信视频会议</div>
+                        
                         <Item>
                             {getFieldDecorator('roomName', {
                                 initialValue: roomName || process.env.REACT_APP_ROOMNAME,
@@ -3298,8 +3309,28 @@ class Room extends Component {
                                 autoComplete="off"
                                 />
                             )}
+                            
                         </Item>
+                        <Item>
+                        {getFieldDecorator('nickName', {
+                                initialValue: '',
+                                rules: [
+                                    { required: true, message: '请填写昵称' },
+                                ],
+                                
+                            })(
+                                <Input
+                                prefix={<Icon type="user" style={{ color: 'rgba(0,0,0,.25)' }} />}
+                                placeholder="昵称"
+                                />
+                            )}
+                            
+                        </Item>
+                        <div className='control-contraints'>
 
+                            <Checkbox checked={video} onChange={this.video_change}>打开摄像头</Checkbox>
+                            <Checkbox checked={audio} onChange={this.audio_change}>打开麦克风</Checkbox>
+                        </div>
                         <div className="action">
                             <Button 
                                 type="primary"  
@@ -3314,7 +3345,7 @@ class Room extends Component {
                                 不用创建会议，初次加入则自动创建
                             </div>
                         </div>
-
+                        <div className='version-text'>Version:{version}</div>
                     </Form>
                 
                     {/* 主播人数已满提醒框 */}
@@ -3344,7 +3375,7 @@ class Room extends Component {
                     <Setting 
                         { ...{audio, video, nickName, headimg_url_suffix} }
                         _get_setting_values={this._get_setting_values} 
-                        is_localStorage_nickName_admin={this.state.is_localStorage_nickName_admin}
+                        // is_localStorage_nickName_admin={this.state.is_localStorage_nickName_admin}
                         ref={setting_modal => this.setting_modal = setting_modal} />
 
                     {/* 设置昵称框 */}
