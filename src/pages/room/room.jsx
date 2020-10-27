@@ -401,37 +401,22 @@ class HeadImages extends Component {
 class Setting extends Component {
 
     state = {
-        nickName: '',
-        video: false,
-        audio: true,
         visible: false,
         headimg_url_suffix: '',
+
         push_cdn: false,
+        cdn: '',
         rec:false,
         recMerge:false,
-        user_room:{
-            role: 3 
-        }
+        join_as_audience: false
     }
-
-    componentDidMount() {
-        this._map_props_to_state();
-    }
+    
     componentWillReceiveProps(nextProps) {
 
         this.setState({ 
-            nickName: nextProps.nickName,   
+            // nickName: nextProps.nickName,   
             headimg_url_suffix: nextProps.headimg_url_suffix,   
         });
-    }
-    _map_props_to_state() {
-        let { nickName, video, audio } = this.props
-
-        this.setState({
-            nickName, 
-            video, 
-            audio
-        })
     }
     show = () => {
         this.setState({ visible: true })
@@ -444,28 +429,27 @@ class Setting extends Component {
         let {
             headimg_url_suffix,
             nickName,
-            video,
-            audio,
             cdn,
             push_cdn,
             rec,
             recMerge,
-            user_room
+            join_as_audience
         } = this.state;
 
         
         // 回调上去
         this.props._get_setting_values({
-            headimg_url_suffix, nickName, video, audio, cdn, push_cdn,
-            rec,recMerge,user_room
+            headimg_url_suffix, nickName, cdn, push_cdn,
+            rec,recMerge,join_as_audience
         })
         this.setState({ visible: false });
-        if(this.props.is_localStorage_nickName_admin) {
-            window.localStorage.setItem('easemob-nickName', nickName); //保存 nickName
-        }
+        // if(this.props.is_localStorage_nickName_admin) {
+        //     window.localStorage.setItem('easemob-nickName', nickName); //保存 nickName
+        // }
         window.sessionStorage.setItem('easemob-headimg_url_suffix', headimg_url_suffix); //保存 头像 url
         
     }
+    
     headimg_change = headimg_url_suffix => {
 
         if(!headimg_url_suffix){
@@ -474,73 +458,35 @@ class Setting extends Component {
 
         this.setState({ headimg_url_suffix })
     }
-    nick_name_change = e => {
-        const { value } = e.target;
+
+
+
+
+    handleChange = (event) => {
+        const target = event.target;
+        const value = target.name === 'cdn' ? target.value : target.checked;
+        const name = target.name;
+    
         this.setState({
-            nickName:value
-        })
-    }
-    video_change = e => {
-        this.setState({
-            video:e.target.checked
-        })
+          [name]: value
+        });
 
     }
-    audio_change = e => {
-        this.setState({
-            audio:e.target.checked
-        })
-    }
-    rec_change = e => {
-        this.setState({
-            rec:e.target.checked
-        })
-    }
-    recMerge_change = e => {
-        this.setState({
-            recMerge:e.target.checked
-        })
-    }
+    
     // 更换头像
     get_headimg_url = () => {
         this.head_images.show()
     }
-    // cdn 地址
-    cdn_change = e => {
-        const { value } = e.target;
-        this.setState({
-            cdn:value
-        })
-    }
-    // 是否开启 CDN 切换
-    toggle_push_cdn = checked => {
-        this.setState({
-            push_cdn:checked
-        })
-    }
-    // 是否以观众身份加入会议
-    toggle_join_role = checked => {
-        this.setState({
-            user_room:{
-                role: checked ? 1 : 3 //开启就是观众身份，关闭就是主播身份
-            }
-        })
-    }
+    
     render() {
         let { 
             visible, 
-            headimg_url_suffix, 
-            audio, 
-            video, 
-            nickName,
-            cdn,
-            push_cdn,
-            rec,
-            recMerge
+            headimg_url_suffix
          } = this.state;
 
         let base_url = 'https://download-sdk.oss-cn-beijing.aliyuncs.com/downloads/RtcDemo/headImage/';
 
+        let _this = this;
         return (
             <Modal 
                 visible={visible}
@@ -551,76 +497,104 @@ class Setting extends Component {
                 className="setting-modal"
                 width="470px"
             >
-                        <div className="avatar-wrapper ">
-                            <Avatar 
-                                src={base_url + headimg_url_suffix} 
-                                onClick={this.get_headimg_url} 
-                                className='setting-avatar'/>
-                            <HeadImages 
-                            ref={head_images => this.head_images = head_images}
-                            headimg_change={this.headimg_change}/>
-                        </div>
-                        <Checkbox checked={rec} onChange={this.rec_change}>开启录制</Checkbox>
-                        <Checkbox checked={recMerge} onChange={this.recMerge_change}>开启录制合并</Checkbox>
-                        <Input placeholder="推流CDN地址" value={cdn} onChange={this.cdn_change} disabled={!push_cdn} />
-                        <span>是否推流 CDN</span> <Switch onChange={this.toggle_push_cdn}></Switch><br />
-                        <span>是否以观众身份加入会议</span> <Switch onChange={this.toggle_join_role}></Switch>
-                        <div className="action">
-                            <Button type="primary" onClick={this.handleSubmit}>保存并返回</Button>
-                        </div>
+                <form action="" onSubmit={this.handleSubmit}>
+
+                    <div className="avatar-wrapper ">
+                        <Avatar 
+                            src={base_url + headimg_url_suffix} 
+                            onClick={this.get_headimg_url} 
+                            className='setting-avatar'/>
+                        <HeadImages 
+                        ref={head_images => this.head_images = head_images}
+                        headimg_change={this.headimg_change}/>
+                    </div>
+
+                    {
+                        [
+                            {key: 'push_cdn', text: '开启推流 CDN'},
+                            {key: 'cdn', text: '推流CDN地址'},
+                            {key: 'rec', text: '开启录制'},
+                            {key: 'recMerge', text: '开启录制合并'},
+                            {key: 'join_as_audience', text: '以观众身份加入会议'},
+                        ].map((item,index) => {
+                            let { key, text } = item;
+                            if(key == 'cdn') {
+                                return <Input 
+                                            key={index}
+                                            placeholder={text} 
+                                            name={key} 
+                                            value={_this.state[key]} 
+                                            onChange={_this.handleChange} disabled={!_this.state['push_cdn']} 
+                                        />
+                            } else {
+                                return <Checkbox 
+                                        key={index}
+                                        checked={_this.state[key]} 
+                                        name={key} 
+                                        onChange={_this.handleChange}>{text}</Checkbox>
+                            }
+                        })
+                    }
+                    
+                    <div className='join_as_audience_tips'>加入后只能观看，需申请上麦</div>
+
+                    <div className="action">
+                        <Button type="primary" onClick={this.handleSubmit}>保存并返回</Button>
+                    </div>
+                </form>
             </Modal>
         )
     }
 }
 
 // 设置昵称 modal
-class SetNickName extends Component {
-    state = {
-        visible: false,
-        nickName:''
-    }
+// class SetNickName extends Component {
+//     state = {
+//         visible: false,
+//         nickName:''
+//     }
 
-    show = () => {
-        this.setState({ visible: true })
-    }
+//     show = () => {
+//         this.setState({ visible: true })
+//     }
 
-    hide() {
-        this.setState({ visible: false })
-    }
-    onChange = e => {
+//     hide() {
+//         this.setState({ visible: false })
+//     }
+//     onChange = e => {
         
-        const { value } = e.target;
+//         const { value } = e.target;
 
-        this.setState({
-            nickName: value
-        })
-    }
-    submit() {
-        let { nickName } = this.state;
-        this.props._set_nickname(nickName);
+//         this.setState({
+//             nickName: value
+//         })
+//     }
+//     submit() {
+//         let { nickName } = this.state;
+//         this.props._set_nickname(nickName);
         
-        this.setState({ visible: false })
-    }
+//         this.setState({ visible: false })
+//     }
 
-    render() {
-        return (
-            <Modal 
-                title="请设置昵称"
-                visible={this.state.visible}
-                onCancel={() => this.hide()}
-                onOk={() => this.submit()}
-                okText="确定"
-                cancelText="取消"
-                getContainer={false}
-                width="350px"
-                centered={true}
-                className="set-nickname-modal"
-            >
-                <Input onChange={this.onChange}/>
-            </Modal>
-        )
-    }
-}
+//     render() {
+//         return (
+//             <Modal 
+//                 title="请设置昵称"
+//                 visible={this.state.visible}
+//                 onCancel={() => this.hide()}
+//                 onOk={() => this.submit()}
+//                 okText="确定"
+//                 cancelText="取消"
+//                 getContainer={false}
+//                 width="350px"
+//                 centered={true}
+//                 className="set-nickname-modal"
+//             >
+//                 <Input onChange={this.onChange}/>
+//             </Modal>
+//         )
+//     }
+// }
 
 // 申请主持人 或者 放弃主持人操作
 function AdminChangeHandle(props) {
@@ -1136,9 +1110,7 @@ class Room extends Component {
             roomName: getPageQuery('roomName') ||'',
             nickName:'',
             user: {},
-            user_room: {
-                role: 3
-            },
+            user_room: null,
             own_stream:null,
             own_desktop_stream: null, // 自己发起的桌面流，不显示（保存起来，用于停止共享）
             own_member: null,
@@ -1157,7 +1129,7 @@ class Room extends Component {
             shared_desktop:false,
 
             set_nickname_modal_show: false,
-            room_setting_modal_show: false,
+            room_setting_modal_show: true,
 
             cdn:'', //推流 cdn url
             push_cdn: false, //是否开启推流 cdn 
@@ -1218,7 +1190,8 @@ class Room extends Component {
     // join fun start
     async join() {
 
-        this.setState({ loading:true, talker_is_full:false })
+        this.setState({ loading:true, talker_is_full:false });
+
         let {
             roomName,
             nickName,
@@ -1229,7 +1202,7 @@ class Room extends Component {
             recMerge
         } = this.state;
 
-        let { role } = this.state.user_room;
+        let role = this.state.join_as_audience ? 1 : 3;
         
         let params = {
             roomName,
@@ -1275,13 +1248,20 @@ class Room extends Component {
     
             process.env.NODE_ENV == 'development' ? '' : this.startTime();
 
-            
+            this._set_config_to_localStorage(); 
+
             this.setState({ 
                 joined: true,
                 user_room,
             },this.get_confr_info)
     
             if(user_room.role == emedia.mgr.Role.AUDIENCE){ // 观众不推流
+                if(this.state.join_as_audience){//观众默认关闭摄像头、麦克风
+                    this.setState({
+                        audio: false,
+                        video: false
+                    })
+                }
                 return
             }
             this.publish();
@@ -1309,19 +1289,21 @@ class Room extends Component {
         //     this.set_nickname_modal.show()
         //     return
         // }
+        
         var _this = this;
-        let { role } = this.state.user_room;
         this.props.form.validateFields((err, values) => {
-            let { audio, video } = _this.state;
-
-            if(role == 1){//观众默认关闭摄像头、麦克风
-                audio = false;
-                video = false;
-            }
-            _this.setState({
-                roomName: values.roomName,
-                audio,
+            let { 
+                roomName,
+                nickName,
+                audio, 
                 video
+             } = values;
+
+            _this.setState({
+                roomName,
+                audio,
+                video,
+                nickName
             },() => {
                 if (!err) {
                     _this.join()
@@ -1331,10 +1313,13 @@ class Room extends Component {
     }
     talker_is_full_handle() { // 主播已满，修改角色
         this.setState({
-            user_room: {
-                role: 1
-            },
+            join_as_audience: true
         })
+        // this.setState({
+        //     user_room: {
+        //         role: 1
+        //     },
+        // })
 
         this.join_handle()
     }
@@ -1371,12 +1356,13 @@ class Room extends Component {
 
             emedia.mgr.exitConference();
 
-            if(_this.state.is_localStorage_nickName_admin) {// localStorage_nickName_admin 放开使用权限
-                window.localStorage.setItem('easemob-nickName-used', false);
-            }
+            // if(_this.state.is_localStorage_nickName_admin) {// localStorage_nickName_admin 放开使用权限
+            //     window.localStorage.setItem('easemob-nickName-used', false);
+            // }
         } 
 
-        this._get_nickname_from_session();
+        // this._get_nickname_from_session();
+        this._get_config_from_localStorage();
         this._get_headimg_url_suffix_from_session();
 
         if(getPageQuery('roomName')) { // 有roomName 认定为邀请的，自动加入会议
@@ -1387,6 +1373,7 @@ class Room extends Component {
         }
     }
 
+    
     componentWillUnmount() {
         clearInterval(this.timeID);
     }
@@ -1752,7 +1739,38 @@ class Room extends Component {
         }
 
     }
-    // 从 sessionStore 拿头像 url
+
+    // 从 昵称、音视频开启状态、头像路径，存储在本地
+    _get_config_from_localStorage() {
+        let config = window.localStorage.getItem('em-meeting-config');
+        console.log('config', config);
+        config = JSON.parse(config);
+
+        for (const key in config) {
+            this.setState({
+                [key]: config[key]
+            })
+        }
+
+    }
+    _set_config_to_localStorage() {
+
+        // 将昵称、音频开启状态、视频开启状态 存储起来
+        let {
+            nickName,
+            audio,
+            video
+        } = this.state;
+
+        let config = {
+            nickName,
+            audio,
+            video
+        }
+        
+        window.localStorage.setItem('em-meeting-config', JSON.stringify(config))
+    }
+    
     _get_headimg_url_suffix_from_session() {
         let headimg_url_suffix = window.sessionStorage.getItem('easemob-headimg_url_suffix');
 
@@ -1761,6 +1779,9 @@ class Room extends Component {
         }
         this.setState({ headimg_url_suffix })
     }
+
+
+
     _set_nickname = nickName => {
         let { username } = this.state.user;
 
@@ -3313,9 +3334,9 @@ class Room extends Component {
                         </Item>
                         <Item>
                         {getFieldDecorator('nickName', {
-                                initialValue: '',
+                                initialValue: nickName || '',
                                 rules: [
-                                    { required: true, message: '请填写昵称' },
+                                    { required: true, message: '请输入您的昵称' },
                                 ],
                                 
                             })(
@@ -3327,9 +3348,15 @@ class Room extends Component {
                             
                         </Item>
                         <div className='control-contraints'>
-
-                            <Checkbox checked={video} onChange={this.video_change}>打开摄像头</Checkbox>
-                            <Checkbox checked={audio} onChange={this.audio_change}>打开麦克风</Checkbox>
+                            {getFieldDecorator('video', {
+                                valuePropName:'checked',
+                                initialValue: video
+                            })( <Checkbox >打开摄像头</Checkbox> )}
+                            {getFieldDecorator('audio', {
+                                valuePropName:'checked',
+                                initialValue: audio
+                            })( <Checkbox >打开麦克风</Checkbox> )}
+                            
                         </div>
                         <div className="action">
                             <Button 
@@ -3379,10 +3406,10 @@ class Room extends Component {
                         ref={setting_modal => this.setting_modal = setting_modal} />
 
                     {/* 设置昵称框 */}
-                    <SetNickName 
+                    {/* <SetNickName 
                         ref={set_nickname_modal => this.set_nickname_modal = set_nickname_modal}
                         _set_nickname={this._set_nickname}
-                    />    
+                    />     */}
                 </div>
                 
                 {/* room compoent */}
