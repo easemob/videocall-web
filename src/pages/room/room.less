@@ -211,7 +211,7 @@
         height: calc(100% - 130px);
     }
     .ant-layout-header, .ant-layout-footer {
-        position: absolute;
+        // position: absolute;
         width: 100%;
         z-index: 4;
         padding: 0 26px;
@@ -221,7 +221,7 @@
         top: 0;
         height: auto;
         height: 50px;
-        background: #232426;;
+        background: #232426;
 
         .header-wrapper {
             display: inline-flex;
@@ -656,13 +656,17 @@
             height: 30px;
         }
 
+        video {
+            // transform: rotateY(180deg);
+        }
+
     }
 
     .ant-layout-content {
         padding: 20px;
         position: relative;
         width: 100%;
-        height: 100%;
+        height: calc(100% - 110px);
         padding: 0;
 
         .item {
@@ -850,6 +854,20 @@
                 }
             }
         }
+    }
+
+
+    .shared-desktop-alert { // 正在共享提示框
+        position: absolute;
+        top: 115px;
+        // bottom: 200px;
+        left: 100px;
+
+        border: none;
+        background: #fff;
+
+        min-width: 200px;
+        // text-align: center;
     }
     
 }

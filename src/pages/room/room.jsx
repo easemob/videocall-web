@@ -1239,8 +1239,8 @@ class Room extends Component {
                 rec, 
                 recMerge,
 
-                // maxTalkerCount:1,//会议最大主播人数
-                // maxVideoCount:1, //会议最大视频数
+                maxTalkerCount:3,//会议最大主播人数
+                maxVideoCount:2, //会议最大视频数
                 // maxPubDesktopCount:1 //会议最大共享桌面数
             }
         }
@@ -1397,6 +1397,14 @@ class Room extends Component {
             // useDeployMore:true //开启多集群部署
         });
 
+
+        // test start
+        emedia.config({
+            
+            forceVideoBitrate: 1500,
+            forceMinVideoBitrate: 500,
+        });
+        // test end
         let memName = appkey +'_'+ username;
         emedia.mgr.setIdentity(memName, token); //设置memName 、token
 
@@ -2094,11 +2102,18 @@ class Room extends Component {
             var options = {
                 withAudio:true,
                 confrId,
+                // video: {
+                //     bitrate: 1500
+                // },
                 stopSharedCallback: () => _this.stop_share_desktop()
             }
             await emedia.mgr.shareDesktopWithAudio(options);
-            
             this.setState({ shared_desktop:true });
+
+            // old desktop stream
+            // emedia.mgr.shareDesktopWithAudio(options).then(() => {
+            //     this.setState({ shared_desktop:true });
+            // })
         } catch (err) {
             if( //用户取消也是 -201 所以两层判断
                 err.error == -201 &&
@@ -2172,6 +2187,9 @@ class Room extends Component {
             // _this._stream_bind_video();//绑定标签
             _this.insert_video_by_stream(member,stream);
 
+            if(stream.type == 1) { // 桌面流还要移动 位置
+                _this.move_v_els()
+            }
 
             let { push_cdn, user_room } = _this.state;
             if(push_cdn && user_room.isCreator){ //只有创建者 并且开启推流 可更新布局
@@ -2187,7 +2205,7 @@ class Room extends Component {
 
         let el = document.createElement('video');
         el.autoplay = true;
-
+        
         let w_el = document.querySelector('[sid='+ stream.id +']');
 
         if( stream.located() ){
@@ -2209,14 +2227,17 @@ class Room extends Component {
     move_v_els() {
         // 通过原生 js， 移动 DOM 节点
         let v_wrappers = document.querySelectorAll('.v-wrapper[sid]');
-        console.log('v-wrappers', v_wrappers);
 
         for (let index = 0; index < v_wrappers.length; index++) {
             const v_wrapper = v_wrappers[index];
             
             let sId = v_wrapper.getAttribute('sid');
             let v_el = this.state.subed_v_els[sId];
-    
+
+            let prev_v_el = v_wrapper.querySelector('video');
+            prev_v_el ? v_wrapper.removeChild(prev_v_el) : '' // 先删除
+
+
             v_wrapper.appendChild(v_el);
         }
 
@@ -2242,8 +2263,7 @@ class Room extends Component {
 
         let _this = this;
         this.setState({ stream_list },() => {
-            // _this._stream_bind_video()//绑定标签
-            // _this.move_v_els()
+            _this.move_v_els()
             let { push_cdn, user_room } = _this.state;
             if(push_cdn && user_room.isCreator){ //只有创建者 并且开启推流 可更新布局
 
@@ -2254,28 +2274,6 @@ class Room extends Component {
         })
     }
     
-    // _stream_bind_video() {
-    //     let { stream_list } = this.state;
-
-    //     let _this = this;
-    //     stream_list.map(item => {
-    //         if( item ){
-
-    //             let { id } = item.stream;
-    //             let el = _this.refs[`list-video-${id}`];
-    
-    //             let { stream, member } = item;
-    //             if( stream.located() ){
-    //                 emedia.mgr.streamBindVideo(stream, el);
-    //             }else {
-    //                 emedia.mgr.subscribe(member, stream, true, true, el)
-    //             }
-    //         }
-    //     });
-
-    //     // 当bind stream to video 就监听一下video
-    //     this._on_media_chanaged();
-    // }
     // 检查是否有别人共享了桌面或者 白板
     _check_has_shared(type) {
 
@@ -2391,32 +2389,31 @@ class Room extends Component {
             this.setState({ stream_list })
         }
         let _this = this;
-        // for (const key in this.refs) {
-        //     let el = this.refs[key];
-            
-            // 监听音视频的开关
-            emedia.mgr.onMediaChanaged(el, function (constaints, stream) {
-                _this.set_stream_item_changed(constaints, stream.id)
-            });
+        
+        // 监听音视频的开关
+        emedia.mgr.onMediaChanaged(el, function (constaints, stream) {
+            _this.set_stream_item_changed(constaints, stream.id)
+        });
 
-            // 监听谁在说话
-            // 函数触发，就证明有人说话 拿 stream_id
-            // emedia.mgr.onSoundChanaged(el, function (meterData, stream) {
-            //     let { instant } = meterData;
-            //     let volume = Math.round((instant/3) * 100);
-            //     volume = volume > 14 ? 14 : volume;
+        process.env.NODE_ENV == 'development' ? '' : 
+        // 监听谁在说话
+        // 函数触发，就证明有人说话 拿 stream_id
+        emedia.mgr.onSoundChanaged(el, function (meterData, stream) {
+            let { instant } = meterData;
+            let volume = Math.round((instant/3) * 100);
+            volume = volume > 14 ? 14 : volume;
 
 
-            //     let prev_volumes = _this.state.prev_volumes;
-            //     if(prev_volumes[stream.id] != volume ) { // 避免每次 setState
-            //         _this.sound_chanaged(stream.id, volume);
-            //         prev_volumes[stream.id] != volume
-            //         _this.setState({
-            //             prev_volumes
-            //         })
-            //     }
-            // });
-        // } 
+            let prev_volumes = _this.state.prev_volumes;
+            if(prev_volumes[stream.id] != volume ) { // 避免每次 setState
+                _this.sound_chanaged(stream.id, volume);
+                prev_volumes[stream.id] != volume
+                _this.setState({
+                    prev_volumes
+                })
+            }
+        });
+
     }
 
     // 推流 CDN 更新布局 九宫格布局
@@ -3251,7 +3248,8 @@ class Room extends Component {
             nickName, 
             headimg_url_suffix,
             roomName,
-            talker_full_btn_disable
+            talker_full_btn_disable,
+            shared_desktop
         } = this.state;
 
         return (
@@ -3390,6 +3388,13 @@ class Room extends Component {
                         : ''
                     }
 
+                { shared_desktop ? 
+                    <Alert 
+                        className='shared-desktop-alert' 
+                        message="您正在共享桌面" 
+                        type="info"
+                        showIcon
+                    /> : ''}
                 </Layout>
             </div>
         )
