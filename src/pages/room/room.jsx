@@ -1110,7 +1110,9 @@ class Room extends Component {
             roomName: getPageQuery('roomName') ||'',
             nickName:'',
             user: {},
-            user_room: null,
+            user_room: {
+                role: 3
+            },
             own_stream:null,
             own_desktop_stream: null, // 自己发起的桌面流，不显示（保存起来，用于停止共享）
             own_member: null,
@@ -1202,7 +1204,7 @@ class Room extends Component {
             recMerge
         } = this.state;
 
-        let role = this.state.join_as_audience ? 1 : 3;
+        let role = this.state.user_room.role;
         
         let params = {
             roomName,
@@ -1256,7 +1258,7 @@ class Room extends Component {
             },this.get_confr_info)
     
             if(user_room.role == emedia.mgr.Role.AUDIENCE){ // 观众不推流
-                if(this.state.join_as_audience){//观众默认关闭摄像头、麦克风
+                if(role == 1){//观众默认关闭摄像头、麦克风
                     this.setState({
                         audio: false,
                         video: false
@@ -1312,16 +1314,15 @@ class Room extends Component {
         });
     }
     talker_is_full_handle() { // 主播已满，修改角色
-        this.setState({
-            join_as_audience: true
-        })
         // this.setState({
-        //     user_room: {
-        //         role: 1
-        //     },
+        //     join_as_audience: true
         // })
+        this.setState({
+            user_room: {
+                role: 1
+            }
+        }, this.join_handle)
 
-        this.join_handle()
     }
     // join fun end
 
@@ -1333,6 +1334,15 @@ class Room extends Component {
         }
         for (const key in values) {
             this.setState({ [key]: values[key]})
+        }
+
+        // 设置角色
+        if(values.join_as_audience){
+            this.setState({
+                user_room: {
+                    role: 1
+                }
+            })
         }
     }
     async componentDidMount () {
@@ -1857,7 +1867,7 @@ class Room extends Component {
         // }
         let constraints = { audio, video };
         if(!audio && !video) { // mic 和 camera 都没打开， 直接publish会报错
-            constranints = { audio: true }
+            constraints = { audio: true }
         }
 
         let _this = this;
@@ -1869,7 +1879,11 @@ class Room extends Component {
                     _this.close_audio()
                 }
             } catch (error) {
-                notification_show('error', '发布流失败')
+                console.error('发布流失败',error);
+                notification_show('error', '发布流失败');
+                if(error.error == -201) {
+                    notification_show('error', '请检查摄像头或麦克风是否被允许');
+                }
             }
         })()
 
@@ -2242,7 +2256,8 @@ class Room extends Component {
         }else {
             emedia.mgr.subscribe(member, stream, true, true, el)
             .then(() => w_el.appendChild(el))
-            .catch(() => {
+            .catch(error => {
+                console.error('订阅流失败',error);
                 notification_show('error', `订阅${member.nickName}的流失败`)
             });
         }
@@ -2868,7 +2883,8 @@ class Room extends Component {
                 shared_desktop,
                 room_setting_modal_show,
                 roomName,
-                own_member
+                own_member,
+                join_as_audience
             } = this.state
         
 
@@ -2917,19 +2933,24 @@ class Room extends Component {
                         />
                         <span className="text">{video ? '关闭视频' : '开启视频'}</span>
                     </div>
-                    <div className="wrapper">
-                        { role == 1 ? 
-                            <img 
-                                src={get_img_url_by_name('apply-to-talker-icon')} 
-                                onClick={() => this.apply_talker()}
-                            /> :
-                            <img 
-                                src={get_img_url_by_name('apply-to-audience-icon')} 
-                                onClick={() => this.apply_audience()}
-                            /> 
-                        }
-                        <span>{ role == 1 ? '上麦' : '下麦' }</span>
-                    </div>
+                    {/* 只有以观众进入的才展示 上下麦按钮 */}
+                    { join_as_audience ? 
+                        <div className="wrapper">
+                            { role == 1 ? 
+                                <img 
+                                    src={get_img_url_by_name('apply-to-talker-icon')} 
+                                    onClick={() => this.apply_talker()}
+                                /> :
+                                <img 
+                                    src={get_img_url_by_name('apply-to-audience-icon')} 
+                                    onClick={() => this.apply_audience()}
+                                /> 
+                            }
+                            <span>{ role == 1 ? '上麦' : '下麦' }</span>
+                        </div>
+                        : ''
+                    }
+
                     { this.get_white_board_action_btn() }
                     
                     <div className="wrapper">
