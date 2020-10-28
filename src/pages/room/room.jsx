@@ -1218,8 +1218,8 @@ class Room extends Component {
                 rec, 
                 recMerge,
 
-                maxTalkerCount:3,//会议最大主播人数
-                maxVideoCount:2, //会议最大视频数
+                // maxTalkerCount:3,//会议最大主播人数
+                // maxVideoCount:2, //会议最大视频数
                 // maxPubDesktopCount:1 //会议最大共享桌面数
             }
         }
@@ -2442,13 +2442,15 @@ class Room extends Component {
             _this.set_stream_item_changed(constaints, stream.id)
         });
 
-        process.env.NODE_ENV == 'development' ? '' : 
+        // process.env.NODE_ENV == 'development' ? '' : 
         // 监听谁在说话
         // 函数触发，就证明有人说话 拿 stream_id
         emedia.mgr.onSoundChanaged(el, function (meterData, stream) {
             let { instant } = meterData;
-            let volume = Math.round((instant/3) * 100);
-            volume = volume > 14 ? 14 : volume;
+            let one_unit_pic = 0.25/14; // 音量（instant）high 为 0.25，也就是图片显示为14
+
+            let volume = Math.round(instant/one_unit_pic);
+            volume = volume > 14 ? 14 : volume; 
 
 
             let prev_volumes = _this.state.prev_volumes;
