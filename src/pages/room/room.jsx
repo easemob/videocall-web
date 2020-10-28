@@ -1131,7 +1131,7 @@ class Room extends Component {
             shared_desktop:false,
 
             set_nickname_modal_show: false,
-            room_setting_modal_show: true,
+            room_setting_modal_show: false,
 
             cdn:'', //推流 cdn url
             push_cdn: false, //是否开启推流 cdn 
@@ -1285,13 +1285,13 @@ class Room extends Component {
 
         }
     }
-    join_handle(e){
+    join_handle = (e) => {
+
         e && e.preventDefault();
         // if(!this.state.nickName) { //没有昵称直接返回 不加入
         //     this.set_nickname_modal.show()
         //     return
         // }
-        
         var _this = this;
         this.props.form.validateFields((err, values) => {
             let { 
@@ -1592,6 +1592,22 @@ class Room extends Component {
             _this.open_audio()
         }
 
+        // 网络质量检测
+        emedia.mgr.onNetworkWeak = sId => {
+            let { stream_list } = _this.state;
+            let item = stream_list.filter(item => (item && item.stream.id == sId));
+
+            if(item[0]) {
+                notification_show('error', `${item.member.nickName}的网络质量差`)
+            }
+        }
+        emedia.mgr.onNetworkDisconnect = sId => {
+            let { stream_list } = _this.state;
+            let item = stream_list.filter(item => (item && item.stream.id == sId));
+            if(item[0]) {
+                notification_show('error', `${item.member.nickName}的网络链接断开`)
+            }
+        }
 
         // electorn 兼容 
         if(emedia.isElectron) {
@@ -2995,14 +3011,14 @@ class Room extends Component {
                                 } 
                             onClick={() => this.toggle_room_setting_modal()}
                         /> 
-                        <span>房间设置</span>
+                        <span>会议信息</span>
                     </div>
                     
 
                 </div>
         )
     }
-    // toggle 房间设置 modal
+    // toggle 会议信息 modal
     toggle_room_setting_modal() {
         let { room_setting_modal_show } = this.state;
 
@@ -3347,10 +3363,10 @@ class Room extends Component {
                                 
                             })(
                                 <Input
-                                prefix={<Icon type="home" style={{ color: 'rgba(0,0,0,.25)' }} />}
-                                placeholder="会议名称"
-                                maxLength={18}
-                                autoComplete="off"
+                                    prefix={<Icon type="home" style={{ color: 'rgba(0,0,0,.25)' }} />}
+                                    placeholder="会议名称"
+                                    maxLength={18}
+                                    autoComplete="off"
                                 />
                             )}
                             
@@ -3365,7 +3381,8 @@ class Room extends Component {
                             })(
                                 <Input
                                 prefix={<Icon type="user" style={{ color: 'rgba(0,0,0,.25)' }} />}
-                                placeholder="昵称"
+                                placeholder="请输入您的昵称"
+                                autoComplete="off"
                                 />
                             )}
                             
@@ -3384,6 +3401,7 @@ class Room extends Component {
                         <div className="action">
                             <Button 
                                 type="primary"  
+                                htmlType="submit"
                                 onClick={this.join_handle}
                                 loading={this.state.loading}
                                 style={{width:'100%'}}
@@ -3443,8 +3461,8 @@ class Room extends Component {
                     </Header>
 
                     {/* 白板的iframe  */}
-                    { this.get_white_board_content_el() }
                     <Content>
+                        { this.get_white_board_content_el() }
                         {this._get_main_el()}
                     </Content>
                     {this._get_drawer_component()}
