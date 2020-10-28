@@ -1121,7 +1121,7 @@ class Room extends Component {
             stream_list: [null],//默认 main画面为空
             talker_list_show:false,
             audio:true,
-            video:true,
+            video:false,
             headimg_url_suffix: '',
             joined: false,
             loading: false,
@@ -1398,14 +1398,6 @@ class Room extends Component {
             // useDeployMore:true //开启多集群部署
         });
 
-
-        // test start
-        emedia.config({
-            
-            forceVideoBitrate: 1500,
-            forceMinVideoBitrate: 500,
-        });
-        // test end
         let memName = appkey +'_'+ username;
         emedia.mgr.setIdentity(memName, token); //设置memName 、token
 
@@ -1598,14 +1590,14 @@ class Room extends Component {
             let item = stream_list.filter(item => (item && item.stream.id == sId));
 
             if(item[0]) {
-                notification_show('error', `${item.member.nickName}的网络质量差`)
+                notification_show('error', `${item[0].member.nickName}的网络质量差`)
             }
         }
         emedia.mgr.onNetworkDisconnect = sId => {
             let { stream_list } = _this.state;
             let item = stream_list.filter(item => (item && item.stream.id == sId));
             if(item[0]) {
-                notification_show('error', `${item.member.nickName}的网络链接断开`)
+                notification_show('error', `${item[0].member.nickName}的网络链接断开`)
             }
         }
 
@@ -2160,18 +2152,11 @@ class Room extends Component {
             var options = {
                 withAudio:true,
                 confrId,
-                // video: {
-                //     bitrate: 1500
-                // },
-                stopSharedCallback: () => _this.stop_share_desktop()
+                stopSharedCallback: sId => _this.stop_share_desktop(sId)
             }
             await emedia.mgr.shareDesktopWithAudio(options);
             this.setState({ shared_desktop:true });
 
-            // old desktop stream
-            // emedia.mgr.shareDesktopWithAudio(options).then(() => {
-            //     this.setState({ shared_desktop:true });
-            // })
         } catch (err) {
             if( //用户取消也是 -201 所以两层判断
                 err.error == -201 &&
@@ -2182,8 +2167,8 @@ class Room extends Component {
         }
     }
 
-    stop_share_desktop() {
-        
+    stop_share_desktop(sId) {
+        console.log('stop_share_desktop', sId);
         let { own_desktop_stream } = this.state;
 
         if(!own_desktop_stream) return;
