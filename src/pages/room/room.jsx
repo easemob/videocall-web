@@ -1181,7 +1181,8 @@ class Room extends Component {
         this.confirm_destory_white_board = this.confirm_destory_white_board.bind(this);   
         this.create_white_board = this.create_white_board.bind(this);
         
-        this.talker_list_scroll = debounce(this.talker_list_scroll_stop.bind(this), 1000)
+        // this.talker_list_scroll = debounce(this.talker_list_scroll_stop.bind(this), 1000)
+        this.talker_list_scroll = this.talker_list_scroll.bind(this, this.talker_list_scroll_stop.bind(this), 1000)();
 
 
         this.hide_leaveConfirmModal = this.hide_leaveConfirmModal.bind(this);
@@ -1480,7 +1481,6 @@ class Room extends Component {
                     })
                     return
                 }
-
 
                 window.location.reload()
             });
@@ -1797,8 +1797,6 @@ class Room extends Component {
         }
         this.setState({ headimg_url_suffix })
     }
-
-
 
     _set_nickname = nickName => {
         let { username } = this.state.user;
@@ -2227,7 +2225,6 @@ class Room extends Component {
             stream_list:stream_list,
             talker_list_show: true
         },() => {
-            // _this._stream_bind_video();//绑定标签
             _this.insert_video_by_stream(member,stream);
 
             if(stream.type == 1) { // 桌面流还要移动 位置
@@ -2248,18 +2245,29 @@ class Room extends Component {
 
         let el = document.createElement('video');
         el.autoplay = true;
+
+        if(stream.located() && stream.type != 1) { //自己的媒体流 镜像显示
+            el.setAttribute('is-main-media', true);
+        }
         
         let w_el = document.querySelector('[sid='+ stream.id +']');
+        w_el.classList.add("loading");
 
         if( stream.located() ){
             emedia.mgr.streamBindVideo(stream, el);
+            w_el.classList.remove("loading");
             w_el.appendChild(el)
         }else {
-            emedia.mgr.subscribe(member, stream, true, true, el)
-            .then(() => w_el.appendChild(el))
+            let sub_optioon = { video: true, audio: true };
+            emedia.mgr.subscribe(member, stream, sub_optioon.video, sub_optioon.audio, el)
+            .then(() => { 
+                w_el.appendChild(el);
+                w_el.classList.remove("loading");
+            })
             .catch(error => {
                 console.error('订阅流失败',error);
-                notification_show('error', `订阅${member.nickName}的流失败`)
+                notification_show('error', `订阅${member.nickName}的流失败`);
+                w_el.classList.remove("loading");
             });
         }
         this._on_media_chanaged_by_stream(el, stream)
@@ -2443,7 +2451,7 @@ class Room extends Component {
             _this.set_stream_item_changed(constaints, stream.id)
         });
 
-        // process.env.NODE_ENV == 'development' ? '' : 
+        process.env.NODE_ENV == 'development' ? '' : 
         // 监听谁在说话
         // 函数触发，就证明有人说话 拿 stream_id
         emedia.mgr.onSoundChanaged(el, function (meterData, stream) {
@@ -2619,36 +2627,86 @@ class Room extends Component {
                 
     }
 
+
+    // 主播列表滚动 
+    // 更新订阅，不可见的只订阅音频
+    talker_list_scroll(fun, wait) {
+        // 当画面不可见时，重新订阅（只订阅音频）
+        let timer;
+        let _this = this;
+
+        return function() {
+            // 获取需要更新的video元素
+            let els = document.querySelectorAll('.talker-list-wrapper video');
+
+            const prev_not_visible = sid => {
+                let { not_visible_arr } = _this.state;
+                if(not_visible_arr.indexOf(sid) > -1) {
+                    // 上次是不可见
+
+                    return true
+                }
+
+                return false
+            }
+
+            const getItemBySid = sid => { // 获取 stream 和 member
+                if(!sid) {
+                    return null
+                }
+    
+                let result = null
+                _this.state.stream_list.map(item => {
+                    if(
+                        item
+                        && item.member
+                        && item.stream
+                        && item.stream.id == sid
+                    ) {
+                        result = item
+                    }
+                })
+    
+                return result
+            }
+
+            for (let index = 0; index < els.length; index++) {
+
+                const element = els[index];
+
+
+                let par_node = element.parentNode;
+                let sid = element.getAttribute('hx_stream');
+
+                let item = getItemBySid(sid);
+
+                if(item.stream.voff) { continue }; //不添加
+
+                if(
+                    !_this.talker_is_not_visble(element)
+                    && prev_not_visible(sid)
+                ) { 
+                    par_node.classList.add('loading');
+                } else {
+                    par_node.classList.remove('loading');
+                }
+
+            }
+            
+            
+                if(timer) clearTimeout(timer);
+
+                timer = setTimeout(fun, wait)
+        }
+    }
     // 主播列表滚动 停止
     // 更新订阅，不可见的只订阅音频
     talker_list_scroll_stop() {
-
         
         // 当画面不可见时，重新订阅（只订阅音频）
 
         // 获取需要更新的video元素
         let els = document.querySelectorAll('.talker-list-wrapper video');
-
-        let body_height = document.body.getBoundingClientRect().height;
-        let el_height = els[0].getBoundingClientRect().height;
-        let footer_height = document.querySelector('footer').getBoundingClientRect().height;
-
-        const isNotVisible = element => { // 元素是否可见
-
-            let top = element.getBoundingClientRect().top;
-
-            if(top >= (body_height-footer_height )) { // top 比(容器 - 底部栏高度 )还高，说明在容器下面
-                return true
-            }
-
-            // 在上面 往上滑 125：是第一个可见的 video 的位置 滑出去了看不见了
-            if(top < 125 && Math.abs(top - 125) > el_height) {
-                return true
-            }
-
-            return false // 介于 125 ~ boby_height 之间的为可见
-
-        }
 
         let _this = this;
         const getItemBySid = sid => { // 获取 stream 和 member
@@ -2714,16 +2772,28 @@ class Room extends Component {
             if(!sid) { continue };
             
             let item = getItemBySid(sid);
+
+            if(item.stream.voff) { continue }; // 没开视频，不管都订阅，不影响性能
             if(item.stream.located()) { continue }; // 自己的不做任何处理
-            if(isNotVisible(element)) {
+
+
+            let par_node = element.parentNode;
+                    
+
+            if(this.talker_is_not_visble(element)) {
                 
                 if(visible_change(sid, 'not-visible')) {// 检测可见行是否变化
                     // 不订阅视频
                     emedia.mgr.subscribe(item.member, item.stream, false, true, element)
+                    .then(() => par_node.classList.remove('loading'))
+                    .catch(() => par_node.classList.remove('loading'))
                 } 
             } else { // 恢复订阅视频
                 if(visible_change(sid, 'visible')) { 
+                    
                     emedia.mgr.subscribe(item.member, item.stream, true, true, element)
+                    .then(() => par_node.classList.remove('loading'))
+                    .catch(() => par_node.classList.remove('loading'))
                 }
             }
 
@@ -2731,6 +2801,28 @@ class Room extends Component {
         }
         
     }
+
+    // 主播列表内主播是否可见
+    talker_is_not_visble(element) {
+        let body_height = document.body.getBoundingClientRect().height;
+        let el_height = document.querySelectorAll('.talker-list-wrapper .v-wrapper')[0].getBoundingClientRect().height;
+        let footer_height = document.querySelector('footer').getBoundingClientRect().height;
+
+        let top = element.getBoundingClientRect().top;
+
+        if(top >= (body_height-footer_height )) { // top 比(容器 - 底部栏高度 )还高，说明在容器下面
+            return true
+        }
+
+        // 在上面 往上滑 125：是第一个可见的 video 的位置 滑出去了看不见了
+        if(top < 125 && Math.abs(top - 125) > el_height) {
+            return true
+        }
+
+        return false // 介于 125 ~ boby_height 之间的为可见
+
+    }
+
 
     // 视频列表
     _get_drawer_component() {
@@ -2790,7 +2882,6 @@ class Room extends Component {
             let { volume, type, voff, aoff } = main_stream.stream; //volume 说话音量
             let { is_me } = main_stream.member;
 
-            let is_own_media_stream = is_me && type != emedia.StreamType.DESKTOP //是否是自己的人像流
 
             return (
                 <div className="main-video-wrapper v-wrapper" sid={main_stream.stream.id} >
@@ -2800,11 +2891,7 @@ class Room extends Component {
                         <img src={get_img_url_by_name('volume-' + (volume || 0))} className='is-speak-icon'/>
                     }
                     { voff ? this._voff_show(main_stream, 'main') :'' } {/* 覆盖到 video上, 不能替换否则 stream 丢失*/}
-                    {/* <video 
-                        style={ is_own_media_stream ? { transform: 'rotateY(180deg)' } : {}}
-                        ref={`list-video-${main_stream.stream.id}`} 
-                        autoPlay
-                    ></video> */}
+                    
                 </div>
             )
         }
