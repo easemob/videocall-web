@@ -1590,7 +1590,7 @@ class Room extends Component {
             let item = stream_list.filter(item => (item && item.stream.id == sId));
 
             if(item[0]) {
-                notification_show('error', `${item[0].member.nickName}的网络质量差`)
+                // notification_show('error', `${item[0].member.nickName}的网络质量差`)
             }
         }
         emedia.mgr.onNetworkDisconnect = sId => {
@@ -2451,7 +2451,7 @@ class Room extends Component {
             _this.set_stream_item_changed(constaints, stream.id)
         });
 
-        process.env.NODE_ENV == 'development' ? '' : 
+        // process.env.NODE_ENV == 'development' ? '' : 
         // 监听谁在说话
         // 函数触发，就证明有人说话 拿 stream_id
         emedia.mgr.onSoundChanaged(el, function (meterData, stream) {
