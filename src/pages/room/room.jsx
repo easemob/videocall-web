@@ -20,7 +20,8 @@ import {
     Radio,
     Tabs,
     Alert,
-    notification
+    notification,
+    Spin
 } from 'antd';
 import './room.less';
 
@@ -37,7 +38,7 @@ function notification_show(type, message) {
         message,
         placement: 'bottomRight',
         className: 'openNotification',
-        // duration: 1000
+        // duration: 50000
     });
 }
 const requireContext = require.context('../../assets/images', true, /^\.\/.*\.png$/)// 通过webpack 获取 img
@@ -338,7 +339,10 @@ class HeadImages extends Component {
         this.setState({ visible: true })
     }
     handleCancel = () => {
-        this.setState({ visible: false })
+        this.setState({ 
+            visible: false,
+            headimg_url_suffix: ''
+        })
     }
 
     change(headimg_url_suffix) {
@@ -773,18 +777,13 @@ function RoomSetting(props) {
         <div 
             className={`room-setting${room_setting_modal_show ? " open":''}`}
         >
-            {/* <img 
-                className='close-icon'
-                src={get_img_url_by_name('close-handle-icon')} 
-                onClick={() => props.toggle_room_setting_modal()}/> */}
-
-            <Icon 
-                className='close-icon'
-                type="close-circle"
-                //  theme="filled" 
-                onClick={() => props.toggle_room_setting_modal()}
-            />
-            <div className="title">房间名称</div>
+            <div className="toast-title">
+                <span>会议名称</span>
+                <Icon 
+                    type="close-circle"
+                    onClick={() => props.toggle_room_setting_modal()}
+                />
+            </div>
             <div className="text">{roomName}</div>
             <div className="item-wrapper">
                 <div className="title">主持人</div>
@@ -830,9 +829,9 @@ function toast(config) {
     }
     ReactDOM.render(
         <div className="toast" >
-            <div className="title">
+            <div className="toast-title">
                 <span>提示</span>
-                <img src={get_img_url_by_name('close-handle-icon')} onClick={() => destroy()}/>
+                <Icon type="close-circle" onClick={() => destroy()}/>
             </div>
             <div className="text"> 退出后将结束互动白板 </div>
             <div className="handle">
@@ -892,7 +891,7 @@ function inviteModal(info) {
     ReactDOM.render(
         <div className="inviteModal" >
             <span className="close" onClick={destroy}>x</span>
-            <div className="title">房间名称：{roomName}</div>
+            <div className="title">会议名称：{roomName}</div>
             <textarea value={content} readOnly id='invite'></textarea>
             <Button type="primary" onClick={copy}>复制</Button>
         </div>, div)
@@ -1162,6 +1161,11 @@ class Room extends Component {
 
             prev_volumes: {}, // 每个流的音量集合
             subed_v_els: {}, // 订阅过的 video 标签
+
+            join_btn_disable: false, // 是否可以加入会议
+
+            main_loading: false, // meeting-loading
+            main_loading_text: ''
         };
 
         this.toggle_main = this.toggle_main.bind(this);
@@ -1189,7 +1193,28 @@ class Room extends Component {
         this.leave_handle = this.leave_handle.bind(this);
         this.leave = this.leave.bind(this);
     }
+    whetherCanUse() {
 
+        if(navigator.userAgent.indexOf('Mobile') > -1) { // 手机不支持
+            this.setState({
+                join_btn_disable: true
+            })
+
+            return
+        }
+        if(
+            !emedia.isChrome &&
+            !emedia.isElectron && 
+            !emedia.isEdge && 
+            !emedia.isSafari 
+        ) {
+            this.setState({
+                join_btn_disable: true
+            })
+        }
+        
+
+    }
     // join fun start
     async join() {
 
@@ -1348,8 +1373,12 @@ class Room extends Component {
     }
     async componentDidMount () {
 
+        this.whetherCanUse()
         
-        const user = await login();
+        this.setState({loading: true})
+        const user = await login(); // IM 登录
+        this.setState({loading: false})
+
         this.setState({ user })
         this.init_emedia_callback(); //登录之后 初始化 emedia
         this.init_white_board(); //初始化 white_board
@@ -1820,12 +1849,9 @@ class Room extends Component {
         let { confrId } = this.state.user_room;
 
         return <div className="leave-confirm-modal" >
-                <div className="title">
+                <div className="toast-title">
                     <span>警告</span>
-                    <img 
-                        src={get_img_url_by_name('close-handle-icon')} 
-                        onClick={this.hide_leaveConfirmModal}
-                    />
+                    <Icon type="close-circle"  onClick={this.hide_leaveConfirmModal} />
                 </div>
                 <div className="text">
                     如果您不想结束会议<br></br>请在离开会议前指定新的主持人
@@ -2451,7 +2477,7 @@ class Room extends Component {
             _this.set_stream_item_changed(constaints, stream.id)
         });
 
-        // process.env.NODE_ENV == 'development' ? '' : 
+        process.env.NODE_ENV == 'development' ? '' : 
         // 监听谁在说话
         // 函数触发，就证明有人说话 拿 stream_id
         emedia.mgr.onSoundChanaged(el, function (meterData, stream) {
@@ -2592,7 +2618,7 @@ class Room extends Component {
                     <NetworkStatus />
                     <div onClick={this.leave_handle} className="leave-action">
                         <img src={get_img_url_by_name('leave-icon')} />
-                        <span>离开房间</span>
+                        <span>离开会议</span>
                     </div>
                 </div>
             </div>
@@ -3013,7 +3039,7 @@ class Room extends Component {
                              get_img_url_by_name('micro-is-close-icon')} 
                              onClick={() => this.toggle_audio()}
                         />
-                        <span className="text">{ audio ? '静音' : '解除静音'}</span>
+                        <span className="text">{ audio ? '禁言' : '解除禁言'}</span>
                     </div>
                     <div className="wrapper">
                         <img src={video ? 
@@ -3227,6 +3253,11 @@ class Room extends Component {
                     white_board_is_created: true,
                     am_i_white_board_creator: true,
                     talker_list_show: true,
+
+
+                    // main_loading: false,
+                    // main_loading_text: ''
+                    
                 })
                 message.success('创建白板成功');
                 _this.emit_white_board_is_created()
@@ -3241,6 +3272,10 @@ class Room extends Component {
             },
         }
 
+        this.setState({
+            main_loading: true,
+            main_loading_text: '正在创建白板...'
+        })
         this.white_board.join(params)
 
     }
@@ -3300,6 +3335,10 @@ class Room extends Component {
         let { roomId } = white_board_info;
         let { username: userName, token } = this.state.user;
 
+        this.setState({
+            main_loading: true,
+            main_loading_text: '正在销毁白板...'
+        })
         let _this = this;
         this.white_board.destroy({
             roomId,
@@ -3311,6 +3350,9 @@ class Room extends Component {
                 _this.setState({ 
                     white_board_is_created: false,
                     am_i_white_board_creator: false,
+
+                    main_loading: false,
+                    main_loading_text: ''
                 });// 默认不显示
                 _this.emit_white_board_is_destroyed()
             },
@@ -3320,7 +3362,6 @@ class Room extends Component {
         });
         
     }
-
 
     control_talker_list = () => {
         this.setState(state => ({ talker_list_show: !state.talker_list_show }) )
@@ -3378,6 +3419,22 @@ class Room extends Component {
         })
     }
 
+    // loading 状态 --- 白板、退出。。。
+    _get_loading_el() {
+
+        let {
+            main_loading,
+            main_loading_text
+        } = this.state;
+
+        if(main_loading) {
+            return <div className="main-looading-wrapper">
+                        <Spin tip={main_loading_text}> </Spin>
+                    </div>
+        }
+
+        return ''
+    }
     render() {
 
         const { getFieldDecorator } = this.props.form;
@@ -3392,7 +3449,8 @@ class Room extends Component {
             headimg_url_suffix,
             roomName,
             talker_full_btn_disable,
-            shared_desktop
+            shared_desktop,
+            join_btn_disable
         } = this.state;
 
         return (
@@ -3408,8 +3466,7 @@ class Room extends Component {
                     }}
                 >
                     {
-                        emedia.browser != 'chrome' ? 
-                        <Alert message="为了最佳使用体验，请使用chrome浏览器" type="warning" closable/> : ''
+                        join_btn_disable ? <Alert message="为了最佳使用体验，请使用chrome浏览器" type="warning" closable/> : ''
                     }
                     <div className="header">
                         <img src={get_img_url_by_name('logo-text-login')} />
@@ -3428,8 +3485,8 @@ class Room extends Component {
                             {getFieldDecorator('roomName', {
                                 initialValue: roomName || process.env.REACT_APP_ROOMNAME,
                                 rules: [
-                                    { required: true, message: '请输入房间名称' },
-                                    { min:3 , message: '房间名称不能少于3位'},
+                                    { required: true, message: '请输入会议名称' },
+                                    { min:3 , message: '会议名称不能少于3位'},
                                     { pattern: /^[\u4e00-\u9fa5\w-]*$/, message: '请输入中文、英文、数字、减号或下划线'},
                                 ],
                                 
@@ -3477,6 +3534,7 @@ class Room extends Component {
                                 onClick={this.join_handle}
                                 loading={this.state.loading}
                                 style={{width:'100%'}}
+                                disabled={join_btn_disable}
                             >
                                 加入会议
                             </Button>
@@ -3518,11 +3576,6 @@ class Room extends Component {
                         // is_localStorage_nickName_admin={this.state.is_localStorage_nickName_admin}
                         ref={setting_modal => this.setting_modal = setting_modal} />
 
-                    {/* 设置昵称框 */}
-                    {/* <SetNickName 
-                        ref={set_nickname_modal => this.set_nickname_modal = set_nickname_modal}
-                        _set_nickname={this._set_nickname}
-                    />     */}
                 </div>
                 
                 {/* room compoent */}
@@ -3534,9 +3587,11 @@ class Room extends Component {
 
                     {/* 白板的iframe  */}
                     <Content>
+                        { this._get_loading_el()}
                         { this.get_white_board_content_el() }
                         {this._get_main_el()}
                     </Content>
+                    
                     {this._get_drawer_component()}
                     <Footer>
                         {this._get_action_el()}
