@@ -1,6 +1,6 @@
 import React, {Component, PureComponent} from 'react' 
 import ReactDOM from 'react-dom'
-import debounce from 'lodash.debounce'; // 防抖函数
+// import debounce from 'lodash.debounce'; // 防抖函数
 
 import { 
     Layout,
@@ -1185,7 +1185,6 @@ class Room extends Component {
         this.confirm_destory_white_board = this.confirm_destory_white_board.bind(this);   
         this.create_white_board = this.create_white_board.bind(this);
         
-        // this.talker_list_scroll = debounce(this.talker_list_scroll_stop.bind(this), 1000)
         this.talker_list_scroll = this.talker_list_scroll.bind(this, this.talker_list_scroll_stop.bind(this), 1000)();
 
 
