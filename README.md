@@ -38,6 +38,7 @@ http://docs-im.easemob.com/rtc/conference/web
 2. electorn 使用教程 http://www.electronjs.org/
 
 `使用travis-ci 部署到生产环境`
+1. .travis.yml/ travis.sh 必需存在
 
 `常见问题`
 1. npm start --->  TypeError [ERR_INVALID_ARG_TYPE]: The "path" argument must be of type string. Received type undefined
