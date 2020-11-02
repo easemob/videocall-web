@@ -1,6 +1,6 @@
 import React, {Component, PureComponent} from 'react' 
 import ReactDOM from 'react-dom'
-import debounce from 'lodash.debounce'; // 防抖函数
+// import debounce from 'lodash.debounce'; // 防抖函数
 
 import { 
     Layout,
@@ -18,7 +18,10 @@ import {
     Menu,
     Switch,
     Radio,
-    Tabs
+    Tabs,
+    Alert,
+    notification,
+    Spin
 } from 'antd';
 import './room.less';
 
@@ -28,8 +31,16 @@ import whiteBoards from './whiteboardsSdk';
 import login from './login.js'
 import { appkey, version } from '../../config';
 
-// assets
 
+// assets
+function notification_show(type, message) {
+    notification[type]({
+        message,
+        placement: 'bottomRight',
+        className: 'openNotification',
+        // duration: 50000
+    });
+}
 const requireContext = require.context('../../assets/images', true, /^\.\/.*\.png$/)// 通过webpack 获取 img
 const get_img_url_by_name = (name) => {
     if(!name){
@@ -195,7 +206,7 @@ class MuteAction extends Component {
         let { mute_all } = this.state
         return(
 
-            <Tooltip title={ mute_all ? '解除禁言' : '全体禁言' } placement="left">
+            <Tooltip title={ mute_all ? '解除静音' : '全体静音' } placement="left">
                 {
                     mute_all ? 
                     <img className='mute-action' src={get_img_url_by_name('mute-all-icon')} onClick={this.unmute_all_action}/> :
@@ -301,66 +312,6 @@ class ManageTalker extends Component {
     }
 }
 
-// 以函数调用的形式，显示提示框 appendChild + ReactDom.render()
-const LeaveConfirmModal = {
-
-    visible: false,
-    roleToken:null,
-    show(roleToken) {
-        
-        this.roleToken = roleToken;
-        this.visible = true;
-        this.render();
-    },
-
-    hide() {
-        this.visible = false;
-        this.render()
-    },
-
-    leave() {
-        emedia.mgr.exitConference();
-        this.visible = false;
-        this.render();
-    },
-
-    async end() {
-        if(!this.roleToken) {
-            return
-        }
-        this.visible = false;
-        await emedia.mgr.destroyConference(this.roleToken);
-        this.render();
-    },
-
-    render() {
-        let dom = document.querySelector('#leave-confirm-modal');
-        if(!dom) {
-            dom = document.createElement('div');
-            dom.setAttribute('id', 'leave-confirm-modal');
-            document.querySelector('.meeting').appendChild(dom);
-        }
-
-        ReactDOM.render(
-            <div 
-                className="leave-confirm-modal" 
-                style={{display: this.visible ? 'block' : 'none'}}
-            >
-                <div className="title">
-                    <span>警告</span>
-                    <img src={get_img_url_by_name('close-handle-icon')} onClick={() => this.hide()}/>
-                </div>
-                <div className="text">
-                    如果您不想结束会议<br></br>请在离开会议前指定新的主持人
-                </div>
-                <div className="handle">
-                    <span className="leave" onClick={() => this.leave()}>离开会议</span><br />
-                    <span className="end" onClick={() => this.end()}>结束会议</span>
-                </div>
-            </div>, dom)
-    }
-}
-
 // 获取头像组件
 import axios from 'axios'
 class HeadImages extends Component {
@@ -388,7 +339,10 @@ class HeadImages extends Component {
         this.setState({ visible: true })
     }
     handleCancel = () => {
-        this.setState({ visible: false })
+        this.setState({ 
+            visible: false,
+            headimg_url_suffix: ''
+        })
     }
 
     change(headimg_url_suffix) {
@@ -451,37 +405,22 @@ class HeadImages extends Component {
 class Setting extends Component {
 
     state = {
-        nickName: '',
-        video: false,
-        audio: true,
         visible: false,
         headimg_url_suffix: '',
+
         push_cdn: false,
+        cdn: '',
         rec:false,
         recMerge:false,
-        user_room:{
-            role: 3 
-        }
+        join_as_audience: false
     }
-
-    componentDidMount() {
-        this._map_props_to_state();
-    }
+    
     componentWillReceiveProps(nextProps) {
 
         this.setState({ 
-            nickName: nextProps.nickName,   
+            // nickName: nextProps.nickName,   
             headimg_url_suffix: nextProps.headimg_url_suffix,   
         });
-    }
-    _map_props_to_state() {
-        let { nickName, video, audio } = this.props
-
-        this.setState({
-            nickName, 
-            video, 
-            audio
-        })
     }
     show = () => {
         this.setState({ visible: true })
@@ -494,28 +433,27 @@ class Setting extends Component {
         let {
             headimg_url_suffix,
             nickName,
-            video,
-            audio,
             cdn,
             push_cdn,
             rec,
             recMerge,
-            user_room
+            join_as_audience
         } = this.state;
 
         
         // 回调上去
         this.props._get_setting_values({
-            headimg_url_suffix, nickName, video, audio, cdn, push_cdn,
-            rec,recMerge,user_room
+            headimg_url_suffix, nickName, cdn, push_cdn,
+            rec,recMerge,join_as_audience
         })
         this.setState({ visible: false });
-        if(this.props.is_localStorage_nickName_admin) {
-            window.localStorage.setItem('easemob-nickName', nickName); //保存 nickName
-        }
+        // if(this.props.is_localStorage_nickName_admin) {
+        //     window.localStorage.setItem('easemob-nickName', nickName); //保存 nickName
+        // }
         window.sessionStorage.setItem('easemob-headimg_url_suffix', headimg_url_suffix); //保存 头像 url
         
     }
+    
     headimg_change = headimg_url_suffix => {
 
         if(!headimg_url_suffix){
@@ -524,73 +462,35 @@ class Setting extends Component {
 
         this.setState({ headimg_url_suffix })
     }
-    nick_name_change = e => {
-        const { value } = e.target;
+
+
+
+
+    handleChange = (event) => {
+        const target = event.target;
+        const value = target.name === 'cdn' ? target.value : target.checked;
+        const name = target.name;
+    
         this.setState({
-            nickName:value
-        })
-    }
-    video_change = e => {
-        this.setState({
-            video:e.target.checked
-        })
+          [name]: value
+        });
 
     }
-    audio_change = e => {
-        this.setState({
-            audio:e.target.checked
-        })
-    }
-    rec_change = e => {
-        this.setState({
-            rec:e.target.checked
-        })
-    }
-    recMerge_change = e => {
-        this.setState({
-            recMerge:e.target.checked
-        })
-    }
+    
     // 更换头像
     get_headimg_url = () => {
         this.head_images.show()
     }
-    // cdn 地址
-    cdn_change = e => {
-        const { value } = e.target;
-        this.setState({
-            cdn:value
-        })
-    }
-    // 是否开启 CDN 切换
-    toggle_push_cdn = checked => {
-        this.setState({
-            push_cdn:checked
-        })
-    }
-    // 是否以观众身份加入会议
-    toggle_join_role = checked => {
-        this.setState({
-            user_room:{
-                role: checked ? 1 : 3 //开启就是观众身份，关闭就是主播身份
-            }
-        })
-    }
+    
     render() {
         let { 
             visible, 
-            headimg_url_suffix, 
-            audio, 
-            video, 
-            nickName,
-            cdn,
-            push_cdn,
-            rec,
-            recMerge
+            headimg_url_suffix
          } = this.state;
 
         let base_url = 'https://download-sdk.oss-cn-beijing.aliyuncs.com/downloads/RtcDemo/headImage/';
 
+        let _this = this;
         return (
             <Modal 
                 visible={visible}
@@ -601,80 +501,104 @@ class Setting extends Component {
                 className="setting-modal"
                 width="470px"
             >
-                        <div className="avatar-wrapper ">
-                            <Avatar 
-                                src={base_url + headimg_url_suffix} 
-                                onClick={this.get_headimg_url} 
-                                className='setting-avatar'/>
-                            <HeadImages 
-                            ref={head_images => this.head_images = head_images}
-                            headimg_change={this.headimg_change}/>
-                        </div>
-                        <div>昵称</div>
-                        <Input placeholder="请输入昵称" value={nickName} onChange={this.nick_name_change} />
-                        <Checkbox checked={video} onChange={this.video_change}>打开摄像头</Checkbox>
-                        <Checkbox checked={audio} onChange={this.audio_change}>打开麦克风</Checkbox>
-                        <Checkbox checked={rec} onChange={this.rec_change}>开启录制</Checkbox>
-                        <Checkbox checked={recMerge} onChange={this.recMerge_change}>开启录制合并</Checkbox>
-                        <Input placeholder="推流CDN地址" value={cdn} onChange={this.cdn_change} disabled={!push_cdn} />
-                        <span>是否推流 CDN</span> <Switch onChange={this.toggle_push_cdn}></Switch><br />
-                        <span>是否以观众身份加入会议</span> <Switch onChange={this.toggle_join_role}></Switch>
-                        <div className="action">
-                            <Button type="primary" onClick={this.handleSubmit}>保存并返回</Button>
-                        </div>
+                <form action="" onSubmit={this.handleSubmit}>
+
+                    <div className="avatar-wrapper ">
+                        <Avatar 
+                            src={base_url + headimg_url_suffix} 
+                            onClick={this.get_headimg_url} 
+                            className='setting-avatar'/>
+                        <HeadImages 
+                        ref={head_images => this.head_images = head_images}
+                        headimg_change={this.headimg_change}/>
+                    </div>
+
+                    {
+                        [
+                            {key: 'push_cdn', text: '开启推流 CDN'},
+                            {key: 'cdn', text: '推流CDN地址'},
+                            {key: 'rec', text: '开启录制'},
+                            {key: 'recMerge', text: '开启录制合并'},
+                            {key: 'join_as_audience', text: '以观众身份加入会议'},
+                        ].map((item,index) => {
+                            let { key, text } = item;
+                            if(key == 'cdn') {
+                                return <Input 
+                                            key={index}
+                                            placeholder={text} 
+                                            name={key} 
+                                            value={_this.state[key]} 
+                                            onChange={_this.handleChange} disabled={!_this.state['push_cdn']} 
+                                        />
+                            } else {
+                                return <Checkbox 
+                                        key={index}
+                                        checked={_this.state[key]} 
+                                        name={key} 
+                                        onChange={_this.handleChange}>{text}</Checkbox>
+                            }
+                        })
+                    }
+                    
+                    <div className='join_as_audience_tips'>加入后只能观看，需申请上麦</div>
+
+                    <div className="action">
+                        <Button type="primary" onClick={this.handleSubmit}>保存并返回</Button>
+                    </div>
+                </form>
             </Modal>
         )
     }
 }
 
 // 设置昵称 modal
-class SetNickName extends Component {
-    state = {
-        visible: false,
-        nickName:''
-    }
+// class SetNickName extends Component {
+//     state = {
+//         visible: false,
+//         nickName:''
+//     }
 
-    show = () => {
-        this.setState({ visible: true })
-    }
+//     show = () => {
+//         this.setState({ visible: true })
+//     }
 
-    hide() {
-        this.setState({ visible: false })
-    }
-    onChange = e => {
+//     hide() {
+//         this.setState({ visible: false })
+//     }
+//     onChange = e => {
         
-        const { value } = e.target;
+//         const { value } = e.target;
 
-        this.setState({
-            nickName: value
-        })
-    }
-    submit() {
-        let { nickName } = this.state;
-        this.props._set_nickname(nickName);
+//         this.setState({
+//             nickName: value
+//         })
+//     }
+//     submit() {
+//         let { nickName } = this.state;
+//         this.props._set_nickname(nickName);
         
-        this.setState({ visible: false })
-    }
+//         this.setState({ visible: false })
+//     }
 
-    render() {
-        return (
-            <Modal 
-                title="请设置昵称"
-                visible={this.state.visible}
-                onCancel={() => this.hide()}
-                onOk={() => this.submit()}
-                okText="确定"
-                cancelText="取消"
-                getContainer={false}
-                width="350px"
-                centered={true}
-                className="set-nickname-modal"
-            >
-                <Input onChange={this.onChange}/>
-            </Modal>
-        )
-    }
-}
+//     render() {
+//         return (
+//             <Modal 
+//                 title="请设置昵称"
+//                 visible={this.state.visible}
+//                 onCancel={() => this.hide()}
+//                 onOk={() => this.submit()}
+//                 okText="确定"
+//                 cancelText="取消"
+//                 getContainer={false}
+//                 width="350px"
+//                 centered={true}
+//                 className="set-nickname-modal"
+//             >
+//                 <Input onChange={this.onChange}/>
+//             </Modal>
+//         )
+//     }
+// }
 
 // 申请主持人 或者 放弃主持人操作
 function AdminChangeHandle(props) {
@@ -853,18 +777,13 @@ function RoomSetting(props) {
         <div 
             className={`room-setting${room_setting_modal_show ? " open":''}`}
         >
-            {/* <img 
-                className='close-icon'
-                src={get_img_url_by_name('close-handle-icon')} 
-                onClick={() => props.toggle_room_setting_modal()}/> */}
-
-            <Icon 
-                className='close-icon'
-                type="close-circle"
-                //  theme="filled" 
-                onClick={() => props.toggle_room_setting_modal()}
-            />
-            <div className="title">房间名称</div>
+            <div className="toast-title">
+                <span>会议名称</span>
+                <Icon 
+                    type="close-circle"
+                    onClick={() => props.toggle_room_setting_modal()}
+                />
+            </div>
             <div className="text">{roomName}</div>
             <div className="item-wrapper">
                 <div className="title">主持人</div>
@@ -910,9 +829,9 @@ function toast(config) {
     }
     ReactDOM.render(
         <div className="toast" >
-            <div className="title">
+            <div className="toast-title">
                 <span>提示</span>
-                <img src={get_img_url_by_name('close-handle-icon')} onClick={() => destroy()}/>
+                <Icon type="close-circle" onClick={() => destroy()}/>
             </div>
             <div className="text"> 退出后将结束互动白板 </div>
             <div className="handle">
@@ -972,7 +891,7 @@ function inviteModal(info) {
     ReactDOM.render(
         <div className="inviteModal" >
             <span className="close" onClick={destroy}>x</span>
-            <div className="title">房间名称：{roomName}</div>
+            <div className="title">会议名称：{roomName}</div>
             <textarea value={content} readOnly id='invite'></textarea>
             <Button type="primary" onClick={copy}>复制</Button>
         </div>, div)
@@ -1187,7 +1106,7 @@ class Room extends Component {
         this.state = {
 
             // join start
-            roomName:'',
+            roomName: getPageQuery('roomName') ||'',
             nickName:'',
             user: {},
             user_room: {
@@ -1207,7 +1126,7 @@ class Room extends Component {
             loading: false,
 
             talker_is_full:false, //主播已满
-
+            talker_full_btn_disable: false, // talker_is_full model button disabled
             shared_desktop:false,
 
             set_nickname_modal_show: false,
@@ -1237,7 +1156,16 @@ class Room extends Component {
             am_i_white_board_creator: false, // 我是否是白板创建者
 
 
-            not_visible_arr: [] // 主播列表不可见标签集合，默认都可见
+            not_visible_arr: [], // 主播列表不可见标签集合，默认都可见
+            leaveConfirmModal_show: false,
+
+            prev_volumes: {}, // 每个流的音量集合
+            subed_v_els: {}, // 订阅过的 video 标签
+
+            join_btn_disable: false, // 是否可以加入会议
+
+            main_loading: false, // meeting-loading
+            main_loading_text: ''
         };
 
         this.toggle_main = this.toggle_main.bind(this);
@@ -1257,13 +1185,40 @@ class Room extends Component {
         this.confirm_destory_white_board = this.confirm_destory_white_board.bind(this);   
         this.create_white_board = this.create_white_board.bind(this);
         
-        this.talker_list_scroll = debounce(this.talker_list_scroll_stop.bind(this), 1000)
-    }
+        this.talker_list_scroll = this.talker_list_scroll.bind(this, this.talker_list_scroll_stop.bind(this), 1000)();
 
+
+        this.hide_leaveConfirmModal = this.hide_leaveConfirmModal.bind(this);
+        this.leave_handle = this.leave_handle.bind(this);
+        this.leave = this.leave.bind(this);
+    }
+    whetherCanUse() {
+
+        if(navigator.userAgent.indexOf('Mobile') > -1) { // 手机不支持
+            this.setState({
+                join_btn_disable: true
+            })
+
+            return
+        }
+        if(
+            !emedia.isChrome &&
+            !emedia.isElectron && 
+            !emedia.isEdge && 
+            !emedia.isSafari 
+        ) {
+            this.setState({
+                join_btn_disable: true
+            })
+        }
+        
+
+    }
     // join fun start
     async join() {
 
-        this.setState({ loading:true, talker_is_full:false })
+        this.setState({ loading:true, talker_is_full:false });
+
         let {
             roomName,
             nickName,
@@ -1274,7 +1229,7 @@ class Room extends Component {
             recMerge
         } = this.state;
 
-        let { role } = this.state.user_room;
+        let role = this.state.user_room.role;
         
         let params = {
             roomName,
@@ -1288,8 +1243,8 @@ class Room extends Component {
                 rec, 
                 recMerge,
 
-                // maxTalkerCount:1,//会议最大主播人数
-                // maxVideoCount:1, //会议最大视频数
+                maxTalkerCount:3,//会议最大主播人数
+                maxVideoCount:2, //会议最大视频数
                 // maxPubDesktopCount:1 //会议最大共享桌面数
             }
         }
@@ -1318,22 +1273,36 @@ class Room extends Component {
         try {
             const user_room = await emedia.mgr.joinRoom(params);
     
-            this.startTime();
-            
+            process.env.NODE_ENV == 'development' ? '' : this.startTime();
+
+            this._set_config_to_localStorage(); 
+
             this.setState({ 
                 joined: true,
                 user_room,
             },this.get_confr_info)
     
             if(user_room.role == emedia.mgr.Role.AUDIENCE){ // 观众不推流
+                if(role == 1){//观众默认关闭摄像头、麦克风
+                    this.setState({
+                        audio: false,
+                        video: false
+                    })
+                }
                 return
             }
             this.publish();
+
+            window.location.hash = '' //加入会议成功，清除query 防止退出后，重复加入
             
         } catch (error) { 
             
             if(/cause: -523|cause:-523/.test(error.errorMessage)){ // 主播已满
-                this.setState({ talker_is_full: true, loading:false });
+                this.setState({ 
+                    talker_is_full: true, 
+                    loading:false,
+                    talker_full_btn_disable: true
+                });
                 return
             }
             message.error(error.errorMessage || error.message) // errorMessage: 接口错误， message：js 语法错误 
@@ -1341,25 +1310,27 @@ class Room extends Component {
 
         }
     }
-    join_handle(){
+    join_handle = (e) => {
 
-        if(!this.state.nickName) { //没有昵称直接返回 不加入
-            this.set_nickname_modal.show()
-            return
-        }
+        e && e.preventDefault();
+        // if(!this.state.nickName) { //没有昵称直接返回 不加入
+        //     this.set_nickname_modal.show()
+        //     return
+        // }
         var _this = this;
-        let { role } = this.state.user_room;
         this.props.form.validateFields((err, values) => {
-            
-            let { audio, video } = _this.state;
-            if(role == 1){//观众默认关闭摄像头、麦克风
-                audio = false;
-                video = false;
-            }
-            _this.setState({
-                roomName: values.roomName,
-                audio,
+            let { 
+                roomName,
+                nickName,
+                audio, 
                 video
+             } = values;
+
+            _this.setState({
+                roomName,
+                audio,
+                video,
+                nickName
             },() => {
                 if (!err) {
                     _this.join()
@@ -1368,13 +1339,15 @@ class Room extends Component {
         });
     }
     talker_is_full_handle() { // 主播已满，修改角色
+        // this.setState({
+        //     join_as_audience: true
+        // })
         this.setState({
             user_room: {
                 role: 1
             }
-        })
+        }, this.join_handle)
 
-        this.join_handle()
     }
     // join fun end
 
@@ -1387,11 +1360,24 @@ class Room extends Component {
         for (const key in values) {
             this.setState({ [key]: values[key]})
         }
+
+        // 设置角色
+        if(values.join_as_audience){
+            this.setState({
+                user_room: {
+                    role: 1
+                }
+            })
+        }
     }
     async componentDidMount () {
 
+        this.whetherCanUse()
         
-        const user = await login();
+        this.setState({loading: true})
+        const user = await login(); // IM 登录
+        this.setState({loading: false})
+
         this.setState({ user })
         this.init_emedia_callback(); //登录之后 初始化 emedia
         this.init_white_board(); //初始化 white_board
@@ -1399,26 +1385,34 @@ class Room extends Component {
         let _this = this;
         window.onbeforeunload=function(e){     
             var e = window.event||e;  
+            if(
+                _this.state.am_i_white_board_creator
+            ) { // 是白板创建者 首先销毁白板
+
+                _this.emit_white_board_is_destroyed();
+                _this.destroy_white_board()
+            }
 
             emedia.mgr.exitConference();
 
-            if(_this.state.is_localStorage_nickName_admin) {// localStorage_nickName_admin 放开使用权限
-                window.localStorage.setItem('easemob-nickName-used', false);
-            }
+            // if(_this.state.is_localStorage_nickName_admin) {// localStorage_nickName_admin 放开使用权限
+            //     window.localStorage.setItem('easemob-nickName-used', false);
+            // }
         } 
 
-        this._get_nickname_from_session();
+        // this._get_nickname_from_session();
+        this._get_config_from_localStorage();
         this._get_headimg_url_suffix_from_session();
 
         if(getPageQuery('roomName')) { // 有roomName 认定为邀请的，自动加入会议
             let _this = this;
             setTimeout(() => {
                 _this.join_handle()
-                window.location.hash = '' // 防止退出后，重复加入
-            },1200) // 给个延时，让页面充分加载
+            },1000) // 给个延时，让页面充分加载
         }
     }
 
+    
     componentWillUnmount() {
         clearInterval(this.timeID);
     }
@@ -1457,6 +1451,7 @@ class Room extends Component {
 
         };
 
+        
         emedia.mgr.onConferenceExit = function (reason, failed) {
             function get_failed_reason(failed) {
                 let reasons = {
@@ -1497,18 +1492,26 @@ class Room extends Component {
 
             console.log('onConferenceExit', reason, failed);
             
-            if(reason !== 0) { // 正常挂断不给提示
+            
+            if(
+                _this.state.am_i_white_board_creator &&
+                reason == 11
+            ){ // 会议结束、 销毁白板,
+                _this.destroy_white_board();
+            }
 
-                let { am_i_white_board_creator } = _this.state;
-
-                if(
-                    am_i_white_board_creator &&
-                    reason == 11
-                ){ // 会议结束、 销毁白板,
-                    _this.destroy_white_board();
+            
+            message.warn(reason_text, 1.5, () => {
+                
+                if(_this.state.talker_is_full){ // 主播已满的加入会议，也会走正常挂断 -- 但是不能刷新
+                    _this.setState({
+                        talker_full_btn_disable: false
+                    })
+                    return
                 }
-            } 
-            message.warn(reason_text, 2, () => window.location.reload());
+
+                window.location.reload()
+            });
         };
         emedia.mgr.onConfrAttrsUpdated = function(confr_attrs){ 
             console.log('onConfrAttrsUpdated', confr_attrs);
@@ -1591,24 +1594,40 @@ class Room extends Component {
 
         // 某人被管理员静音或取消静音的回调
         emedia.mgr.onMuted = () => { 
-            message.warn('你被管理员禁言了'); 
+            message.warn('你被管理员静音了'); 
             _this.close_audio()
         }
         emedia.mgr.onUnmuted = () => { 
-            message.success('你被管理员取消了禁言');
+            message.success('你被管理员取消了静音');
             _this.open_audio()
         }
 
         // 全体静音或取消全体静音
         emedia.mgr.onMuteAll = () => { 
-            message.warn('管理员启用了全体禁言');
-            setTimeout(_this.close_audio, 500)  //如果禁言，加入会议就会触发，所以设置延时
+            message.warn('管理员启用了全体静音');
+            setTimeout(_this.close_audio, 500)  //如果静音，加入会议就会触发，所以设置延时
         }
         emedia.mgr.onUnMuteAll = () => { 
-            message.success('管理员取消了全体禁言');
+            message.success('管理员取消了全体静音');
             _this.open_audio()
         }
 
+        // 网络质量检测
+        emedia.mgr.onNetworkWeak = sId => {
+            let { stream_list } = _this.state;
+            let item = stream_list.filter(item => (item && item.stream.id == sId));
+
+            if(item[0]) {
+                // notification_show('error', `${item[0].member.nickName}的网络质量差`)
+            }
+        }
+        emedia.mgr.onNetworkDisconnect = sId => {
+            let { stream_list } = _this.state;
+            let item = stream_list.filter(item => (item && item.stream.id == sId));
+            if(item[0]) {
+                notification_show('error', `${item[0].member.nickName}的网络链接断开`)
+            }
+        }
 
         // electorn 兼容 
         if(emedia.isElectron) {
@@ -1766,7 +1785,38 @@ class Room extends Component {
         }
 
     }
-    // 从 sessionStore 拿头像 url
+
+    // 从 昵称、音视频开启状态、头像路径，存储在本地
+    _get_config_from_localStorage() {
+        let config = window.localStorage.getItem('em-meeting-config');
+        console.log('config', config);
+        config = JSON.parse(config);
+
+        for (const key in config) {
+            this.setState({
+                [key]: config[key]
+            })
+        }
+
+    }
+    _set_config_to_localStorage() {
+
+        // 将昵称、音频开启状态、视频开启状态 存储起来
+        let {
+            nickName,
+            audio,
+            video
+        } = this.state;
+
+        let config = {
+            nickName,
+            audio,
+            video
+        }
+        
+        window.localStorage.setItem('em-meeting-config', JSON.stringify(config))
+    }
+    
     _get_headimg_url_suffix_from_session() {
         let headimg_url_suffix = window.sessionStorage.getItem('easemob-headimg_url_suffix');
 
@@ -1775,31 +1825,67 @@ class Room extends Component {
         }
         this.setState({ headimg_url_suffix })
     }
+
     _set_nickname = nickName => {
         let { username } = this.state.user;
 
-        this.setState({ nickName: nickName || username });
+        this.setState({ nickName: nickName || username },this.join_handle);
 
         if(this.state.is_localStorage_nickName_admin) { 
             // 是否是 localStorage_nickName 拥有者，一个浏览器只有第一个页面拥有localStorage_nickName
             window.localStorage.setItem('easemob-nickName', nickName);
         }
     }
-    leave() {
 
-        let { role, confrId } = this.state.user_room;
+    // 退出会议相关
+    hide_leaveConfirmModal() {
+        this.setState({ leaveConfirmModal_show: false})
+    }
+    get_leaveConfirmModal() {
+        let { leaveConfirmModal_show } = this.state;
+        if(!leaveConfirmModal_show) return '';
+        
+        let { confrId } = this.state.user_room;
+
+        return <div className="leave-confirm-modal" >
+                <div className="toast-title">
+                    <span>警告</span>
+                    <Icon type="close-circle"  onClick={this.hide_leaveConfirmModal} />
+                </div>
+                <div className="text">
+                    如果您不想结束会议<br></br>请在离开会议前指定新的主持人
+                </div>
+                <div className="handle">
+                    <span className="leave" onClick={this.leave}>离开会议</span><br />
+                    <span className="end" onClick={() => emedia.mgr.destroyConference(confrId)}>结束会议</span>
+                </div>
+            </div>
+    }
+    leave_handle() {
+
+        let { role } = this.state.user_room;
 
         if(role == 7) {
-            LeaveConfirmModal.show(confrId);
+            this.setState( state => ({leaveConfirmModal_show: !state.leaveConfirmModal_show}) )
         } else {
             let is_confirm = window.confirm('确定退出会议吗？');
     
             if(is_confirm){
-                emedia.mgr.exitConference();
+                this.leave()
             }
         }
 
     }
+    leave(){
+        let { am_i_white_board_creator } = this.state;
+        if(am_i_white_board_creator) {
+            this.emit_white_board_is_destroyed()
+            this.destroy_white_board()
+        }
+
+        setTimeout(emedia.mgr.exitConference,300) // 用于发送 销毁会议的消息
+    }
+
     publish() {
         let { audio, video }  = this.state;
         // video = { // 设置 video 分辨率
@@ -1810,7 +1896,28 @@ class Room extends Component {
         //         exact: 720
         //     }
         // }
-        emedia.mgr.publish({ audio, video });
+        let constraints = { audio, video };
+        if(!audio && !video) { // mic 和 camera 都没打开， 直接publish会报错
+            constraints = { audio: true }
+        }
+
+        let _this = this;
+        (async function() {
+            try {
+                await emedia.mgr.publish(constraints);
+                notification_show('success', '发布流成功');
+                if(!audio && !video) { // getUserMedia 后再关闭音频
+                    _this.close_audio()
+                }
+            } catch (error) {
+                console.error('发布流失败',error);
+                notification_show('error', '发布流失败');
+                if(error.error == -201) {
+                    notification_show('error', '请检查摄像头或麦克风是否被允许');
+                }
+            }
+        })()
+
     }
     // 上麦申请
     apply_talker() {
@@ -1917,11 +2024,8 @@ class Room extends Component {
         this.setState({ stream_list })
 
     }
+    
     toggle_main(index) {
-        if(!index) {
-            return
-        }
-
         let shared_content = this._check_has_shared();
         if(shared_content) { // 共享桌面或者白板，不可切换大图
             message.warn(`${shared_content == 'desktop' ? '有人在共享桌面，不可切换大图': '有人在共享白板，不可切换大图'}`);
@@ -1929,16 +2033,14 @@ class Room extends Component {
         }
 
         let { stream_list } = this.state;
-
         let first_item = stream_list.splice(index,1)[0];
         stream_list.unshift(first_item);
 
 
         this.setState({ 
             stream_list
-        },this._stream_bind_video)
+        }, this.move_v_els)
     }
-    
     // 更新 stream by id
     upload_stream_by_id(sId, source) { 
         // 只做一层拷贝
@@ -2073,11 +2175,11 @@ class Room extends Component {
             var options = {
                 withAudio:true,
                 confrId,
-                stopSharedCallback: () => _this.stop_share_desktop()
+                stopSharedCallback: sId => _this.stop_share_desktop(sId)
             }
             await emedia.mgr.shareDesktopWithAudio(options);
-            
             this.setState({ shared_desktop:true });
+
         } catch (err) {
             if( //用户取消也是 -201 所以两层判断
                 err.error == -201 &&
@@ -2088,8 +2190,8 @@ class Room extends Component {
         }
     }
 
-    stop_share_desktop() {
-        
+    stop_share_desktop(sId) {
+        console.log('stop_share_desktop', sId);
         let { own_desktop_stream } = this.state;
 
         if(!own_desktop_stream) return;
@@ -2148,7 +2250,11 @@ class Room extends Component {
             stream_list:stream_list,
             talker_list_show: true
         },() => {
-            _this._stream_bind_video();//绑定标签
+            _this.insert_video_by_stream(member,stream);
+
+            if(stream.type == 1) { // 桌面流还要移动 位置
+                _this.move_v_els()
+            }
 
             let { push_cdn, user_room } = _this.state;
             if(push_cdn && user_room.isCreator){ //只有创建者 并且开启推流 可更新布局
@@ -2159,6 +2265,66 @@ class Room extends Component {
             }
         })
     } 
+
+    insert_video_by_stream(member,stream) {
+
+        let el = document.createElement('video');
+        el.autoplay = true;
+
+        if(stream.located() && stream.type != 1) { //自己的媒体流 镜像显示
+            el.setAttribute('is-main-media', true);
+        }
+        
+        let w_el = document.querySelector('[sid='+ stream.id +']');
+        w_el.classList.add("loading");
+
+        if( stream.located() ){
+            emedia.mgr.streamBindVideo(stream, el);
+            w_el.classList.remove("loading");
+            w_el.appendChild(el)
+        }else {
+            let sub_optioon = { video: true, audio: true };
+            emedia.mgr.subscribe(member, stream, sub_optioon.video, sub_optioon.audio, el)
+            .then(() => { 
+                w_el.appendChild(el);
+                w_el.classList.remove("loading");
+            })
+            .catch(error => {
+                console.error('订阅流失败',error);
+                notification_show('error', `订阅${member.nickName}的流失败`);
+                w_el.classList.remove("loading");
+            });
+        }
+        this._on_media_chanaged_by_stream(el, stream)
+
+        let { subed_v_els } = this.state;
+        subed_v_els[stream.id] = el;
+        this.setState({
+            subed_v_els
+        });
+
+    }
+
+    move_v_els() {
+        // 通过原生 js， 移动 DOM 节点
+        let v_wrappers = document.querySelectorAll('.v-wrapper[sid]');
+
+        for (let index = 0; index < v_wrappers.length; index++) {
+            const v_wrapper = v_wrappers[index];
+            
+            let sId = v_wrapper.getAttribute('sid');
+            let v_el = this.state.subed_v_els[sId];
+
+            let prev_v_el = v_wrapper.querySelector('video');
+            prev_v_el ? v_wrapper.removeChild(prev_v_el) : '' // 先删除
+
+
+            v_wrapper.appendChild(v_el);
+        }
+
+    }
+
+
     _on_stream_removed(stream) {
         if(!stream){
             return
@@ -2178,8 +2344,7 @@ class Room extends Component {
 
         let _this = this;
         this.setState({ stream_list },() => {
-            _this._stream_bind_video()//绑定标签
-
+            _this.move_v_els()
             let { push_cdn, user_room } = _this.state;
             if(push_cdn && user_room.isCreator){ //只有创建者 并且开启推流 可更新布局
 
@@ -2190,28 +2355,6 @@ class Room extends Component {
         })
     }
     
-    _stream_bind_video() {
-        let { stream_list } = this.state;
-
-        let _this = this;
-        stream_list.map(item => {
-            if( item ){
-
-                let { id } = item.stream;
-                let el = _this.refs[`list-video-${id}`];
-    
-                let { stream, member } = item;
-                if( stream.located() ){
-                    emedia.mgr.streamBindVideo(stream, el);
-                }else {
-                    emedia.mgr.subscribe(member, stream, true, true, el)
-                }
-            }
-        });
-
-        // 当bind stream to video 就监听一下video
-        this._on_media_chanaged();
-    }
     // 检查是否有别人共享了桌面或者 白板
     _check_has_shared(type) {
 
@@ -2276,7 +2419,7 @@ class Room extends Component {
     }
 
     //监听音视频变化
-    _on_media_chanaged() {
+    _on_media_chanaged_by_stream(el, stream) {
 
         // 音视频变化，触发 setState stream_list
          this.set_stream_item_changed = (constaints, id) => {
@@ -2304,9 +2447,9 @@ class Room extends Component {
         }
 
         // 有人在说话处理流 status: is_speak 在说话、no_speak 没说话
-        this.sound_chanaged = (id, status) => { 
+        this.sound_chanaged = (id, volume) => { 
 
-            if(!status || !id) {
+            if(!id) {
                 return
             }
 
@@ -2318,8 +2461,7 @@ class Room extends Component {
                     item.stream &&
                     item.stream.id == id
                 ){
-                    
-                    item.stream.is_speak = (status == 'is_speak' ? true : false)
+                    item.stream.volume = volume
                 }
 
                 return item
@@ -2328,28 +2470,33 @@ class Room extends Component {
             this.setState({ stream_list })
         }
         let _this = this;
-        for (const key in this.refs) {
-            let el = this.refs[key];
-            
-            // 监听音视频的开关
-            emedia.mgr.onMediaChanaged(el, function (constaints, stream) {
-                _this.set_stream_item_changed(constaints, stream.id)
-            });
+        
+        // 监听音视频的开关
+        emedia.mgr.onMediaChanaged(el, function (constaints, stream) {
+            _this.set_stream_item_changed(constaints, stream.id)
+        });
 
-            // 监听谁在说话
-            // 函数触发，就证明有人说话 拿 stream_id
-            emedia.mgr.onSoundChanaged(el, function (meterData, stream) {
-                
-                let { instant } = meterData;
-                if(instant * 100 > 1){
-                    _this.sound_chanaged(stream.id, 'is_speak')
-                }else {
-                    _this.sound_chanaged(stream.id, 'no_speak')
+        process.env.NODE_ENV == 'development' ? '' : 
+        // 监听谁在说话
+        // 函数触发，就证明有人说话 拿 stream_id
+        emedia.mgr.onSoundChanaged(el, function (meterData, stream) {
+            let { instant } = meterData;
+            let one_unit_pic = 0.25/14; // 音量（instant）high 为 0.25，也就是图片显示为14
 
-                }
-                
-            });
-        } 
+            let volume = Math.round(instant/one_unit_pic);
+            volume = volume > 14 ? 14 : volume; 
+
+
+            let prev_volumes = _this.state.prev_volumes;
+            if(prev_volumes[stream.id] != volume ) { // 避免每次 setState
+                _this.sound_chanaged(stream.id, volume);
+                prev_volumes[stream.id] != volume
+                _this.setState({
+                    prev_volumes
+                })
+            }
+        });
+
     }
 
     // 推流 CDN 更新布局 九宫格布局
@@ -2468,9 +2615,9 @@ class Room extends Component {
 
                 <div className='leave-action-wrapper'>
                     <NetworkStatus />
-                    <div onClick={() => this.leave()} className="leave-action">
+                    <div onClick={this.leave_handle} className="leave-action">
                         <img src={get_img_url_by_name('leave-icon')} />
-                        <span>离开房间</span>
+                        <span>离开会议</span>
                     </div>
                 </div>
             </div>
@@ -2505,36 +2652,86 @@ class Room extends Component {
                 
     }
 
+
+    // 主播列表滚动 
+    // 更新订阅，不可见的只订阅音频
+    talker_list_scroll(fun, wait) {
+        // 当画面不可见时，重新订阅（只订阅音频）
+        let timer;
+        let _this = this;
+
+        return function() {
+            // 获取需要更新的video元素
+            let els = document.querySelectorAll('.talker-list-wrapper video');
+
+            const prev_not_visible = sid => {
+                let { not_visible_arr } = _this.state;
+                if(not_visible_arr.indexOf(sid) > -1) {
+                    // 上次是不可见
+
+                    return true
+                }
+
+                return false
+            }
+
+            const getItemBySid = sid => { // 获取 stream 和 member
+                if(!sid) {
+                    return null
+                }
+    
+                let result = null
+                _this.state.stream_list.map(item => {
+                    if(
+                        item
+                        && item.member
+                        && item.stream
+                        && item.stream.id == sid
+                    ) {
+                        result = item
+                    }
+                })
+    
+                return result
+            }
+
+            for (let index = 0; index < els.length; index++) {
+
+                const element = els[index];
+
+
+                let par_node = element.parentNode;
+                let sid = element.getAttribute('hx_stream');
+
+                let item = getItemBySid(sid);
+
+                if(item.stream.voff) { continue }; //不添加
+
+                if(
+                    !_this.talker_is_not_visble(element)
+                    && prev_not_visible(sid)
+                ) { 
+                    par_node.classList.add('loading');
+                } else {
+                    par_node.classList.remove('loading');
+                }
+
+            }
+            
+            
+                if(timer) clearTimeout(timer);
+
+                timer = setTimeout(fun, wait)
+        }
+    }
     // 主播列表滚动 停止
     // 更新订阅，不可见的只订阅音频
     talker_list_scroll_stop() {
-
         
         // 当画面不可见时，重新订阅（只订阅音频）
 
         // 获取需要更新的video元素
         let els = document.querySelectorAll('.talker-list-wrapper video');
-
-        let body_height = document.body.getBoundingClientRect().height;
-        let el_height = els[0].getBoundingClientRect().height;
-        let footer_height = document.querySelector('footer').getBoundingClientRect().height;
-
-        const isNotVisible = element => { // 元素是否可见
-
-            let top = element.getBoundingClientRect().top;
-
-            if(top >= (body_height-footer_height )) { // top 比(容器 - 底部栏高度 )还高，说明在容器下面
-                return true
-            }
-
-            // 在上面 往上滑 125：是第一个可见的 video 的位置 滑出去了看不见了
-            if(top < 125 && Math.abs(top - 125) > el_height) {
-                return true
-            }
-
-            return false // 介于 125 ~ boby_height 之间的为可见
-
-        }
 
         let _this = this;
         const getItemBySid = sid => { // 获取 stream 和 member
@@ -2600,16 +2797,28 @@ class Room extends Component {
             if(!sid) { continue };
             
             let item = getItemBySid(sid);
+
+            if(item.stream.voff) { continue }; // 没开视频，不管都订阅，不影响性能
             if(item.stream.located()) { continue }; // 自己的不做任何处理
-            if(isNotVisible(element)) {
+
+
+            let par_node = element.parentNode;
+                    
+
+            if(this.talker_is_not_visble(element)) {
                 
                 if(visible_change(sid, 'not-visible')) {// 检测可见行是否变化
                     // 不订阅视频
                     emedia.mgr.subscribe(item.member, item.stream, false, true, element)
+                    .then(() => par_node.classList.remove('loading'))
+                    .catch(() => par_node.classList.remove('loading'))
                 } 
             } else { // 恢复订阅视频
                 if(visible_change(sid, 'visible')) { 
+                    
                     emedia.mgr.subscribe(item.member, item.stream, true, true, element)
+                    .then(() => par_node.classList.remove('loading'))
+                    .catch(() => par_node.classList.remove('loading'))
                 }
             }
 
@@ -2617,6 +2826,28 @@ class Room extends Component {
         }
         
     }
+
+    // 主播列表内主播是否可见
+    talker_is_not_visble(element) {
+        let body_height = document.body.getBoundingClientRect().height;
+        let el_height = document.querySelectorAll('.talker-list-wrapper .v-wrapper')[0].getBoundingClientRect().height;
+        let footer_height = document.querySelector('footer').getBoundingClientRect().height;
+
+        let top = element.getBoundingClientRect().top;
+
+        if(top >= (body_height-footer_height )) { // top 比(容器 - 底部栏高度 )还高，说明在容器下面
+            return true
+        }
+
+        // 在上面 往上滑 125：是第一个可见的 video 的位置 滑出去了看不见了
+        if(top < 125 && Math.abs(top - 125) > el_height) {
+            return true
+        }
+
+        return false // 介于 125 ~ boby_height 之间的为可见
+
+    }
+
 
     // 视频列表
     _get_drawer_component() {
@@ -2669,30 +2900,23 @@ class Room extends Component {
                 </div>
     }
     
-
     _get_main_el() {
         let main_stream = this.state.stream_list[0];
 
         if(main_stream) {
-            let { is_speak, type, voff, aoff } = main_stream.stream; //is_speak 是否在说话
+            let { volume, type, voff, aoff } = main_stream.stream; //volume 说话音量
             let { is_me } = main_stream.member;
 
-            let is_own_media_stream = is_me && type != emedia.StreamType.DESKTOP //是否是自己的人像流
 
             return (
-                <div className="main-video-wrapper">
-                    { is_speak ? 
-                        <img src={get_img_url_by_name('is-speak-icon')} className='is-speak-icon'/> : ''
-                    }
+                <div className="main-video-wrapper v-wrapper" sid={main_stream.stream.id} >
+                    
                     { aoff ? 
-                        <img src={get_img_url_by_name('audio-is-close-icon')} className='is-speak-icon'/> : ''
+                        <img src={get_img_url_by_name('micro-is-close-icon')} className='is-speak-icon'/> : 
+                        <img src={get_img_url_by_name('volume-' + (volume || 0))} className='is-speak-icon'/>
                     }
                     { voff ? this._voff_show(main_stream, 'main') :'' } {/* 覆盖到 video上, 不能替换否则 stream 丢失*/}
-                    <video 
-                        style={ is_own_media_stream ? { transform: 'rotateY(180deg)' } : {}}
-                        ref={`list-video-${main_stream.stream.id}`} 
-                        autoPlay
-                    ></video>
+                    
                 </div>
             )
         }
@@ -2711,7 +2935,7 @@ class Room extends Component {
             return ''
         }
 
-        let { id, aoff, is_speak, type, voff } = stream;
+        let { id, aoff, volume, type, voff } = stream;
         let { role, is_me } = member;
         let { role:my_role } = this.state.user_room;//拿到我自己的角色
         let { username:my_username } = this.state.user;//拿到我自己的username
@@ -2723,8 +2947,10 @@ class Room extends Component {
         return (
             <div 
                 key={id} 
-                className="item"
-                onDoubleClick={ index ? () => {this.toggle_main(index)} : () => {}} //mian 图不需要点击事件，所以不传index÷
+                className="item v-wrapper"
+                sid={stream.id}
+                // onDoubleClick={ index ? () => {this.toggle_main(index)} : () => {}} //mian 图不需要点击事件，所以不传index÷
+                onDoubleClick={ () => this.toggle_main(index) } //mian 图不需要点击事件，所以不传index÷
             >
 
                 <div className="info">
@@ -2736,27 +2962,22 @@ class Room extends Component {
                     {/* 
                      * 对方没有开启音频 显示audio-is-close-icon
                      * 对方开启音频 不说话 不显示图标
-                     * 对方开启音频 在说话 显示is-speak-icon
+                     * 对方开启音频 在说话 显示volume-icon
                      */}
                     <div className="status-icon"> 
 
-                        <span className='icon-wrapper'>
-                            { role == 7 ? <img src={ get_img_url_by_name('admin-small-icon') }/> : ''}
-                        </span>
-                        <span className='icon-wrapper'>
-                            {
-                                aoff ? 
-                                <img src={get_img_url_by_name('audio-is-close-icon')} /> : 
-                                ( is_speak ? 
-                                <img src={get_img_url_by_name('is-speak-icon')} /> : '' )
-                            }
-                        </span>
+                        { role == 7 ? <img className='admin' src={ get_img_url_by_name('admin-small-icon') }/> : ''}
+                        {
+                            aoff ? 
+                            <img src={get_img_url_by_name('micro-is-close-icon')} /> : 
+                            <img src={get_img_url_by_name('volume-'+(volume || 0))} />
+                        }
                         
                     </div>
                 </div>
                 { voff ? this._voff_show(talker_item) :'' }
 
-                <video ref={`list-video-${id}`} autoPlay></video>
+                {/* <video ref={`list-video-${id}`} autoPlay></video> */}
                 {/* 不是主持人 并且不是主持人自己 并且流不是共享桌面 才加载 */}
                 { 
                     (my_role == 7 && !is_me && type != emedia.StreamType.DESKTOP) ? 
@@ -2777,7 +2998,8 @@ class Room extends Component {
                 shared_desktop,
                 room_setting_modal_show,
                 roomName,
-                own_member
+                own_member,
+                join_as_audience
             } = this.state
         
 
@@ -2826,19 +3048,24 @@ class Room extends Component {
                         />
                         <span className="text">{video ? '关闭视频' : '开启视频'}</span>
                     </div>
-                    <div className="wrapper">
-                        { role == 1 ? 
-                            <img 
-                                src={get_img_url_by_name('apply-to-talker-icon')} 
-                                onClick={() => this.apply_talker()}
-                            /> :
-                            <img 
-                                src={get_img_url_by_name('apply-to-audience-icon')} 
-                                onClick={() => this.apply_audience()}
-                            /> 
-                        }
-                        <span>{ role == 1 ? '上麦' : '下麦' }</span>
-                    </div>
+                    {/* 只有以观众进入的才展示 上下麦按钮 */}
+                    { join_as_audience ? 
+                        <div className="wrapper">
+                            { role == 1 ? 
+                                <img 
+                                    src={get_img_url_by_name('apply-to-talker-icon')} 
+                                    onClick={() => this.apply_talker()}
+                                /> :
+                                <img 
+                                    src={get_img_url_by_name('apply-to-audience-icon')} 
+                                    onClick={() => this.apply_audience()}
+                                /> 
+                            }
+                            <span>{ role == 1 ? '上麦' : '下麦' }</span>
+                        </div>
+                        : ''
+                    }
+
                     { this.get_white_board_action_btn() }
                     
                     <div className="wrapper">
@@ -2881,14 +3108,14 @@ class Room extends Component {
                                 } 
                             onClick={() => this.toggle_room_setting_modal()}
                         /> 
-                        <span>房间设置</span>
+                        <span>会议信息</span>
                     </div>
                     
 
                 </div>
         )
     }
-    // toggle 房间设置 modal
+    // toggle 会议信息 modal
     toggle_room_setting_modal() {
         let { room_setting_modal_show } = this.state;
 
@@ -3025,6 +3252,11 @@ class Room extends Component {
                     white_board_is_created: true,
                     am_i_white_board_creator: true,
                     talker_list_show: true,
+
+
+                    // main_loading: false,
+                    // main_loading_text: ''
+                    
                 })
                 message.success('创建白板成功');
                 _this.emit_white_board_is_created()
@@ -3039,6 +3271,10 @@ class Room extends Component {
             },
         }
 
+        this.setState({
+            main_loading: true,
+            main_loading_text: '正在创建白板...'
+        })
         this.white_board.join(params)
 
     }
@@ -3078,7 +3314,7 @@ class Room extends Component {
 
         this.setState({
             stream_list
-        }, this._stream_bind_video)
+        }, this.move_v_els)
     }
     // confirm destory_white_board
     confirm_destory_white_board() {
@@ -3098,16 +3334,24 @@ class Room extends Component {
         let { roomId } = white_board_info;
         let { username: userName, token } = this.state.user;
 
+        this.setState({
+            main_loading: true,
+            main_loading_text: '正在销毁白板...'
+        })
         let _this = this;
         this.white_board.destroy({
             roomId,
             userName,
             token,
             suc: function(data){
+
                 message.success('已经退出了白板');
                 _this.setState({ 
                     white_board_is_created: false,
                     am_i_white_board_creator: false,
+
+                    main_loading: false,
+                    main_loading_text: ''
                 });// 默认不显示
                 _this.emit_white_board_is_destroyed()
             },
@@ -3117,7 +3361,6 @@ class Room extends Component {
         });
         
     }
-
 
     control_talker_list = () => {
         this.setState(state => ({ talker_list_show: !state.talker_list_show }) )
@@ -3175,6 +3418,22 @@ class Room extends Component {
         })
     }
 
+    // loading 状态 --- 白板、退出。。。
+    _get_loading_el() {
+
+        let {
+            main_loading,
+            main_loading_text
+        } = this.state;
+
+        if(main_loading) {
+            return <div className="main-looading-wrapper">
+                        <Spin tip={main_loading_text}> </Spin>
+                    </div>
+        }
+
+        return ''
+    }
     render() {
 
         const { getFieldDecorator } = this.props.form;
@@ -3187,10 +3446,15 @@ class Room extends Component {
             video, 
             nickName, 
             headimg_url_suffix,
+            roomName,
+            talker_full_btn_disable,
+            shared_desktop,
+            join_btn_disable
         } = this.state;
 
         return (
             <div style={{width:'100%', height:'100%'}}>
+
                 {/* join compoent */}
                 <div 
                     className="login-wrap" 
@@ -3200,6 +3464,9 @@ class Room extends Component {
                         backgroundSize: 'cover'
                     }}
                 >
+                    {
+                        join_btn_disable ? <Alert message="为了最佳使用体验，请使用chrome浏览器" type="warning" closable/> : ''
+                    }
                     <div className="header">
                         <img src={get_img_url_by_name('logo-text-login')} />
                     </div>
@@ -3211,38 +3478,71 @@ class Room extends Component {
                         /> 
                             
                         <img src={get_img_url_by_name('logo')} />
-                        <div style={{marginTop:'17px'}}>欢迎使用环信多人会议</div>
-                        <div className='version-text'>Version:{version}</div>
+                        <div className='app-name'>环信视频会议</div>
+                        
                         <Item>
                             {getFieldDecorator('roomName', {
-                                initialValue: getPageQuery('roomName') || process.env.REACT_APP_ROOMNAME,
+                                initialValue: roomName || process.env.REACT_APP_ROOMNAME,
                                 rules: [
-                                    { required: true, message: '请输入房间名称' },
-                                    { min:3 , message: '房间名称不能少于3位'},
+                                    { required: true, message: '请输入会议名称' },
+                                    { min:3 , message: '会议名称不能少于3位'},
                                     { pattern: /^[\u4e00-\u9fa5\w-]*$/, message: '请输入中文、英文、数字、减号或下划线'},
                                 ],
                                 
                             })(
                                 <Input
-                                prefix={<Icon type="home" style={{ color: 'rgba(0,0,0,.25)' }} />}
-                                placeholder="房间名称"
-                                maxLength={18}
+                                    prefix={<Icon type="home" style={{ color: 'rgba(0,0,0,.25)' }} />}
+                                    placeholder="会议名称"
+                                    maxLength={18}
+                                    autoComplete="off"
+                                />
+                            )}
+                            
+                        </Item>
+                        <Item>
+                        {getFieldDecorator('nickName', {
+                                initialValue: nickName || '',
+                                rules: [
+                                    { required: true, message: '请输入您的昵称' },
+                                ],
+                                
+                            })(
+                                <Input
+                                prefix={<Icon type="user" style={{ color: 'rgba(0,0,0,.25)' }} />}
+                                placeholder="请输入您的昵称"
                                 autoComplete="off"
                                 />
                             )}
+                            
                         </Item>
-
+                        <div className='control-contraints'>
+                            {getFieldDecorator('video', {
+                                valuePropName:'checked',
+                                initialValue: video
+                            })( <Checkbox >打开摄像头</Checkbox> )}
+                            {getFieldDecorator('audio', {
+                                valuePropName:'checked',
+                                initialValue: audio
+                            })( <Checkbox >打开麦克风</Checkbox> )}
+                            
+                        </div>
                         <div className="action">
                             <Button 
                                 type="primary"  
+                                htmlType="submit"
                                 onClick={this.join_handle}
                                 loading={this.state.loading}
                                 style={{width:'100%'}}
+                                disabled={join_btn_disable}
                             >
                                 加入会议
                             </Button>
+                            <div className='info-tips'>
+                                <Icon type="info-circle" /> 
+                                不用创建会议，初次加入则自动创建
+                            </div>
                         </div>
-
+                        <div className='version-text'>Version:{version}</div>
                     </Form>
                 
                     {/* 主播人数已满提醒框 */}
@@ -3259,6 +3559,8 @@ class Room extends Component {
                         width='470px'
                         className="talker-is-full-modal"
 
+                        okButtonProps={{disabled: talker_full_btn_disable}}
+                        cancelButtonProps={{disabled: talker_full_btn_disable}}
                     >
                         <div>
                             <img src={get_img_url_by_name('warning-icon')}/>
@@ -3270,14 +3572,9 @@ class Room extends Component {
                     <Setting 
                         { ...{audio, video, nickName, headimg_url_suffix} }
                         _get_setting_values={this._get_setting_values} 
-                        is_localStorage_nickName_admin={this.state.is_localStorage_nickName_admin}
+                        // is_localStorage_nickName_admin={this.state.is_localStorage_nickName_admin}
                         ref={setting_modal => this.setting_modal = setting_modal} />
 
-                    {/* 设置昵称框 */}
-                    <SetNickName 
-                        ref={set_nickname_modal => this.set_nickname_modal = set_nickname_modal}
-                        _set_nickname={this._set_nickname}
-                    />    
                 </div>
                 
                 {/* room compoent */}
@@ -3288,15 +3585,19 @@ class Room extends Component {
                     </Header>
 
                     {/* 白板的iframe  */}
-                    { this.get_white_board_content_el() }
                     <Content>
+                        { this._get_loading_el()}
+                        { this.get_white_board_content_el() }
                         {this._get_main_el()}
                     </Content>
+                    
                     {this._get_drawer_component()}
                     <Footer>
                         {this._get_action_el()}
                         <RoomSetting {...this.state} toggle_room_setting_modal={this.toggle_room_setting_modal}/>
                     </Footer>
+                    {/* 退出确认框 */}
+                    { this.get_leaveConfirmModal() }
                     {/* 左侧选人下麦框 */}
                     {
                         role == 7 ?
@@ -3312,6 +3613,13 @@ class Room extends Component {
                         : ''
                     }
 
+                { shared_desktop ? 
+                    <Alert 
+                        className='shared-desktop-alert' 
+                        message="您正在共享桌面" 
+                        type="info"
+                        showIcon
+                    /> : ''}
                 </Layout>
             </div>
         )

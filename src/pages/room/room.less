@@ -27,7 +27,7 @@
     .setting-modal {
         .avatar-wrapper {
             text-align: center;
-            margin-top: 20px;
+            margin: 20px 0 30px;
             .ant-avatar {
                 width: 86px;
                 height: 86px;
@@ -57,9 +57,14 @@
                 }
             }
         }
-
+        label {
+            display: block;
+        }
+        label:nth-of-type(2),label:nth-of-type(3) {
+            margin-bottom: 15px;
+        }
         input {
-            margin: 8px 0 30px 0;
+            margin: 5px 0 15px;
         }
         .action {
             text-align: center;
@@ -106,10 +111,15 @@
         .ant-checkbox-wrapper + .ant-checkbox-wrapper {
             margin-left: 0;
         }
+
+        .join_as_audience_tips {
+            padding-left: 24px;
+            color: rgba(0, 0, 0, 0.25);
+        }
     }
 
     .version-text {
-        margin: 10px 0 30px 0;
+        margin-top: 30px;
         font-size: 14px;
     }
 }
@@ -120,22 +130,43 @@
     box-shadow:0px 0px 1px 0px rgba(0,0,0,0.25);
 
     padding: 43px;
+    padding-bottom: 30px;
 
     text-align: center;
-    .title {
-        text-align: center;
-        padding: 15px;
-        color: #938e8e;
-        font-weight: bold;
+
+    .app-name {
+        color: #00AFEF;
+        font: bold 20px/1 courier;
+        margin-bottom: 30px;
     }
+
+    .control-contraints {
+        text-align: left;
+        margin-bottom: 15px;
+    }
+    // .title {
+    //     text-align: center;
+    //     padding: 15px;
+    //     color: #938e8e;
+    //     font-weight: bold;
+    // }
 
     input {
         height: 40px;
     }
 
     .action {
-        display: flex;
-        justify-content: space-between;
+        // display: flex;
+        // justify-content: space-between;
+        .info-tips {
+            text-align: left;
+            margin-top: 5px;
+            // padding:0 10px;
+
+            i {
+                margin-right: 5px;
+            }
+        }
     }
     button {
         width: 182px;
@@ -201,7 +232,7 @@
         height: calc(100% - 130px);
     }
     .ant-layout-header, .ant-layout-footer {
-        position: absolute;
+        // position: absolute;
         width: 100%;
         z-index: 4;
         padding: 0 26px;
@@ -211,7 +242,7 @@
         top: 0;
         height: auto;
         height: 50px;
-        background: #232426;;
+        background: #232426;
 
         .header-wrapper {
             display: inline-flex;
@@ -396,10 +427,17 @@
         
                         .status-icon {
                             float: right;
-                            .icon-wrapper {
-                                display: inline-block;
+                            img {
+                                // display: inline-block;
                                 width: 16px;
+                                height: 16px;
                                 margin-right: 3px;
+                            }
+
+                            img.admin {
+                                height: 18px;
+                                width: 18px;
+                                margin-top: 2px;
                             }
                         }
                     }
@@ -559,7 +597,7 @@
             bottom: 65px;
             right: 30px;
 
-            padding: 16px;
+            padding:0 16px 16px;
             display: none;
             width: 240px;
 
@@ -571,6 +609,8 @@
 
             color: #fff;
             text-align: left;
+
+            z-index: 4;
             .item-wrapper {
                 margin: 20px 0;
             }
@@ -639,13 +679,45 @@
             height: 30px;
         }
 
+        video[is-main-media] {
+            transform: rotateY(180deg);
+        }
+
+        
+
+    }
+
+    .v-wrapper.loading:before {
+        content: "";
+        position: absolute;
+        top: 0;
+        left: 0;
+        bottom: 0;
+        right: 0;
+        margin: auto;
+        width: 3.2rem;
+        height: 3.2rem;
+        border-radius: 50%;
+        border: 2px #f0dcd0 solid;
+        clip: rect(0, 40px, 160px, 0);
+        z-index: 3;
+        animation: loading 1.1s infinite linear;
+    }
+    
+    @keyframes loading {
+    0% {
+        transform: rotate(0deg);
+    }
+    100% {
+        transform: rotate(360deg);
+    }
     }
 
     .ant-layout-content {
         padding: 20px;
         position: relative;
         width: 100%;
-        height: 100%;
+        height: calc(100% - 110px);
         padding: 0;
 
         .item {
@@ -717,64 +789,49 @@
             }
         }
     }
-    #leave-confirm-modal {
-        .action-wrapper {
-            display: flex;
-            justify-content: space-around;
+    .leave-confirm-modal {
+        width: 240px;
+        height: 188px;
+        color: #fff;
+        background:rgba(0,0,0,0.8);
+        border-radius:10px;
+
+        position: absolute;
+        right: 16px;
+        top: 55px;
+        z-index: 3;
+
+        padding: 0 10px;
+
+        transition: all 0.3s;
+        
+        .text {
+            font-size: 14px;
+            text-align: center;
+            margin-top: 20px;
         }
 
-        .leave-confirm-modal {
-            width: 240px;
-            height: 188px;
-            color: #fff;
-            background:rgba(0,0,0,0.8);
-            border-radius:10px;
+        .handle {
+            text-align: center;
+            margin: 16px 0;
+            .leave,.end {
+                display: inline-block;
+                width:92px;
+                line-height:20px;
+                background:rgba(28,28,30,1);
+                border-radius:10px;
 
-            position: absolute;
-            right: 16px;
-            top: 55px;
-            z-index: 3;
+                color:rgba(0,175,239,1);
+                font-size: 12px;
 
-            padding: 0 10px;
-
-            transition: all 0.3s;
-            .title {
-                line-height: 40px;
-                display: flex;
-                justify-content: space-between;
-
-                img {
-                    cursor: pointer;
-                }
+                cursor: pointer;
             }
-
-            .text {
-                font-size: 14px;
-                text-align: center;
-                margin-top: 20px;
-            }
-
-            .handle {
-                text-align: center;
-                margin: 16px 0;
-                .leave,.end {
-                    display: inline-block;
-                    width:92px;
-                    line-height:20px;
-                    background:rgba(28,28,30,1);
-                    border-radius:10px;
-
-                    color:rgba(0,175,239,1);
-                    font-size: 12px;
-
-                    cursor: pointer;
-                }
-                .leave {
-                    margin-bottom: 12px;
-                }
+            .leave {
+                margin-bottom: 12px;
             }
         }
     }
+    
 
     // 白板操作界面
     iframe[name="white-board"] {
@@ -787,7 +844,7 @@
         z-index: 1;
 
         border: none;
-        padding: 50px 0 60px 0;
+        // padding: 50px 0 60px 0;
     }
 
     // electorn 选择屏幕 框
@@ -840,7 +897,39 @@
             }
         }
     }
-    
+
+
+    .shared-desktop-alert { // 正在共享提示框
+        position: absolute;
+        top: 115px;
+        // bottom: 200px;
+        left: 100px;
+
+        border: none;
+        background: #fff;
+
+        min-width: 200px;
+        // text-align: center;
+    }
+
+    .main-looading-wrapper {
+        position: absolute;
+        top: 0;
+        width: 100%;
+        height: 100%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background: #fff;
+        z-index: 1;
+        // opacity: 0.7;
+
+        .ant-spin-nested-loading > div > .ant-spin .ant-spin-text {
+            width: 200px; 
+            transform: translateX(-50%);
+            // color: #000;
+        }
+    }
 }
 .ant-tooltip-inner {
     border-radius: 4px;
@@ -862,16 +951,6 @@
     padding: 0 10px;
     transition: all 0.3s;
 
-
-    .title {
-        line-height: 40px;
-        display: flex;
-        justify-content: space-between;
-
-        img {
-            cursor: pointer;
-        }
-    }
 
     .text {
         font-size: 14px;
@@ -896,6 +975,23 @@
         }
         .leave {
             margin-bottom: 12px;
+        }
+    }
+}
+
+.toast-title {
+    line-height: 40px;
+    display: flex;
+    justify-content: space-between;
+
+    i.anticon-close-circle {
+        cursor: pointer;
+        line-height: inherit;
+        font-size: 16px;
+        opacity: 0.8;
+
+        &:hover {
+            opacity: 1;
         }
     }
 }
@@ -952,4 +1048,23 @@
     }
 }
 
+.ant-alert {
+    z-index: 2;
+    border-radius: 5px;
+    position: absolute;
+    top: 100px;
+    // left: 50%;
+    // transform: translateX(-50%);
+}
 
+
+// 通知栏
+.openNotification {
+    border-radius: 5px;
+    padding: 5px 5px 3px;
+    width: 300px;
+    transform: translateX(80px);
+    a.ant-notification-notice-close {
+        top: 7px;
+    }
+}
