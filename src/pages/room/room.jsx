@@ -206,7 +206,7 @@ class MuteAction extends Component {
         let { mute_all } = this.state
         return(
 
-            <Tooltip title={ mute_all ? '解除禁言' : '全体禁言' } placement="left">
+            <Tooltip title={ mute_all ? '解除静音' : '全体静音' } placement="left">
                 {
                     mute_all ? 
                     <img className='mute-action' src={get_img_url_by_name('mute-all-icon')} onClick={this.unmute_all_action}/> :
@@ -1244,8 +1244,8 @@ class Room extends Component {
                 rec, 
                 recMerge,
 
-                // maxTalkerCount:3,//会议最大主播人数
-                // maxVideoCount:2, //会议最大视频数
+                maxTalkerCount:3,//会议最大主播人数
+                maxVideoCount:2, //会议最大视频数
                 // maxPubDesktopCount:1 //会议最大共享桌面数
             }
         }
@@ -1595,21 +1595,21 @@ class Room extends Component {
 
         // 某人被管理员静音或取消静音的回调
         emedia.mgr.onMuted = () => { 
-            message.warn('你被管理员禁言了'); 
+            message.warn('你被管理员静音了'); 
             _this.close_audio()
         }
         emedia.mgr.onUnmuted = () => { 
-            message.success('你被管理员取消了禁言');
+            message.success('你被管理员取消了静音');
             _this.open_audio()
         }
 
         // 全体静音或取消全体静音
         emedia.mgr.onMuteAll = () => { 
-            message.warn('管理员启用了全体禁言');
-            setTimeout(_this.close_audio, 500)  //如果禁言，加入会议就会触发，所以设置延时
+            message.warn('管理员启用了全体静音');
+            setTimeout(_this.close_audio, 500)  //如果静音，加入会议就会触发，所以设置延时
         }
         emedia.mgr.onUnMuteAll = () => { 
-            message.success('管理员取消了全体禁言');
+            message.success('管理员取消了全体静音');
             _this.open_audio()
         }
 
@@ -3039,7 +3039,7 @@ class Room extends Component {
                              get_img_url_by_name('micro-is-close-icon')} 
                              onClick={() => this.toggle_audio()}
                         />
-                        <span className="text">{ audio ? '禁言' : '解除禁言'}</span>
+                        <span className="text">{ audio ? '静音' : '解除静音'}</span>
                     </div>
                     <div className="wrapper">
                         <img src={video ? 
