@@ -426,13 +426,14 @@ class Setting extends Component {
         this.setState({ visible: true })
     }
     handleCancel = () => {
-        this.setState({ visible: false })
+        this.setState({ visible: false });
+
+        this.reset()
     }
     handleSubmit = () => {
 
         let {
             headimg_url_suffix,
-            nickName,
             cdn,
             push_cdn,
             rec,
@@ -443,7 +444,7 @@ class Setting extends Component {
         
         // 回调上去
         this.props._get_setting_values({
-            headimg_url_suffix, nickName, cdn, push_cdn,
+            headimg_url_suffix, cdn, push_cdn,
             rec,recMerge,join_as_audience
         })
         this.setState({ visible: false });
@@ -482,6 +483,16 @@ class Setting extends Component {
         this.head_images.show()
     }
     
+    reset() {
+        this.setState({
+            push_cdn: false,
+            cdn: '',
+            rec:false,
+            recMerge:false,
+            join_as_audience: false
+    
+        })
+    }
     render() {
         let { 
             visible, 
@@ -1280,20 +1291,26 @@ class Room extends Component {
             this.setState({ 
                 joined: true,
                 user_room,
-            },this.get_confr_info)
+            })
+
+            // this.setState({ 
+            //     joined: true,
+            //     user_room,
+            // },this.get_confr_info)
     
+            window.location.hash = '' //加入会议成功，清除query 防止退出后，重复加入
+
             if(user_room.role == emedia.mgr.Role.AUDIENCE){ // 观众不推流
-                if(role == 1){//观众默认关闭摄像头、麦克风
-                    this.setState({
-                        audio: false,
-                        video: false
-                    })
-                }
+                // if(role == 1){//观众默认关闭摄像头、麦克风
+                //     this.setState({
+                //         audio: false,
+                //         video: false
+                //     })
+                // }
                 return
             }
             this.publish();
 
-            window.location.hash = '' //加入会议成功，清除query 防止退出后，重复加入
             
         } catch (error) { 
             
@@ -1313,10 +1330,7 @@ class Room extends Component {
     join_handle = (e) => {
 
         e && e.preventDefault();
-        // if(!this.state.nickName) { //没有昵称直接返回 不加入
-        //     this.set_nickname_modal.show()
-        //     return
-        // }
+        
         var _this = this;
         this.props.form.validateFields((err, values) => {
             let { 
@@ -1963,7 +1977,12 @@ class Room extends Component {
     // 下麦申请
     async apply_audience() {
 
-        let { stream_list } = this.state;
+        let { stream_list, am_i_white_board_creator } = this.state;
+        if(am_i_white_board_creator){ // 白板进行中不允许下麦
+            message.warn('当前您正在共享白板，请退出白板后，再下麦');
+            return
+        }
+
         if(stream_list.filter(item => item).length == 1){ // 过滤后 如果只有一个主播
             message.warn('当前您是唯一主播，不允许下麦');
             return
@@ -1995,8 +2014,8 @@ class Room extends Component {
     
     reset_state() { // 重置 state、比如下麦成功后
         this.setState({
-            audio:false,
-            video:false,
+            // audio:false,
+            // video:false,
             shared_desktop:false,
             room_setting_modal_show: false
         })
@@ -2597,7 +2616,7 @@ class Room extends Component {
                 }
             })
 
-            let { id:confrId } = this.state.confr;
+            let { confrId } = this.state.user_room;
             let { liveCfgs } = emedia.config
             emedia.mgr.updateLiveLayout(confrId, liveCfgs[0].id, regions)
     }
@@ -2905,13 +2924,12 @@ class Room extends Component {
 
         if(main_stream) {
             let { volume, type, voff, aoff } = main_stream.stream; //volume 说话音量
-            let { is_me } = main_stream.member;
-
 
             return (
                 <div className="main-video-wrapper v-wrapper" sid={main_stream.stream.id} >
                     
-                    { aoff ? 
+                    {type == 1 ? '' :
+                     aoff ? 
                         <img src={get_img_url_by_name('micro-is-close-icon')} className='is-speak-icon'/> : 
                         <img src={get_img_url_by_name('volume-' + (volume || 0))} className='is-speak-icon'/>
                     }
@@ -3033,20 +3051,32 @@ class Room extends Component {
                 
                 <div className="actions">
                     <div className="wrapper">
-                        <img src={audio ? 
-                             get_img_url_by_name('micro-is-open-icon') : 
-                             get_img_url_by_name('micro-is-close-icon')} 
+                        <img 
+                            className={role == 1 ? 'disabled' : '' } 
+                            src={
+                                role == 1 ? 
+                                get_img_url_by_name('micro-is-close-icon') :
+
+                                audio ? get_img_url_by_name('micro-is-open-icon') : 
+                                get_img_url_by_name('micro-is-close-icon')} 
+
                              onClick={() => this.toggle_audio()}
                         />
-                        <span className="text">{ audio ? '静音' : '解除静音'}</span>
+                        <span className="text">{role == 1 ? '解除静音': audio ? '静音' : '解除静音'}</span>
                     </div>
                     <div className="wrapper">
-                        <img src={video ? 
-                             get_img_url_by_name('video-is-open-icon') : 
-                             get_img_url_by_name('video-is-close-icon')} 
+                        <img 
+                            className={role == 1 ? 'disabled' : '' } 
+                            src={
+                                role == 1 ?
+                                get_img_url_by_name('video-is-close-icon') :
+
+                                video ? get_img_url_by_name('video-is-open-icon') : 
+                                get_img_url_by_name('video-is-close-icon')} 
+
                              onClick={() => this.toggle_video()}
                         />
-                        <span className="text">{video ? '关闭视频' : '开启视频'}</span>
+                        <span className="text">{role == 1 ? '开启视频': video ? '关闭视频' : '开启视频'}</span>
                     </div>
                     {/* 只有以观众进入的才展示 上下麦按钮 */}
                     { join_as_audience ? 
@@ -3398,20 +3428,21 @@ class Room extends Component {
     }
 
     // 获取会议信息
-    get_confr_info = async () => {
-        let { confrId } = this.state.user_room;
-        let { roomName } = this.state;
+    // get_confr_info = async () => {
+    //     let { confrId } = this.state.user_room;
+    //     let { roomName } = this.state;
 
-        if(!confrId){
-            return
-        }
+    //     if(!confrId){
+    //         return
+    //     }
 
-        let password = roomName; // 房间名称和密码一样
-        const confr = await emedia.mgr.selectConfr(confrId, password);
+    //     let password = roomName; // 房间名称和密码一样
+    //     const confr = await emedia.mgr.selectConfr(confrId, password);
 
-        this.setState({ confr:confr.confr })
+    //     this.setState({ confr:confr.confr })
         
-    }
+    // }
+
     close_talker_model = () => {
         this.setState({
             talker_is_full: false
