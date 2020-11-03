@@ -617,7 +617,7 @@ function AdminChangeHandle(props) {
         my_username,
         my_role,
         stream_list,
-        confr
+        user_room
     } = props;
 
     // 主播角色
@@ -625,7 +625,7 @@ function AdminChangeHandle(props) {
         const apply_admin = () => {
     
             message.success('主持人申请已发出，请等待主持人同意');
-            emedia.mgr.requestToAdmin(confr.id);
+            emedia.mgr.requestToAdmin(user_room.confrId);
         
         }
         return(
@@ -661,7 +661,7 @@ function AdminChangeHandle(props) {
     
             let memName = appkey + '_' + my_username;
             try {
-                await emedia.mgr.grantRole(confr, [memName], 3);
+                await emedia.mgr.grantRole(user_room, [memName], 3);
                 message.success('您已经变为了主播')
             } catch (error) {
                 message.error('变更主播失败')
@@ -758,7 +758,7 @@ function RoomSetting(props) {
             roomName, 
             stream_list,
 
-            confr,
+            // confr,
             user,
             user_room
         } = props;
@@ -804,7 +804,7 @@ function RoomSetting(props) {
                     })
                 }
             </div>
-            <AdminChangeHandle { ...{my_username, stream_list, my_role, confr}}/>
+            <AdminChangeHandle { ...{my_username, stream_list, my_role, user_room} }/>
 
         </div>
     )
@@ -1254,8 +1254,8 @@ class Room extends Component {
                 rec, 
                 recMerge,
 
-                maxTalkerCount:3,//会议最大主播人数
-                maxVideoCount:2, //会议最大视频数
+                // maxTalkerCount:3,//会议最大主播人数
+                // maxVideoCount:2, //会议最大视频数
                 // maxPubDesktopCount:1 //会议最大共享桌面数
             }
         }
@@ -1353,10 +1353,9 @@ class Room extends Component {
         });
     }
     talker_is_full_handle() { // 主播已满，修改角色
-        // this.setState({
-        //     join_as_audience: true
-        // })
+        
         this.setState({
+            join_as_audience: true,
             user_room: {
                 role: 1
             }
@@ -1441,6 +1440,15 @@ class Room extends Component {
             // useDeployMore:true //开启多集群部署
         });
 
+
+        //test start
+        emedia.config({
+            
+            forceVideoBitrate: 2000,
+            forceMinVideoBitrate: 1000,
+        });
+        //test end
+
         let memName = appkey +'_'+ username;
         emedia.mgr.setIdentity(memName, token); //设置memName 、token
 
@@ -1515,7 +1523,7 @@ class Room extends Component {
             }
 
             
-            message.warn(reason_text, 1.5, () => {
+            message.warn(reason_text, 1, () => {
                 
                 if(_this.state.talker_is_full){ // 主播已满的加入会议，也会走正常挂断 -- 但是不能刷新
                     _this.setState({
@@ -1683,7 +1691,8 @@ class Room extends Component {
                 _this.setState({
                     audio:true
                 },_this.publish)
-                message.success('你已经上麦成功,并且推流成功')
+                message.success('你已经上麦成功,并且推流成功');
+                
                 return
             }
 
@@ -1692,7 +1701,10 @@ class Room extends Component {
                 (old_role == 3 || old_role == 7) &&
                 role == 1
             ) {
-                message.success('你已经下麦了,并且停止推流')
+                message.success('你已经下麦了,并且停止推流');
+                _this.setState({
+                    join_as_audience: true
+                })
                 return
             }
 
@@ -2495,12 +2507,13 @@ class Room extends Component {
             _this.set_stream_item_changed(constaints, stream.id)
         });
 
-        process.env.NODE_ENV == 'development' ? '' : 
+        // process.env.NODE_ENV == 'development' ? '' : 
         // 监听谁在说话
         // 函数触发，就证明有人说话 拿 stream_id
         emedia.mgr.onSoundChanaged(el, function (meterData, stream) {
             let { instant } = meterData;
-            let one_unit_pic = 0.25/14; // 音量（instant）high 为 0.25，也就是图片显示为14
+
+            let one_unit_pic = 0.15/14; // 音量（instant）high 为 0.25，也就是图片显示为14
 
             let volume = Math.round(instant/one_unit_pic);
             volume = volume > 14 ? 14 : volume; 
