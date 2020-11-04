@@ -190,14 +190,14 @@ class MuteAction extends Component {
     }
     mute_all_action = async () => {
 
-        let { id:confrId } = this.props.confr;
+        let { confrId } = this.props.user_room;
 
         await emedia.mgr.muteAll(confrId);
         this.setState({ mute_all:true })
     }
     unmute_all_action = async () => {
 
-        let { id:confrId } = this.props.confr;
+        let { confrId } = this.props.user_room;
 
         await emedia.mgr.unmuteAll(confrId);
         this.setState({ mute_all:false })
@@ -221,13 +221,13 @@ class MuteAction extends Component {
 class ManageTalker extends Component {
     // 静音某一人
     mute = () => {
-        let { id:confrId } = this.props.confr;
+        let { confrId } = this.props.user_room;
         let { id:memberId } = this.props.member;
         emedia.mgr.muteBymemberId(confrId, memberId);
     }
     // 解除静音某人
     unmute = () => {
-        let { id:confrId } = this.props.confr;
+        let { confrId } = this.props.user_room;
         let { id:memberId } = this.props.member;
         emedia.mgr.unmuteBymemberId(confrId, memberId);
     }
@@ -242,16 +242,16 @@ class ManageTalker extends Component {
     }
     // 指定为主持人
     appoint_as_admin = async () => {
-        let { confr } = this.props;
+        let { user_room } = this.props;
         let { memName, nickName } = this.props.member;
             nickName = nickName || memName; //兼容显示
 
-        if(!confr || !memName){
+        if(!user_room || !memName){
             return
         }
 
         try {
-            await emedia.mgr.grantRole(confr, [memName], 7);
+            await emedia.mgr.grantRole(user_room, [memName], 7);
 
             message.success(`已把${nickName}设为主持人`)
         } catch (error) {
@@ -262,13 +262,13 @@ class ManageTalker extends Component {
     move_out = () => {
         
 
-        let { confr } = this.props;
+        let { user_room } = this.props;
         let { memName } = this.props.member;
 
-        if(!confr || !memName){
+        if(!user_room || !memName){
             return
         }
-        emedia.mgr.kickMembersById(confr, [memName]);
+        emedia.mgr.kickMembersById(user_room, [memName]);
 
     }
 
@@ -1202,6 +1202,8 @@ class Room extends Component {
         this.hide_leaveConfirmModal = this.hide_leaveConfirmModal.bind(this);
         this.leave_handle = this.leave_handle.bind(this);
         this.leave = this.leave.bind(this);
+
+
     }
     whetherCanUse() {
 
@@ -1254,8 +1256,8 @@ class Room extends Component {
                 rec, 
                 recMerge,
 
-                // maxTalkerCount:3,//会议最大主播人数
-                // maxVideoCount:2, //会议最大视频数
+                maxTalkerCount:3,//会议最大主播人数
+                maxVideoCount:2, //会议最大视频数
                 // maxPubDesktopCount:1 //会议最大共享桌面数
             }
         }
@@ -1440,14 +1442,6 @@ class Room extends Component {
             // useDeployMore:true //开启多集群部署
         });
 
-
-        //test start
-        emedia.config({
-            
-            forceVideoBitrate: 2000,
-            forceMinVideoBitrate: 1000,
-        });
-        //test end
 
         let memName = appkey +'_'+ username;
         emedia.mgr.setIdentity(memName, token); //设置memName 、token
@@ -1660,6 +1654,8 @@ class Room extends Component {
                 }
             }
         }
+
+
     }
 
     // 初始化白板
@@ -1989,7 +1985,8 @@ class Room extends Component {
     // 下麦申请
     async apply_audience() {
 
-        let { stream_list, am_i_white_board_creator } = this.state;
+        let { stream_list, am_i_white_board_creator, shared_desktop } = this.state;
+        
         if(am_i_white_board_creator){ // 白板进行中不允许下麦
             message.warn('当前您正在共享白板，请退出白板后，再下麦');
             return
@@ -2007,6 +2004,7 @@ class Room extends Component {
         }
         let memName = appkey + '_' + my_username;
 
+        let _this = this;
         Modal.confirm({
             title: '下麦后不能发布语音视频',
             okText: '确认下麦',
@@ -2014,7 +2012,9 @@ class Room extends Component {
             onOk: async () => {
                 try {
                     await emedia.mgr.degradeRole(confrId, [memName], emedia.mgr.Role.AUDIENCE);
-                    this.reset_state()
+                    if(shared_desktop) {
+                        _this.stop_share_desktop()
+                    }
                 } catch (error) {
                     
                 }
@@ -2222,7 +2222,6 @@ class Room extends Component {
     }
 
     stop_share_desktop(sId) {
-        console.log('stop_share_desktop', sId);
         let { own_desktop_stream } = this.state;
 
         if(!own_desktop_stream) return;
@@ -2307,23 +2306,29 @@ class Room extends Component {
         }
         
         let w_el = document.querySelector('[sid='+ stream.id +']');
-        w_el.classList.add("loading");
+
+        let loading_el = this._get_video_loading_el();
+        w_el.appendChild(loading_el);
 
         if( stream.located() ){
             emedia.mgr.streamBindVideo(stream, el);
-            w_el.classList.remove("loading");
+            
             w_el.appendChild(el)
+
+            w_el.removeChild(loading_el)
         }else {
             let sub_optioon = { video: true, audio: true };
             emedia.mgr.subscribe(member, stream, sub_optioon.video, sub_optioon.audio, el)
             .then(() => { 
                 w_el.appendChild(el);
-                w_el.classList.remove("loading");
+                
+                w_el.removeChild(loading_el)
             })
             .catch(error => {
                 console.error('订阅流失败',error);
                 notification_show('error', `订阅${member.nickName}的流失败`);
-                w_el.classList.remove("loading");
+                
+                w_el.removeChild(loading_el)
             });
         }
         this._on_media_chanaged_by_stream(el, stream)
@@ -2684,6 +2689,39 @@ class Room extends Component {
                 
     }
 
+    // get loading el
+    _get_video_loading_el() {
+
+        let el = document.createElement('div')
+        el.classList.add('loading-wrapper');
+
+
+        let children = [
+            `<div class="loading">
+                <div class="circle circle1">
+                    <span></span>
+                    <span></span>
+                    <span></span>
+                    <span></span>
+                </div>
+                <div class="circle circle2">
+                    <span></span>
+                    <span></span>
+                    <span></span>
+                    <span></span>
+                </div>
+                <div class="circle circle3">
+                    <span></span>
+                    <span></span>
+                    <span></span>
+                    <span></span>
+                </div>
+            </div>`
+        ]
+
+        el.innerHTML = children;
+        return el
+    }
 
     // 主播列表滚动 
     // 更新订阅，不可见的只订阅音频
@@ -2743,9 +2781,12 @@ class Room extends Component {
                     !_this.talker_is_not_visble(element)
                     && prev_not_visible(sid)
                 ) { 
-                    par_node.classList.add('loading');
+                    if(!par_node.querySelector('.loading-wrapper')) {
+                        par_node.appendChild(_this._get_video_loading_el());
+                    } 
                 } else {
-                    par_node.classList.remove('loading');
+                    let loading_el = par_node.querySelector('.loading-wrapper');
+                    loading_el ? par_node.removeChild(loading_el) : '';
                 }
 
             }
@@ -2821,6 +2862,12 @@ class Room extends Component {
 
         }
 
+        const del_loading = par_node => { // 删除loading el
+            let loading_el = par_node.querySelector('.loading-wrapper');
+            console.log('del_loading loading_el', loading_el);
+            loading_el ? par_node.removeChild(loading_el) : '';
+        }
+
         for (let index = 0; index < els.length; index++) {
 
             const element = els[index];
@@ -2842,20 +2889,25 @@ class Room extends Component {
                 if(visible_change(sid, 'not-visible')) {// 检测可见行是否变化
                     // 不订阅视频
                     emedia.mgr.subscribe(item.member, item.stream, false, true, element)
-                    .then(() => par_node.classList.remove('loading'))
-                    .catch(() => par_node.classList.remove('loading'))
+                    .then(() => del_loading(par_node))
+                    .catch(() => del_loading(par_node))
                 } 
             } else { // 恢复订阅视频
                 if(visible_change(sid, 'visible')) { 
                     
                     emedia.mgr.subscribe(item.member, item.stream, true, true, element)
-                    .then(() => par_node.classList.remove('loading'))
-                    .catch(() => par_node.classList.remove('loading'))
+                    .then(() => del_loading(par_node))
+                    .catch(err => {
+                        console.log('sub talker', err);
+                        del_loading(par_node)
+                    })
                 }
             }
 
             
         }
+
+
         
     }
 
@@ -2970,7 +3022,7 @@ class Room extends Component {
         let { role, is_me } = member;
         let { role:my_role } = this.state.user_room;//拿到我自己的角色
         let { username:my_username } = this.state.user;//拿到我自己的username
-        let { confr } = this.state
+        let { user_room } = this.state
         
         let nickName = get_nickname(member);
 
@@ -3012,7 +3064,7 @@ class Room extends Component {
                 {/* 不是主持人 并且不是主持人自己 并且流不是共享桌面 才加载 */}
                 { 
                     (my_role == 7 && !is_me && type != emedia.StreamType.DESKTOP) ? 
-                        <ManageTalker { ...{stream, member, my_username, confr} } /> : '' 
+                        <ManageTalker { ...{stream, member, my_username, user_room} } /> : '' 
                 } 
             </div>
         )
@@ -3123,6 +3175,15 @@ class Room extends Component {
                     </div>
                     <div className="wrapper">
                         {
+                            role == 1 ? (
+                                <Tooltip title='观众不可共享桌面'>
+                                    <img 
+                                        src={get_img_url_by_name('share-desktop-icon')} 
+                                        style={{opacity:'0.7', cursor:'not-allowed'}}
+                                    />
+                                </Tooltip>
+                            ) :
+
                             shared_content ? 
                             <Tooltip title={ shared_content == 'desktop' ? 
                                             '有人在共享桌面，不可再共享桌面': '有人在共享白板，不可再共享桌面'}>
@@ -3471,7 +3532,7 @@ class Room extends Component {
         } = this.state;
 
         if(main_loading) {
-            return <div className="main-looading-wrapper">
+            return <div className="main-loading-wrapper">
                         <Spin tip={main_loading_text}> </Spin>
                     </div>
         }
