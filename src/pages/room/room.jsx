@@ -681,14 +681,14 @@ class NetworkStatus extends Component {
 
     // network_status
     //  0 : offline、1: slow-2g、2: 2g、3: 3g、4: 4g
-    state = {
-        network_status: 0
-    }
+    // state = {
+    //     network_status: 0
+    // }
 
-    componentWillMount() {
-        this.get_network_status();
-        this.on_network_status_changed()
-    }
+    // componentWillMount() {
+    //     this.get_network_status();
+    //     this.on_network_status_changed()
+    // }
 
     on_network_status_changed = () => {
         let _this = this;
@@ -739,7 +739,7 @@ class NetworkStatus extends Component {
 
     render() {
 
-        let { network_status } = this.state;
+        let { network_status } = this.props; // 0: 断网 1: 弱网 2: 良好
         
         return (
             <div className="network-wrapper">
@@ -1176,7 +1176,8 @@ class Room extends Component {
             join_btn_disable: false, // 是否可以加入会议
 
             main_loading: false, // meeting-loading
-            main_loading_text: ''
+            main_loading_text: '',
+
         };
 
         this.toggle_main = this.toggle_main.bind(this);
@@ -1256,8 +1257,8 @@ class Room extends Component {
                 rec, 
                 recMerge,
 
-                maxTalkerCount:3,//会议最大主播人数
-                maxVideoCount:2, //会议最大视频数
+                // maxTalkerCount:3,//会议最大主播人数
+                // maxVideoCount:2, //会议最大视频数
                 // maxPubDesktopCount:1 //会议最大共享桌面数
             }
         }
@@ -1629,13 +1630,39 @@ class Room extends Component {
         }
 
         // 网络质量检测
-        emedia.mgr.onNetworkWeak = sId => {
-            let { stream_list } = _this.state;
-            let item = stream_list.filter(item => (item && item.stream.id == sId));
+        emedia.mgr.onNetworkQuality = (sId, status) => {
+            console.log('onNetworkQuality', sId, status);
 
-            if(item[0]) {
-                // notification_show('error', `${item[0].member.nickName}的网络质量差`)
+
+
+            let { stream_list } = _this.state;
+
+            let changed = false;
+            stream_list.map(item => {
+                if(
+                    item &&
+                    item.stream &&
+                    item.stream.id == sId
+                ) {
+                    let perv_n_status = item.stream.network_status;
+                    if(perv_n_status != status) {
+                        changed = true;
+                        item.stream.network_status = status;
+
+                    }
+                }
+            });
+
+            if(changed) {
+                _this.setState({ stream_list })
             }
+
+
+            // let item = stream_list.filter(item => (item && item.stream.id == sId));
+
+            // if(item[0]) {
+            //     // notification_show('error', `${item[0].member.nickName}的网络质量差`)
+            // }
         }
         emedia.mgr.onNetworkDisconnect = sId => {
             let { stream_list } = _this.state;
@@ -2522,7 +2549,7 @@ class Room extends Component {
             _this.set_stream_item_changed(constaints, stream.id)
         });
 
-        // process.env.NODE_ENV == 'development' ? '' : 
+        process.env.NODE_ENV == 'development' ? '' : 
         // 监听谁在说话
         // 函数触发，就证明有人说话 拿 stream_id
         emedia.mgr.onSoundChanaged(el, function (meterData, stream) {
@@ -2650,7 +2677,7 @@ class Room extends Component {
     }
     _get_header_el() { 
 
-        let { roomName } = this.state;
+        let { roomName, own_stream } = this.state;
 
         return (
             <div className="header-wrapper">
@@ -2661,7 +2688,11 @@ class Room extends Component {
                 </div>
 
                 <div className='leave-action-wrapper'>
-                    <NetworkStatus />
+                    { own_stream ? 
+                        <div className="network-icon">
+                            <NetworkStatus network_status={own_stream.network_status} />
+                        </div> : ''
+                    }
                     <div onClick={this.leave_handle} className="leave-action">
                         <img src={get_img_url_by_name('leave-icon')} />
                         <span>离开会议</span>
@@ -3057,7 +3088,9 @@ class Room extends Component {
                      * 对方开启音频 在说话 显示volume-icon
                      */}
                     <div className="status-icon"> 
-
+                        <div className="network-icon">
+                            <NetworkStatus network_status={stream.network_status} />
+                        </div>
                         { role == 7 ? <img className='admin' src={ get_img_url_by_name('admin-small-icon') }/> : ''}
                         {
                             aoff ? 

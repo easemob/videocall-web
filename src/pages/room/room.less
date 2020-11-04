@@ -278,34 +278,9 @@
             .leave-action-wrapper {
                 display: flex;
                 align-items: center;
-                .network-wrapper {
-                    margin-right: 5px;
+                
+                .network-icon {
                     height: 18px;
-                    display: flex;
-                    align-items: flex-end;
-    
-                    .network-item {
-                        float: left;
-                        width: 3px;
-                        background: #fff;
-                        margin-right: 3px;
-                    }
-    
-                    .network-item.one {
-                        height: 25%;
-                    }
-                    .network-item.two {
-                        height: 50%;
-                    }
-                    .network-item.three {
-                        height: 75%;
-                    }
-                    .network-item.four {
-                        height: 100%;
-                    }
-                    .network-item.high-light {
-                        background: #3FEF66;
-                    }
                 }
                 
                 .leave-action {
@@ -331,7 +306,37 @@
             }
         };
     }
-    
+
+    // 网络
+    .network-wrapper {
+        margin-right: 5px;
+        height: 100%;
+        display: flex;
+        align-items: flex-end;
+
+        .network-item {
+            float: left;
+            width: 3px;
+            background: #fff;
+            margin-right: 3px;
+        }
+
+        .network-item.one {
+            height: 25%;
+        }
+        .network-item.two {
+            height: 50%;
+        }
+        .network-item.three {
+            height: 75%;
+        }
+        .network-item.four {
+            height: 100%;
+        }
+        .network-item.high-light {
+            background: #3FEF66;
+        }
+    }
     // 主播列表 UI
     .talker-list-placeholder {
 
@@ -438,6 +443,10 @@
                                 height: 18px;
                                 width: 18px;
                                 margin-top: 2px;
+                            }
+
+                            .network-icon {
+                                height: 15px;
                             }
                         }
                     }
