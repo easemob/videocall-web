@@ -2097,7 +2097,7 @@ class Room extends Component {
     }
     // toggle 代指关闭或开启
     // 关闭或开启自己的
-    async toggle_video() {
+    async toggle_video(e) {
 
         let { role } = this.state.user_room;
         let { own_stream } = this.state;
@@ -2117,7 +2117,17 @@ class Room extends Component {
             video = !video
             this.setState({ video })
         }else {
+            let t_el;
+            if(e) { //loading
+                t_el = e.target;
+                t_el.style.cursor = 'wait'
+            }
             await emedia.mgr.resumeVideo(own_stream);
+
+            if(t_el) {
+                t_el.style.cursor = 'pointer'
+            }
+
             video = !video
             this.setState({ 
                 video 
@@ -3032,7 +3042,6 @@ class Room extends Component {
                 key={id} 
                 className="item v-wrapper"
                 sid={stream.id}
-                // onDoubleClick={ index ? () => {this.toggle_main(index)} : () => {}} //mian 图不需要点击事件，所以不传index÷
                 onDoubleClick={ () => this.toggle_main(index) } //mian 图不需要点击事件，所以不传index÷
             >
 
@@ -3139,7 +3148,7 @@ class Room extends Component {
                                 video ? get_img_url_by_name('video-is-open-icon') : 
                                 get_img_url_by_name('video-is-close-icon')} 
 
-                             onClick={() => this.toggle_video()}
+                             onClick={(e) => this.toggle_video(e)}
                         />
                         <span className="text">{role == 1 ? '开启视频': video ? '关闭视频' : '开启视频'}</span>
                     </div>
