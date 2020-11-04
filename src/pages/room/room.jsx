@@ -2864,7 +2864,6 @@ class Room extends Component {
 
         const del_loading = par_node => { // 删除loading el
             let loading_el = par_node.querySelector('.loading-wrapper');
-            console.log('del_loading loading_el', loading_el);
             loading_el ? par_node.removeChild(loading_el) : '';
         }
 
@@ -2894,13 +2893,14 @@ class Room extends Component {
                 } 
             } else { // 恢复订阅视频
                 if(visible_change(sid, 'visible')) { 
-                    
-                    emedia.mgr.subscribe(item.member, item.stream, true, true, element)
-                    .then(() => del_loading(par_node))
-                    .catch(err => {
-                        console.log('sub talker', err);
+                    try {
+                        emedia.mgr.subscribe(item.member, item.stream, true, true, element)
+                        .then(() => del_loading(par_node))
+                        .catch(() => del_loading(par_node))
+                        
+                    } catch (error) {
                         del_loading(par_node)
-                    })
+                    }
                 }
             }
 
