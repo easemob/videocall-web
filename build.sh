@@ -58,5 +58,5 @@ fi
 
 echo 'upload complete'
 
-# rm -r ${build_name}
+rm -r ${build_name}
 
