@@ -562,54 +562,12 @@ class Setting extends Component {
     }
 }
 
-// 设置昵称 modal
-// class SetNickName extends Component {
-//     state = {
-//         visible: false,
-//         nickName:''
-//     }
+// 网络连接状态监听
+window.addEventListener("offline", function() {
+    message.error('您的网络链接断开了')
+})
 
-//     show = () => {
-//         this.setState({ visible: true })
-//     }
-
-//     hide() {
-//         this.setState({ visible: false })
-//     }
-//     onChange = e => {
-        
-//         const { value } = e.target;
-
-//         this.setState({
-//             nickName: value
-//         })
-//     }
-//     submit() {
-//         let { nickName } = this.state;
-//         this.props._set_nickname(nickName);
-        
-//         this.setState({ visible: false })
-//     }
-
-//     render() {
-//         return (
-//             <Modal 
-//                 title="请设置昵称"
-//                 visible={this.state.visible}
-//                 onCancel={() => this.hide()}
-//                 onOk={() => this.submit()}
-//                 okText="确定"
-//                 cancelText="取消"
-//                 getContainer={false}
-//                 width="350px"
-//                 centered={true}
-//                 className="set-nickname-modal"
-//             >
-//                 <Input onChange={this.onChange}/>
-//             </Modal>
-//         )
-//     }
-// }
+window.addEventListener("online", () =>  message.success('您的网络链接成功'));
 
 // 申请主持人 或者 放弃主持人操作
 function AdminChangeHandle(props) {
@@ -679,74 +637,24 @@ function AdminChangeHandle(props) {
 // 网络状态
 class NetworkStatus extends Component {
 
-    // network_status
-    //  0 : offline、1: slow-2g、2: 2g、3: 3g、4: 4g
-    // state = {
-    //     network_status: 0
-    // }
-
-    // componentWillMount() {
-    //     this.get_network_status();
-    //     this.on_network_status_changed()
-    // }
-
-    on_network_status_changed = () => {
-        let _this = this;
-        window.addEventListener("offline", function() {
-            _this.setState({ network_status: 0 })
-        })
-
-        window.addEventListener("online", this.get_network_status);
-
-        // chrome 网络状态 变化
-        if(navigator.connection) {
-            navigator.connection.addEventListener('change', this.onConnectionChange);
-        }
-    }
-
-    // 只适用于 chrome 网络状态 变化
-    onConnectionChange = () => {
-        let { effectiveType } = navigator.connection;
-
-        switch(effectiveType){
-            case 'slow-2g':
-                this.setState({ network_status: 1})
-                break;
-            case '2g':
-                this.setState({ network_status: 2})
-                break;
-            case '3g':
-                this.setState({ network_status: 3})
-                break;
-            case '4g':
-                this.setState({ network_status: 4})
-                break;
-        }
-    }
-
-    get_network_status = () => {
-        if(navigator.onLine){//已经联网 简单判断
-
-            if(navigator.connection){ //判断网络状态、只有chrome 支持
-                this.onConnectionChange()
-            } else { // 别的浏览器直接显示 全网
-                this.setState({ network_status: 4})
-            } 
-        } else {
-            this.setState({ network_status: 0 })
-        }
-    }
 
     render() {
 
         let { network_status } = this.props; // 0: 断网 1: 弱网 2: 良好
-        
+        network_status = network_status == undefined ? 2 : network_status;
+
+        let c_status = { 0: 'dis', 1: 'weak', 2: ''};
+
         return (
-            <div className="network-wrapper">
+            <div className={`network-wrapper ${c_status[network_status]}`}>
                 <div className={`network-item one ${network_status>0 ? 'high-light' : ''}`}></div>
-                <div className={`network-item two ${network_status>1 ? 'high-light' : ''}`}></div>
-                <div className={`network-item three ${network_status>2 ? 'high-light' : ''}`}></div>
-                <div className={`network-item four ${network_status>3 ? 'high-light' : ''}`}></div>
+                <div className={`network-item two ${network_status>0 ? 'high-light' : ''}`}></div>
+                <div className={`network-item three ${network_status>1 ? 'high-light' : ''}`}></div>
+                <div className={`network-item four ${network_status>1 ? 'high-light' : ''}`}></div>
+
+                <div className="icon">
+                    <span className="line"></span>
+                </div>
             </div>
         ) 
     }
@@ -851,6 +759,22 @@ function toast(config) {
                 <span className="end" onClick={() => destroy()}>取消</span>
             </div>
         </div>, div)
+}
+
+// toast message
+function toast_msg_show(text) {
+
+    let el_m = document.createElement('div');
+    el_m.id = 'toast-msg'; // 只能有一个
+    el_m.innerText = text
+    document.body.appendChild(el_m);
+
+
+    setTimeout(() => {
+        if(document.querySelector('#toast-msg')){
+            document.body.removeChild(document.querySelector('#toast-msg'))
+        }
+    },2000)
 }
 
 // 邀请他人文案框
@@ -1631,11 +1555,12 @@ class Room extends Component {
 
         // 网络质量检测
         emedia.mgr.onNetworkQuality = (sId, status) => {
-            console.log('onNetworkQuality', sId, status);
 
 
 
-            let { stream_list } = _this.state;
+
+            let { stream_list, n_weak_ms_t } = _this.state;
+
 
             let changed = false;
             stream_list.map(item => {
@@ -1650,7 +1575,24 @@ class Room extends Component {
                         item.stream.network_status = status;
 
                     }
+
+                    // 自己弱网的提示
+                    if(item.member && item.member.is_me && status !=2 ) {
+                        let t = new Date().getTime()
+                        if(!n_weak_ms_t) {
+                            _this.setState({ n_weak_ms_t: t});
+                            toast_msg_show('您的网络状态不佳');
+                        } else {
+                            
+                            if(t - n_weak_ms_t > 10000) {
+                                _this.setState({ n_weak_ms_t: t});
+                                toast_msg_show('您的网络状态不佳')
+                            };
+                        }
+                    }
                 }
+
+
             });
 
             if(changed) {
@@ -3124,7 +3066,8 @@ class Room extends Component {
                 room_setting_modal_show,
                 roomName,
                 own_member,
-                join_as_audience
+                join_as_audience,
+                nickName
             } = this.state
         
 
@@ -3210,7 +3153,7 @@ class Room extends Component {
                             src={get_img_url_by_name('invite-icon')} 
                             onClick={() => inviteModal({
                                 roomName, 
-                                invitees: get_nickname(own_member)
+                                invitees: nickName
                             })}
                         />
                         <span>邀请他人</span>

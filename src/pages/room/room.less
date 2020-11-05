@@ -281,6 +281,12 @@
                 
                 .network-icon {
                     height: 18px;
+
+                    .network-wrapper.dis .icon {
+                        height: 12px;
+                        width: 12px;
+                        border-radius: 12px;
+                    }
                 }
                 
                 .leave-action {
@@ -313,6 +319,7 @@
         height: 100%;
         display: flex;
         align-items: flex-end;
+        position: relative;
 
         .network-item {
             float: left;
@@ -336,6 +343,65 @@
         .network-item.high-light {
             background: #3FEF66;
         }
+
+        &.dis .icon {
+            height: 10px;
+            width: 10px;
+            border: 1px red solid;
+            background: #fff;
+            border-radius: 10px;
+            position: absolute;
+            right: 0;
+            bottom: 0;
+            color: red;
+
+            .line {
+                width: 2px;
+                height: 100%;
+                transform: rotate(-45deg);
+                display: inline-block;
+                position: absolute;
+                left: 42%;
+                background: red;
+            }
+        }
+
+        &.weak .high-light {
+            background: red;
+        }
+        // &.dis:before {
+        //     content: "/";
+        //     height: 50%;
+        //     width: 50%;
+        //     border: 1px red solid;
+        //     background: transparent;
+        //     // border-radius: 50%;
+        //     // position: absolute;
+        //     color: red;
+        // }
+
+        // &.dis::before,
+        // &.dis::after {
+        //     content: ' ';
+        //     background-color: red;
+        //     width: 2px;
+        //     height: 65%;
+
+        //     position: absolute;
+        //     right: 30%;
+        //     bottom: 0;
+
+        //     // transform-origin: bottom;
+        // }
+
+        // &.dis::before {
+        //     transform: rotate(45deg);
+        // }
+
+        // &.dis::after {
+        //     transform: rotate(-45deg);
+        // }
+
     }
     // 主播列表 UI
     .talker-list-placeholder {
@@ -423,6 +489,10 @@
                         padding: 0 6px;
                         z-index: 5;
                         background: #232426;
+
+                        display: flex;
+                        justify-content: space-between;
+                        align-items: center;
                         .name {
                             font-size:12px;
                             font-family:Alibaba-PuHuiTi-R,Alibaba-PuHuiTi;
@@ -432,6 +502,9 @@
         
                         .status-icon {
                             float: right;
+                            display: flex;
+                            justify-content: center;
+                            align-items: center;
                             img {
                                 // display: inline-block;
                                 width: 16px;
@@ -447,6 +520,11 @@
 
                             .network-icon {
                                 height: 15px;
+
+                                .network-wrapper .network-item {
+                                    width: 2px;
+                                    margin-right: 2px;
+                                }
                             }
                         }
                     }
@@ -1133,6 +1211,22 @@
     }
 }
 
+#toast-msg {
+    background: rgba(0, 0, 0, 0.65);
+    border-radius: 10px;
+    min-width: 200px;
+
+    color: #fff;
+    text-align: center;
+    font:  bold 20px/40px italic;
+
+    position: absolute;
+    top: 50%;
+    left: 50%;
+
+    transform: translate(-50%, -50%);
+    transition: 0.5s;
+}
 // 邀请信息框
 .inviteModal {
     position: absolute;
