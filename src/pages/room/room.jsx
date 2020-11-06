@@ -831,6 +831,83 @@ function inviteModal(info) {
             <Button type="primary" onClick={copy}>复制</Button>
         </div>, div)
 }
+
+// 问题反馈按钮
+class Exc_feed extends PureComponent {
+    constructor(props) {
+        super(props)
+        this.state = {
+            visible: false
+        }
+
+        this.handle_click = this.handle_click.bind(this)
+        this.handleCancel = this.handleCancel.bind(this)
+        this.handleOk = this.handleOk.bind(this)
+        this.onChange = this.onChange.bind(this)
+    }
+
+    handle_click(){
+        this.setState({ visible: true })
+    }
+
+    handleOk() {
+        let { msg } = this.state;
+
+
+        this.setState({
+            confirmLoading: true,
+        });
+        setTimeout(() => {
+            this.setState({
+              visible: false,
+              confirmLoading: false,
+            });
+
+            emedia.fileReport('', msg);
+
+            Modal.success({
+                title: '您的会议日志，已经保存到了本地',
+                content: `请添加QQ：454374569, 进行问题反馈`,
+                okText: '知道了'
+            });
+        }, 500);
+    }
+
+    handleCancel() {
+        this.setState({ visible: false })
+    }
+
+    onChange(e) {
+        let value = e.target.value;
+
+        this.setState({
+            msg: value
+        })
+    }
+    render() {
+
+        let {
+            visible ,
+            confirmLoading
+        } = this.state;
+
+        const { TextArea } = Input
+        return (
+            <div>
+                <Modal
+                title="请填写您遇到的问题"
+                visible={visible}
+                onOk={this.handleOk}
+                confirmLoading={confirmLoading}
+                onCancel={this.handleCancel}
+                >
+                    <TextArea rows={4} onChange={this.onChange}/>
+                </Modal>
+                <div className="exception-feedback-action" onClick={this.handle_click}>问题反馈</div>
+            </div>
+        )
+    }
+}
 // 选择共享桌面流组件
 class ChooseDesktopMedia extends PureComponent {
 
@@ -1057,7 +1134,7 @@ class Room extends Component {
             audio:true,
             video:false,
             headimg_url_suffix: '',
-            joined: false,
+            joined: true,
             loading: false,
 
             talker_is_full:false, //主播已满
@@ -2630,19 +2707,25 @@ class Room extends Component {
                 </div>
 
                 <div className='leave-action-wrapper'>
+                    
                     { own_stream ? 
                         <div className="network-icon">
                             <NetworkStatus network_status={own_stream.network_status} />
                         </div> : ''
                     }
+                    
                     <div onClick={this.leave_handle} className="leave-action">
                         <img src={get_img_url_by_name('leave-icon')} />
                         <span>离开会议</span>
                     </div>
+
+                    <Exc_feed />
                 </div>
             </div>
         )
     }
+
+    
     // 视频关闭的显示框，不直接显示 video 是个黑框
     // type: 区分 main画面和talker-list， 默认不显示admin 标志和 名字（因为talker-list 上面有）
     _voff_show(stream, type) {
