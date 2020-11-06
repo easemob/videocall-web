@@ -900,6 +900,8 @@ class Exc_feed extends PureComponent {
                 onOk={this.handleOk}
                 confirmLoading={confirmLoading}
                 onCancel={this.handleCancel}
+                okText='确定'
+                cancelText='取消'
                 >
                     <TextArea rows={4} onChange={this.onChange}/>
                 </Modal>
