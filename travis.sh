@@ -8,10 +8,8 @@ packing(){
     # cd ../
     echo -e "\nINSTALL DONE.\n"
 
-    sed -i "s/version = '2.0.0'/version = ${TRAVIS_TAG}/g"  ./src/config.js
-
     # cd ./demo
-    TRAVIS=true TAG_NAME=$TRAVIS_TAG npm run build:prod
+    TRAVIS=true TAG_NAME=$TRAVIS_TAG npm run build
     # cd ../
     echo -e "\nBUILD DONE.\n"
 }
