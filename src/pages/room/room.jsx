@@ -1974,7 +1974,7 @@ class Room extends Component {
         let _this = this;
         (async function() {
             try {
-                await emedia.mgr.publish(constraints);
+                const stream = await emedia.mgr.publish(constraints);
                 notification_show('success', '发布流成功');
                 if(!audio && !video) { // getUserMedia 后再关闭音频
                     _this.close_audio()
@@ -2368,27 +2368,38 @@ class Room extends Component {
         let loading_el = this._get_video_loading_el();
         w_el.appendChild(loading_el);
 
+        setTimeout(() => { // 删除 v-loading
+            let v_ls = document.querySelectorAll('.v-wrapper .loading-wrapper');
+
+            for (let index = 0; index < v_ls.length; index++) {
+                const element = v_ls[index];
+                element.parentNode.removeChild(element)
+            }
+        },1000)
         if( stream.located() ){
             emedia.mgr.streamBindVideo(stream, el);
             
-            w_el.appendChild(el)
+            // w_el.appendChild(el)
 
-            w_el.removeChild(loading_el)
+            // w_el.removeChild(loading_el)
         }else {
             let sub_optioon = { video: true, audio: true };
+            console.log('%c sub','color:green');
             emedia.mgr.subscribe(member, stream, sub_optioon.video, sub_optioon.audio, el)
             .then(() => { 
-                w_el.appendChild(el);
+                // w_el.appendChild(el);
                 
-                w_el.removeChild(loading_el)
+                // w_el.removeChild(loading_el)
             })
             .catch(error => {
                 console.error('订阅流失败',error);
                 notification_show('error', `订阅${member.nickName}的流失败`);
                 
-                w_el.removeChild(loading_el)
+                // w_el.removeChild(loading_el)
             });
         }
+
+        w_el.appendChild(el);
         this._on_media_chanaged_by_stream(el, stream)
 
         let { subed_v_els } = this.state;
@@ -2950,30 +2961,19 @@ class Room extends Component {
 
 
             let par_node = element.parentNode;
-                    
+            del_loading(par_node);       
 
             if(this.talker_is_not_visble(element)) {
                 
                 if(visible_change(sid, 'not-visible')) {// 检测可见行是否变化
                     // 不订阅视频
                     emedia.mgr.subscribe(item.member, item.stream, false, true, element)
-                    .then(() => del_loading(par_node))
-                    .catch(() => del_loading(par_node))
+                    
                 } 
             } else { // 恢复订阅视频
                 if(visible_change(sid, 'visible')) { 
-                    try {
-                        emedia.mgr.subscribe(item.member, item.stream, true, true, element)
-                        .then(() => {
-                            console.log('% stop then', 'color:red');
-                            console.log('par_node', par_node);
-                            del_loading(par_node)
-                        })
-                        .catch(() => del_loading(par_node))
-                        
-                    } catch (error) {
-                        del_loading(par_node)
-                    }
+                    emedia.mgr.subscribe(item.member, item.stream, true, true, element)
+                    
                 }
             }
 
