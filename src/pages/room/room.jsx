@@ -1637,7 +1637,6 @@ class Room extends Component {
 
 
 
-
             let { stream_list, n_weak_ms_t } = _this.state;
 
 
@@ -1652,6 +1651,7 @@ class Room extends Component {
                     if(perv_n_status != status) {
                         changed = true;
                         item.stream.network_status = status;
+                        console.log(`onNetworkQuality change: sid=${sId}, status=${status}`);
 
                     }
 
@@ -1678,20 +1678,8 @@ class Room extends Component {
                 _this.setState({ stream_list })
             }
 
-
-            // let item = stream_list.filter(item => (item && item.stream.id == sId));
-
-            // if(item[0]) {
-            //     // notification_show('error', `${item[0].member.nickName}的网络质量差`)
-            // }
         }
-        emedia.mgr.onNetworkDisconnect = sId => {
-            let { stream_list } = _this.state;
-            let item = stream_list.filter(item => (item && item.stream.id == sId));
-            if(item[0]) {
-                notification_show('error', `${item[0].member.nickName}的网络链接断开`)
-            }
-        }
+       
 
         // electorn 兼容 
         if(emedia.isElectron) {
@@ -2879,6 +2867,7 @@ class Room extends Component {
     // 主播列表滚动 停止
     // 更新订阅，不可见的只订阅音频
     talker_list_scroll_stop() {
+        
         
         // 当画面不可见时，重新订阅（只订阅音频）
 
