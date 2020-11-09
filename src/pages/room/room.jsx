@@ -2956,12 +2956,14 @@ class Room extends Component {
                 
                 if(visible_change(sid, 'not-visible')) {// 检测可见行是否变化
                     // 不订阅视频
-                    emedia.mgr.subscribe(item.member, item.stream, false, true, element)
+                    // emedia.mgr.subscribe(item.member, item.stream, false, true, element)
+                    emedia.useCurrentXService.subscribe(item.stream.id, {subSVideo: false, subSAudio: true})
                     
                 } 
             } else { // 恢复订阅视频
                 if(visible_change(sid, 'visible')) { 
-                    emedia.mgr.subscribe(item.member, item.stream, true, true, element)
+                    // emedia.mgr.subscribe(item.member, item.stream, false, true, element)
+                    emedia.useCurrentXService.subscribe(item.stream.id, {subSVideo: true, subSAudio: true})
                     
                 }
             }
