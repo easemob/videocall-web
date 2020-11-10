@@ -2445,7 +2445,13 @@ class Room extends Component {
                     cdn_zorder: state.cdn_zorder + 1
                 }), _this._update_live_layout)
             }
-        })
+        });
+
+        // 删除退出的流 el
+        let { subed_v_els } = this.state;
+        if(subed_v_els[stream.id]) delete subed_v_els[stream.id];
+
+        this.setState({ subed_v_els })
     }
     
     // 检查是否有别人共享了桌面或者 白板
