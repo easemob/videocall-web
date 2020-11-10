@@ -2698,8 +2698,8 @@ class Room extends Component {
             })
 
             let { confrId } = this.state.user_room;
-            let { liveCfgs } = emedia.config
-            emedia.mgr.updateLiveLayout(confrId, liveCfgs[0].id, regions)
+            let { liveCfgs } = emedia.config;
+            if(liveCfgs && liveCfgs[0]) emedia.mgr.updateLiveLayout(confrId, liveCfgs[0].id, regions);
     }
     _get_header_el() { 
 
