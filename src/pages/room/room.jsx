@@ -448,9 +448,7 @@ class Setting extends Component {
             rec,recMerge,join_as_audience
         })
         this.setState({ visible: false });
-        // if(this.props.is_localStorage_nickName_admin) {
-        //     window.localStorage.setItem('easemob-nickName', nickName); //保存 nickName
-        // }
+        
         window.sessionStorage.setItem('easemob-headimg_url_suffix', headimg_url_suffix); //保存 头像 url
         
     }
@@ -1298,21 +1296,11 @@ class Room extends Component {
                 joined: true,
                 user_room,
             })
-
-            // this.setState({ 
-            //     joined: true,
-            //     user_room,
-            // },this.get_confr_info)
     
             window.location.hash = '' //加入会议成功，清除query 防止退出后，重复加入
 
             if(user_room.role == emedia.mgr.Role.AUDIENCE){ // 观众不推流
-                // if(role == 1){//观众默认关闭摄像头、麦克风
-                //     this.setState({
-                //         audio: false,
-                //         video: false
-                //     })
-                // }
+                
                 return
             }
             this.publish();
@@ -1412,11 +1400,12 @@ class Room extends Component {
                 _this.destroy_white_board()
             }
 
+            if(_this.state.shared_desktop) {
+                _this.stop_share_desktop()
+            }
+
             emedia.mgr.exitConference();
 
-            // if(_this.state.is_localStorage_nickName_admin) {// localStorage_nickName_admin 放开使用权限
-            //     window.localStorage.setItem('easemob-nickName-used', false);
-            // }
         } 
 
         // this._get_nickname_from_session();
@@ -1935,10 +1924,13 @@ class Room extends Component {
 
     }
     leave(){
-        let { am_i_white_board_creator } = this.state;
+        let { am_i_white_board_creator,shared_desktop } = this.state;
         if(am_i_white_board_creator) {
             this.emit_white_board_is_destroyed()
             this.destroy_white_board()
+        }
+        if(shared_desktop) {
+            this.stop_share_desktop()
         }
 
         setTimeout(emedia.mgr.exitConference,300) // 用于发送 销毁会议的消息
