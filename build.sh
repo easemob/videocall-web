@@ -1,4 +1,3 @@
-echo 'test sh'
 
 # env=$
 

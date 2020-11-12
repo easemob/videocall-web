@@ -8,10 +8,10 @@ packing(){
     # 如果有 build, 不再构建，直接发布
     if [ -d build ] 
     then 
-        echo 'have build'
+        echo '\nhave build\n'
 
     else
-        echo 'not have build'
+        echo '\nnot have build\n'
 
         npm install
         echo -e "\nINSTALL DONE.\n"
