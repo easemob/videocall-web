@@ -4,14 +4,21 @@ echo TAG: $TRAVIS_TAG
 packing(){
     # cd ./demo
     echo $PWD 
-	npm install
-    # cd ../
-    echo -e "\nINSTALL DONE.\n"
 
-    # cd ./demo
-    TRAVIS=true TAG_NAME=$TRAVIS_TAG npm run build
-    # cd ../
-    echo -e "\nBUILD DONE.\n"
+    # 如果有 build, 不再构建，直接发布
+    if [ -d build ] 
+    then 
+        echo 'have build'
+
+    else
+        echo 'not have build'
+
+        npm install
+        echo -e "\nINSTALL DONE.\n"
+
+        TRAVIS=true TAG_NAME=$TRAVIS_TAG npm run build
+        echo -e "\nBUILD DONE.\n"
+    fi
 
     sed -i "s/{#version}/${TRAVIS_TAG}/g"  ./build/index.html
 }
