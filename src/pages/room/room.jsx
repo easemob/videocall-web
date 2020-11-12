@@ -1930,7 +1930,10 @@ class Room extends Component {
             this.destroy_white_board()
         }
         if(shared_desktop) {
-            this.stop_share_desktop()
+            Modal.info({
+                title: '您还在共享桌面，请先停止共享桌面'
+            });
+            return
         }
 
         setTimeout(emedia.mgr.exitConference,300) // 用于发送 销毁会议的消息
