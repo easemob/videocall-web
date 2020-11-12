@@ -1316,7 +1316,17 @@ class Room extends Component {
                 });
                 return
             }
-            message.error(error.errorMessage || error.message) // errorMessage: 接口错误， message：js 语法错误 
+
+            let err_o = {
+                '-530':'创建session失败',
+                '-531':'设置布局失败',
+                '-532':'画布不能为空',
+                '-533':'删除session失败',
+                '-534':'自定义录制失败',
+                '-200':'参数错误',
+
+            }
+            message.error(err_o[error.error] || error.errorMessage || error.message) // errorMessage: 接口错误， message：js 语法错误 
             this.setState({ loading:false });
 
         }
@@ -1408,7 +1418,6 @@ class Room extends Component {
 
         } 
 
-        // this._get_nickname_from_session();
         this._get_config_from_localStorage();
         this._get_headimg_url_suffix_from_session();
 
@@ -1623,8 +1632,6 @@ class Room extends Component {
 
         // 网络质量检测
         emedia.mgr.onNetworkQuality = (sId, status) => {
-
-
 
             let { stream_list, n_weak_ms_t } = _this.state;
 
