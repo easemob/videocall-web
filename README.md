@@ -37,6 +37,16 @@ http://docs-im.easemob.com/rtc/conference/web
 1. 已经实现 兼容electorn 的共享桌面
 2. electorn 使用教程 http://www.electronjs.org/
 
+
+
+`项目部署`
+1. 将项目通过 travis ci 部署到服务器 教程[http://www.ruanyifeng.com/blog/2017/12/travis_ci_tutorial.html]
+    有两种不同的情况
+    1. 项目依赖 npm库的SDK -- 直接打 tag,提交到 github
+    2. 项目依赖 本地随时修改的 SDK --- 执行npm run build,生成build 文件, 再打 tag,提交到 github
+    3. travis.sh 会区分有没有 build 文件夹
+
+
 `常见问题`
 1. npm start --->  TypeError [ERR_INVALID_ARG_TYPE]: The "path" argument must be of type string. Received type undefined
 
