@@ -1512,12 +1512,16 @@ class Room extends Component {
             
             
             if(
-                _this.state.am_i_white_board_creator &&
-                reason == 11
+                _this.state.am_i_white_board_creator
+                //  &&
+                // reason == 11
             ){ // 会议结束、 销毁白板,
                 _this.destroy_white_board();
             }
 
+            if(_this.state.shared_desktop) {
+                _this.stop_share_desktop()
+            }
             
             message.warn(reason_text, 1, () => {
                 
@@ -3574,22 +3578,6 @@ class Room extends Component {
         }
         return time_str
     }
-
-    // 获取会议信息
-    // get_confr_info = async () => {
-    //     let { confrId } = this.state.user_room;
-    //     let { roomName } = this.state;
-
-    //     if(!confrId){
-    //         return
-    //     }
-
-    //     let password = roomName; // 房间名称和密码一样
-    //     const confr = await emedia.mgr.selectConfr(confrId, password);
-
-    //     this.setState({ confr:confr.confr })
-        
-    // }
 
     close_talker_model = () => {
         this.setState({
