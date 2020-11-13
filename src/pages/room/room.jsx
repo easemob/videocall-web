@@ -423,12 +423,27 @@ class Setting extends Component {
         });
     }
     show = () => {
-        this.setState({ visible: true })
+        let {
+            push_cdn,
+            cdn,
+            rec,
+            recMerge,
+            join_as_audience 
+        } = this.props;
+
+        this.setState({ 
+            visible: true,
+
+            push_cdn, // 获取room state
+            cdn,
+            rec,
+            recMerge,
+            join_as_audience
+        })
     }
     handleCancel = () => {
         this.setState({ visible: false });
 
-        this.reset()
     }
     handleSubmit = () => {
 
@@ -462,9 +477,6 @@ class Setting extends Component {
         this.setState({ headimg_url_suffix })
     }
 
-
-
-
     handleChange = (event) => {
         const target = event.target;
         const value = target.name === 'cdn' ? target.value : target.checked;
@@ -481,16 +493,6 @@ class Setting extends Component {
         this.head_images.show()
     }
     
-    reset() {
-        this.setState({
-            push_cdn: false,
-            cdn: '',
-            rec:false,
-            recMerge:false,
-            join_as_audience: false
-    
-        })
-    }
     render() {
         let { 
             visible, 
@@ -505,6 +507,7 @@ class Setting extends Component {
                 visible={visible}
                 onOk={this.handleSubmit}
                 onCancel={this.handleCancel}
+                destroyOnClose={true}
                 footer={null}
                 getContainer={false}
                 className="setting-modal"
@@ -1378,11 +1381,18 @@ class Room extends Component {
             this.setState({ [key]: values[key]})
         }
 
+        console.log('values', values);
         // 设置角色
         if(values.join_as_audience){
             this.setState({
                 user_room: {
                     role: 1
+                }
+            })
+        }else {
+            this.setState({
+                user_room: {
+                    role: 3
                 }
             })
         }
@@ -1532,7 +1542,7 @@ class Room extends Component {
                     return
                 }
 
-                window.location.reload()
+                // window.location.reload()
             });
         };
         emedia.mgr.onConfrAttrsUpdated = function(confr_attrs){ 
@@ -3616,7 +3626,8 @@ class Room extends Component {
             roomName,
             talker_full_btn_disable,
             shared_desktop,
-            join_btn_disable
+            join_btn_disable,
+            
         } = this.state;
 
         return (
@@ -3737,7 +3748,7 @@ class Room extends Component {
 
                     {/* 设置框 */}
                     <Setting 
-                        { ...{audio, video, nickName, headimg_url_suffix} }
+                        { ...this.state }
                         _get_setting_values={this._get_setting_values} 
                         // is_localStorage_nickName_admin={this.state.is_localStorage_nickName_admin}
                         ref={setting_modal => this.setting_modal = setting_modal} />
