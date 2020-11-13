@@ -9,7 +9,7 @@
 /coverage
 
 # production
-# /build 因为依赖 npm sdk 本地的
+# /build 因为依赖 npm sdk 本地的, 先暂时注释掉
 
 # misc
 .DS_Store
