@@ -21,6 +21,7 @@ packing(){
     fi
 
     sed -i "s/{#version}/${TRAVIS_TAG}/g"  ./build/index.html
+    echo "replace version success: ${TRAVIS_TAG}"
 }
 
 upload(){
