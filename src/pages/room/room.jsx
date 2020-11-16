@@ -1541,6 +1541,7 @@ class Room extends Component {
                     })
                     return
                 }
+                
                 window.location.reload()
             });
         };
