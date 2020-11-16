@@ -1778,8 +1778,6 @@ class Room extends Component {
         }
 
         set_role_to_my_member();
-
-
     }
     // 会议属性变更
     confrAttrsUpdated(confr_attrs) {
