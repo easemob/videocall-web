@@ -1542,7 +1542,7 @@ class Room extends Component {
                     return
                 }
 
-                // window.location.reload()
+                window.location.reload()
             });
         };
         emedia.mgr.onConfrAttrsUpdated = function(confr_attrs){ 
