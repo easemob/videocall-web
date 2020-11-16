@@ -1263,7 +1263,7 @@ class Room extends Component {
 
                 // maxTalkerCount:3,//会议最大主播人数
                 // maxVideoCount:2, //会议最大视频数
-                // maxPubDesktopCount:1 //会议最大共享桌面数
+                maxPubDesktopCount:1 //会议最大共享桌面数
             }
         }
 
@@ -1541,7 +1541,7 @@ class Room extends Component {
                     })
                     return
                 }
-                
+
                 window.location.reload()
             });
         };
