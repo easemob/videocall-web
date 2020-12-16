@@ -26,7 +26,8 @@ import {
 import './room.less';
 
 
-import emedia from 'easemob-emedia';
+// import emedia from 'easemob-emedia';
+import emedia from '../../sdk/EMedia_sdk-3.4.1';
 import whiteBoards from './whiteboardsSdk';
 import login from './login.js'
 import { appkey, version } from '../../config';
@@ -1449,7 +1450,6 @@ class Room extends Component {
         let { username, token } = this.state.user;
 
         emedia.config({
-            restPrefix: process.env.REACT_APP_RTC_HOST,
             appkey,
             // useDeployMore:true //开启多集群部署
         });
