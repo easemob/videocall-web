@@ -27985,12 +27985,13 @@ Manager.prototype.get_dns_config = function () {
 };
 Manager.prototype.check_rest_prefix = function () {
     // 验证接口是否能通
-
+    // 更改验证接口需要的 username/password，或者去掉此验证接口 
+    let user = JSON.parse(window.sessionStorage.getItem('easemob-user'));
     var params = {
         grant_type: "password",
-        password: "123456",
+        password: user.password,
         timestamp: new Date().getTime(),
-        username: "e432598ea3a34ba8ba196df046efdf90"
+        username: user.username
     };
 
     var _this = this;

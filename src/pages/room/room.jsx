@@ -3424,6 +3424,8 @@ class Room extends Component {
     }
     
     create_white_board() {
+        // 请求直接返回 
+        return message.info('白板功能暂未开通，请联系商务！');
         let { roomName } = this.state;
         let { username:userName, token } = this.state.user;
 
