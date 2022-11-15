@@ -413,7 +413,8 @@ class Setting extends Component {
         cdn: '',
         rec:false,
         recMerge:false,
-        join_as_audience: false
+        join_as_audience: false,
+        video_separation_rate: '480',
     }
     
     componentWillReceiveProps(nextProps) {
@@ -429,7 +430,7 @@ class Setting extends Component {
             cdn,
             rec,
             recMerge,
-            join_as_audience 
+            join_as_audience,
         } = this.props;
 
         this.setState({ 
@@ -439,7 +440,7 @@ class Setting extends Component {
             cdn,
             rec,
             recMerge,
-            join_as_audience
+            join_as_audience,
         })
     }
     handleCancel = () => {
@@ -454,14 +455,15 @@ class Setting extends Component {
             push_cdn,
             rec,
             recMerge,
-            join_as_audience
+            join_as_audience,
+            video_separation_rate,
         } = this.state;
 
         
         // 回调上去
         this.props._get_setting_values({
             headimg_url_suffix, cdn, push_cdn,
-            rec,recMerge,join_as_audience
+            rec,recMerge,join_as_audience,video_separation_rate
         })
         this.setState({ visible: false });
         
@@ -494,6 +496,23 @@ class Setting extends Component {
         this.head_images.show()
     }
     
+    // 选择视频清晰度
+    select_video_separation_rate= ( {key} ) => {
+        switch (key) {
+            case "480":
+                this.setState({
+                    video_separation_rate: key
+                })
+                break;
+            case "720":
+                this.setState({
+                    video_separation_rate: key
+                })
+                break;
+            default:
+                break;
+        }
+    }
     render() {
         let { 
             visible, 
@@ -503,6 +522,18 @@ class Setting extends Component {
         let base_url = 'https://download-sdk.oss-cn-beijing.aliyuncs.com/downloads/RtcDemo/headImage/';
 
         let _this = this;
+
+        const video_menu = (
+            <Menu onClick={this.select_video_separation_rate} defaultOpenKeys="720p">
+                <Menu.Item key="480">
+                    480P
+                </Menu.Item>
+                <Menu.Item key="720">
+                    720P
+                </Menu.Item>
+            </Menu>
+        )
+
         return (
             <Modal 
                 visible={visible}
@@ -533,6 +564,7 @@ class Setting extends Component {
                             {key: 'rec', text: '开启录制'},
                             {key: 'recMerge', text: '开启录制合并'},
                             {key: 'join_as_audience', text: '以观众身份加入会议'},
+                            {key: 'video_separation_rate', text: '视频分辩率'},
                         ].map((item,index) => {
                             let { key, text } = item;
                             if(key == 'cdn') {
@@ -543,6 +575,18 @@ class Setting extends Component {
                                             value={_this.state[key]} 
                                             onChange={_this.handleChange} disabled={!_this.state['push_cdn']} 
                                         />
+                            } else if (key === 'video_separation_rate') {
+                                return  <div key={index} className="video-select-box">
+                                    <Dropdown
+                                        overlay={video_menu}
+                                        key={index}
+                                        placement="bottomLeft"
+                                        trigger={["click"]}
+                                    >
+                                        <Button>{_this.state['video_separation_rate']}</Button>
+                                    </Dropdown>
+                                    <span className='video-select-style'>{text}</span>
+                                </div>
                             } else {
                                 return <Checkbox 
                                         key={index}
@@ -1182,7 +1226,24 @@ class Room extends Component {
 
             main_loading: false, // meeting-loading
             main_loading_text: '',
-
+            default_video_separation_rate: {
+                '480':{ 
+                        width: {
+                            exact: 640
+                        },
+                        height: {
+                            exact: 480
+                        }
+                    },
+                '720': { 
+                        width: {
+                            exact: 1280
+                        },
+                        height: {
+                            exact: 720
+                        }
+                    },
+            },
         };
 
         this.toggle_main = this.toggle_main.bind(this);
@@ -1382,7 +1443,7 @@ class Room extends Component {
             this.setState({ [key]: values[key]})
         }
 
-        console.log('values', values);
+        console.log('values>>>', values);
         // 设置角色
         if(values.join_as_audience){
             this.setState({
@@ -1959,15 +2020,9 @@ class Room extends Component {
     }
 
     publish() {
-        let { audio, video }  = this.state;
-        // video = { // 设置 video 分辨率
-        //     width: {
-        //         exact: 1280
-        //     },
-        //     height: {
-        //         exact: 720
-        //     }
-        // }
+        let { audio, video,video_separation_rate, default_video_separation_rate}  = this.state;
+        let video_separation = video_separation_rate || "480";
+        video = default_video_separation_rate[video_separation];
         let constraints = { audio, video };
         if(!audio && !video) { // mic 和 camera 都没打开， 直接publish会报错
             constraints = { audio: true }
