@@ -873,7 +873,7 @@ function inviteModal(info) {
     '会议名称：' + roomName + '\r\n\r\n' + 
     
     '点击链接直接加入会议:\r\n' + 
-    'https://meeting.easemob.com/invite/index.html?'+
+    'https://zq-im-management-hsb.easemob.com/?'+
     'roomName='+ encodeURI(roomName) + '&invitees='+ encodeURI(invitees) +'\r\n\r\n' +
     
     'app下载地址：http://www.easemob.com/download/rtc';
