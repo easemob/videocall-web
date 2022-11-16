@@ -414,7 +414,7 @@ class Setting extends Component {
         rec:false,
         recMerge:false,
         join_as_audience: false,
-        video_separation_rate: '480',
+        video_separation_rate: '720',
     }
     
     componentWillReceiveProps(nextProps) {
@@ -524,7 +524,7 @@ class Setting extends Component {
         let _this = this;
 
         const video_menu = (
-            <Menu onClick={this.select_video_separation_rate} defaultOpenKeys="720p">
+            <Menu onClick={this.select_video_separation_rate} defaultOpenKeys="720">
                 <Menu.Item key="480">
                     480P
                 </Menu.Item>
@@ -558,13 +558,14 @@ class Setting extends Component {
                     </div>
 
                     {
-                        [
+                        [   
                             {key: 'push_cdn', text: '开启推流 CDN'},
                             {key: 'cdn', text: '推流CDN地址'},
                             {key: 'rec', text: '开启录制'},
                             {key: 'recMerge', text: '开启录制合并'},
                             {key: 'join_as_audience', text: '以观众身份加入会议'},
                             {key: 'video_separation_rate', text: '视频分辩率'},
+
                         ].map((item,index) => {
                             let { key, text } = item;
                             if(key == 'cdn') {
@@ -587,7 +588,17 @@ class Setting extends Component {
                                     </Dropdown>
                                     <span className='video-select-style'>{text}</span>
                                 </div>
-                            } else {
+                            } else if (key === 'join_as_audience') {
+                                return <>
+                                    <Checkbox 
+                                        key={index}
+                                        checked={_this.state[key]} 
+                                        name={key} 
+                                        onChange={_this.handleChange}>{text}</Checkbox>
+                                    <div className='join_as_audience_tips'>加入后只能观看，需申请上麦</div>
+
+                                </>
+                            }else {
                                 return <Checkbox 
                                         key={index}
                                         checked={_this.state[key]} 
@@ -597,7 +608,6 @@ class Setting extends Component {
                         })
                     }
                     
-                    <div className='join_as_audience_tips'>加入后只能观看，需申请上麦</div>
 
                     <div className="action">
                         <Button type="primary" onClick={this.handleSubmit}>保存并返回</Button>
@@ -2021,8 +2031,6 @@ class Room extends Component {
 
     publish() {
         let { audio, video,video_separation_rate, default_video_separation_rate}  = this.state;
-        let video_separation = video_separation_rate || "480";
-        video = default_video_separation_rate[video_separation];
         let constraints = { audio, video };
         if(!audio && !video) { // mic 和 camera 都没打开， 直接publish会报错
             constraints = { audio: true }
@@ -2203,9 +2211,8 @@ class Room extends Component {
     // toggle 代指关闭或开启
     // 关闭或开启自己的
     async toggle_video(e) {
-
         let { role } = this.state.user_room;
-        let { own_stream } = this.state;
+        let { own_stream } = this.state;        
         if(role == 1){
             return
         }
@@ -2215,25 +2222,26 @@ class Room extends Component {
             return
         }
         
-        let { video } = this.state;
-    
+        let { video, video_separation_rate, default_video_separation_rate } = this.state;
         if(video){
             await emedia.mgr.pauseVideo(own_stream);
             video = !video
             this.setState({ video })
         }else {
+            let video_separation = video_separation_rate || "720";
+            video = default_video_separation_rate[video_separation];
             let t_el;
             if(e) { //loading
                 t_el = e.target;
                 t_el.style.cursor = 'wait'
             }
-            await emedia.mgr.resumeVideo(own_stream);
+            await emedia.mgr.resumeVideo(own_stream, video);
 
             if(t_el) {
                 t_el.style.cursor = 'pointer'
             }
 
-            video = !video
+            video = true
             this.setState({ 
                 video 
             })
