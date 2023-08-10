@@ -195,6 +195,7 @@ var whiteBoards = function(options){
     }
     this.restApi = options.restApi;
     this.appKey = options.appKey;
+    this.apiUrl = options.apiUrl;
     this.orgName = options.appKey.split("#")[0];
     this.appName = options.appKey.split("#")[1];
 

@@ -4965,6 +4965,7 @@ emedia.config({
     useDTX: true, // 开启 DTX
     uploadStats: true, // 开启 数据上报
     liveCfgs: [], // 多路推流数组
+    restPrefix: process.env.REACT_APP_RTC_HOST,
     rtcStatsTypeMath: function rtcStatsTypeMath(_stat, name) {
         switch (_stat.type) {
             case "remote-candidate":
@@ -5510,7 +5511,7 @@ emedia.config({
     version: '3.2.2',
 
     userAgent: navigator.userAgent,
-    isHttpDNS: true, // 是否从 DNS 获取restUrl
+    isHttpDNS: false, // 是否从 DNS 获取restUrl
 
     acptOps: [100230, //远程控制
     100205, //远程抓图
@@ -22298,6 +22299,8 @@ var _WebRTC = _util.prototypeExtend({
             _logger.debug('setLocalDescription start', self._rtcId, self.__id, self.closed, self.optimalVideoCodecs, self.optimalAudioCodecs);
             if (emedia.config.useDTX) {
                 // 1. 先删除 带 CN/ 的行
+                var num = desc.sdp.match(/a=rtpmap:(.*)\sCN/)[1];
+                desc.sdp = desc.sdp.replace(new RegExp('m=audio(.*) ' + num + '(.*)\\r\\n'), 'm=audio$1$2\r\n');
                 desc.sdp = desc.sdp.replace(/a=rtpmap:(.*)CN\/(.*)\r\n/g, '');
                 // 2. 拿到 音频编码的 数字
                 var num = desc.sdp.match(/a=rtpmap:(.*)\sopus/)[1];
