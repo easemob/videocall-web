@@ -1708,6 +1708,7 @@ class Room extends Component {
     init_white_board() {
         this.white_board = new whiteBoards({
 			restApi: process.env.REACT_APP_WHITE_BOARD_HOST,
+            apiUrl: process.env.REACT_APP_RTC_HOST,
             appKey: appkey
             
 		});
